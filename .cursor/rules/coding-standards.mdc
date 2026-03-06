@@ -40,3 +40,5 @@ const add = (x, y) => x + y;
 - **Exports:** Prefer named exports (`export const fn`, `export type T`) for utilities and types. Use default export only for pages or single-component entry files when the framework expects it.
 
 - **Secrets:** No hardcoded secrets or credentials in the repo. Use environment variables and never commit `.env` with real values.
+
+- **Database (dev):** After running `db:migrate` in development, always run `db:seed` so everyone has consistent baseline data. Require this in your workflow when setting up or resetting the local database.

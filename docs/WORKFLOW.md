@@ -128,6 +128,8 @@ Whenever a PR is opened or updated, expect CI to:
    - `pnpm db:generate`
    - Optionally apply migrations against a disposable Postgres.
 
+**Note — CI hooks for Prisma (planned, not yet implemented):** Full CI integration for Prisma (e.g. running `db:generate` and optionally migrations against a temporary Postgres service on every PR) is planned as part of **Foundation F5 – CI & branching**. Until F5 is in place, DB checks may be run manually; the workflow above describes the target state once CI is configured.
+
 For branches that should be previewed:
 
 - CI deploys API + web to a **staging environment** using a separate `DATABASE_URL`.
