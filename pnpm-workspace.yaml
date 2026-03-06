@@ -1,0 +1,7 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+catalogs:
+  prisma:
+    prisma: 6.3.1

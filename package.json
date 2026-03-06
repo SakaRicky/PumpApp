@@ -1,0 +1,23 @@
+{
+  "name": "pumpapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter api dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "db:migrate": "prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "db:seed": "ts-node db/seed.ts"
+  },
+  "devDependencies": {
+    "prisma": "6.3.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  },
+  "dependencies": {
+    "@prisma/client": "6.3.1"
+  }
+}
