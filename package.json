@@ -10,14 +10,17 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:studio": "prisma studio",
-    "db:seed": "ts-node db/seed.ts"
+    "db:seed": "ts-node --project tsconfig.base.json db/seed.ts"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "dotenv": "^16.4.5",
     "prisma": "6.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "@prisma/client": "6.3.1"
+    "@prisma/client": "6.3.1",
+    "bcrypt": "^5.1.1"
   }
 }

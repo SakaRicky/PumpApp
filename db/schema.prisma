@@ -1,0 +1,261 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Enums
+
+enum UserType {
+  SYSTEM_USER
+}
+
+enum Role {
+  ADMIN
+  USER
+  SALE
+  PUMPIST
+}
+
+enum ShiftStatus {
+  PLANNED
+  OPEN
+  CLOSED
+  RECONCILED
+}
+
+enum ShopSalesSource {
+  SHIFT_SUMMARY_ENTRY
+  TRANSACTIONAL_SYSTEM_TOTAL
+  MANUAL
+}
+
+// Models
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         Role
+  userType     UserType  @default(SYSTEM_USER)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  pumpReadings       PumpReading[]          @relation("PumpReadingRecordedBy")
+  cashHandIns        CashHandIn[]          @relation("CashHandInRecordedBy")
+  reviewedSummaries  ShiftReconciliationSummary[] @relation("SummaryReviewedBy")
+  createdShopSales   ShopSale[]            @relation("ShopSaleCreatedBy")
+
+  @@map("users")
+}
+
+model Worker {
+  id          Int       @id @default(autoincrement())
+  name        String
+  designation String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  shiftWorkers ShiftWorker[]
+  cashHandIns  CashHandIn[]
+
+  @@map("workers")
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id           Int       @id @default(autoincrement())
+  name         String
+  categoryId   Int
+  sellingPrice Decimal   @db.Decimal(10, 2)
+  currentStock Decimal    @db.Decimal(12, 3)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  category             Category              @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  purchasePriceHistory PurchasePriceHistory[]
+  shopSaleItems        ShopSaleItem[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+model PurchasePriceHistory {
+  id            Int      @id @default(autoincrement())
+  productId     Int
+  purchasePrice Decimal  @db.Decimal(10, 2)
+  effectiveAt   DateTime
+  notes         String?
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([productId, effectiveAt])
+  @@map("purchase_price_history")
+}
+
+model Pump {
+  id     Int     @id @default(autoincrement())
+  name   String
+  active Boolean @default(true)
+
+  priceHistory FuelPriceHistory[]
+  readings     PumpReading[]
+
+  @@map("pumps")
+}
+
+model FuelPriceHistory {
+  id            Int      @id @default(autoincrement())
+  pumpId        Int
+  pricePerUnit  Decimal  @db.Decimal(10, 2)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+
+  pump Pump @relation(fields: [pumpId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([pumpId, effectiveFrom, effectiveTo])
+  @@map("fuel_price_history")
+}
+
+model Shift {
+  id        Int       @id @default(autoincrement())
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  status    ShiftStatus
+  notes     String?
+
+  workers             ShiftWorker[]
+  pumpReadings        PumpReading[]
+  cashHandIns         CashHandIn[]
+  reconciliation      ShiftReconciliationSummary?
+  shopSales           ShopSale[]
+
+  @@index([date])
+  @@index([status])
+  @@map("shifts")
+}
+
+model ShiftWorker {
+  shiftId  Int
+  workerId Int
+
+  shift  Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([shiftId, workerId])
+  @@index([shiftId])
+  @@index([workerId])
+  @@map("shift_workers")
+}
+
+model PumpReading {
+  id              Int      @id @default(autoincrement())
+  pumpId          Int
+  shiftId         Int
+  openingReading  Decimal  @db.Decimal(12, 3)
+  closingReading  Decimal  @db.Decimal(12, 3)
+  recordedById    Int
+  recordedAt      DateTime @default(now())
+
+  pump        Pump @relation(fields: [pumpId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  shift       Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  recordedBy  User @relation("PumpReadingRecordedBy", fields: [recordedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([shiftId, pumpId])
+  @@map("pump_readings")
+}
+
+model CashHandIn {
+  id           Int      @id @default(autoincrement())
+  shiftId      Int
+  workerId     Int?
+  amount       Decimal  @db.Decimal(10, 2)
+  recordedById Int
+  recordedAt   DateTime @default(now())
+
+  shift      Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  worker     Worker? @relation(fields: [workerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  recordedBy User   @relation("CashHandInRecordedBy", fields: [recordedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([shiftId, workerId])
+  @@map("cash_hand_ins")
+}
+
+model ShiftReconciliationSummary {
+  id                     Int             @id @default(autoincrement())
+  shiftId                Int             @unique
+  shopSalesSource        ShopSalesSource
+  systemShopSalesTotal   Decimal?        @db.Decimal(10, 2)
+  manualShopSalesTotal   Decimal?        @db.Decimal(10, 2)
+  effectiveShopSalesTotal Decimal        @db.Decimal(10, 2)
+  manualShopSalesReason  String?
+  fuelSalesTotal         Decimal         @db.Decimal(10, 2)
+  cashHandedTotal        Decimal         @db.Decimal(10, 2)
+  discrepancyAmount      Decimal         @db.Decimal(10, 2)
+  reviewedById           Int?
+  notes                  String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  shift      Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  reviewedBy User? @relation("SummaryReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([shiftId])
+  @@map("shift_reconciliation_summaries")
+}
+
+model ShopSale {
+  id           Int      @id @default(autoincrement())
+  createdAt    DateTime @default(now())
+  totalAmount  Decimal  @db.Decimal(10, 2)
+  createdById  Int?
+  shiftId      Int?
+
+  createdBy User?   @relation("ShopSaleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  shift     Shift?  @relation(fields: [shiftId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items     ShopSaleItem[]
+
+  @@map("shop_sales")
+}
+
+model ShopSaleItem {
+  id             Int      @id @default(autoincrement())
+  shopSaleId     Int
+  productId      Int
+  quantity       Decimal  @db.Decimal(12, 3)
+  unitPriceAtSale Decimal @db.Decimal(10, 2)
+  lineTotal      Decimal  @db.Decimal(10, 2)
+
+  sale    ShopSale @relation(fields: [shopSaleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product  @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("shop_sale_items")
+}
+
+model FixedCost {
+  id            Int      @id @default(autoincrement())
+  name          String
+  monthlyAmount Decimal  @db.Decimal(10, 2)
+  effectiveMonth DateTime
+  notes         String?
+
+  @@map("fixed_costs")
+}
+
