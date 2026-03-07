@@ -63,6 +63,13 @@ All color and radius tokens live in `apps/web/src/index.css`. Use them via Tailw
 - Toggle via `.dark` on a root element (e.g. `html` or app wrapper). All semantic tokens have `.dark` overrides in `index.css`.
 - Sidebar, cards, and tables must use semantic tokens (`background`, `card`, `border`) only—no hard-coded light/dark colors in components.
 
+### Icons
+
+- **Icon pack**: [Lucide React](https://lucide.dev/) — outline style, tree-shakeable, accessible.
+- **Usage**: Import from `@/components/icons`. A barrel file re-exports a curated set (e.g. `LayoutDashboard`, `CalendarClock`, `Scale`, `Package`, `BarChart3`, `Plus`, `Pencil`, `Trash2`, `CheckCircle`, `AlertCircle`); add new Lucide icons there when needed.
+- **Sizing**: Use Tailwind size classes (`size-4`, `size-5`) or the `<Icon icon={...} size="sm" />` wrapper for consistent dimensions. Sidebar nav icons: `size-4`; header/brand: `size-5`.
+- **A11y**: Icons used as decoration (e.g. next to labels) should have `aria-hidden`. Icon-only buttons must have an `aria-label`.
+
 ## 5. References
 
 - Theme implementation: `apps/web/src/index.css`
