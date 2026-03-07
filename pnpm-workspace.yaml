@@ -2,6 +2,10 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Allow native addons to run their build scripts (e.g. bcrypt)
+allowBuilds:
+  bcrypt: true
+
 catalogs:
   prisma:
     prisma: 6.3.1

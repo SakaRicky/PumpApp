@@ -1,0 +1,53 @@
+{
+  "app": {
+    "name": "PumpPro"
+  },
+  "nav": {
+    "ariaLabel": "Navigation principale",
+    "groups": {
+      "operations": "Opérations",
+      "masterData": "Données de base",
+      "reports": "Rapports"
+    },
+    "links": {
+      "shifts": "Postes",
+      "reconciliation": "Réconciliation",
+      "products": "Produits",
+      "categoriesAndMore": "Catégories et plus",
+      "reports": "Rapports"
+    }
+  },
+  "breadcrumbs": {
+    "ariaLabel": "Fil d'Ariane",
+    "home": "Accueil"
+  },
+  "home": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue sur PumpPro. Utilisez le menu pour accéder aux Postes, Réconciliation, Produits ou Rapports."
+  },
+  "shifts": {
+    "title": "Postes",
+    "intro": "Gestion des postes et des employés."
+  },
+  "reconciliation": {
+    "title": "Réconciliation",
+    "intro": "Réconciliation des postes et remise de caisse."
+  },
+  "products": {
+    "title": "Produits",
+    "intro": "Produits et catégories."
+  },
+  "masterData": {
+    "title": "Catégories et plus",
+    "intro": "Catégories, employés, pompes, historique des prix des carburants."
+  },
+  "reports": {
+    "title": "Rapports",
+    "intro": "Rapports et analyse des bénéfices."
+  },
+  "languageSwitcher": {
+    "label": "Langue",
+    "en": "English",
+    "fr": "Français"
+  }
+}

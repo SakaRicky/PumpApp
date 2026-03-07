@@ -3,6 +3,9 @@ import { Role } from "../enums.js"
 
 const roleValues = [Role.ADMIN, Role.USER, Role.SALE, Role.PUMPIST] as const
 
+// API list/detail responses: use UserResponse / WorkerResponse from dto (no password). Re-exported here for the user/worker API contract.
+export type { UserResponse, WorkerResponse } from "../dto/index.js"
+
 export const userCreateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email(),

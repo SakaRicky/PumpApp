@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 
 export interface BreadcrumbItem {
@@ -12,11 +13,12 @@ export interface BreadcrumbsProps {
 }
 
 export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
+  const { t } = useTranslation()
   if (items.length === 0) return null
 
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={t("breadcrumbs.ariaLabel")}
       className={cn(
         "flex items-center gap-2 text-sm text-muted-foreground",
         className
@@ -59,8 +61,9 @@ export const useBreadcrumbsFromPath = (
   pageTitle?: string
 ): BreadcrumbItem[] => {
   const location = useLocation()
+  const { t } = useTranslation()
   const segments = location.pathname.split("/").filter(Boolean)
-  const items: BreadcrumbItem[] = [{ label: "Home", href: "/" }]
+  const items: BreadcrumbItem[] = [{ label: t("breadcrumbs.home"), href: "/" }]
   let path = ""
   for (let i = 0; i < segments.length; i++) {
     path += `/${segments[i]}`

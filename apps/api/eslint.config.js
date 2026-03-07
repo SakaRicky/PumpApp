@@ -22,4 +22,12 @@ export default defineConfig([
       ],
     },
   },
+  {
+    files: ["vitest.config.ts"],
+    languageOptions: {
+      parserOptions: {
+        project: null,
+      },
+    },
+  },
 ])

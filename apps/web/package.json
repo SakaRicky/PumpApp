@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@pumpapp/shared": "workspace:*",
+    "i18next": "^24.2.0",
+    "react-i18next": "^15.1.1",
     "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

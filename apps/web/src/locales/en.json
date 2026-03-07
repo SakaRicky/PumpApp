@@ -1,0 +1,53 @@
+{
+  "app": {
+    "name": "PumpPro"
+  },
+  "nav": {
+    "ariaLabel": "Main navigation",
+    "groups": {
+      "operations": "Operations",
+      "masterData": "Master data",
+      "reports": "Reports"
+    },
+    "links": {
+      "shifts": "Shifts",
+      "reconciliation": "Reconciliation",
+      "products": "Products",
+      "categoriesAndMore": "Categories & more",
+      "reports": "Reports"
+    }
+  },
+  "breadcrumbs": {
+    "ariaLabel": "Breadcrumb",
+    "home": "Home"
+  },
+  "home": {
+    "title": "Dashboard",
+    "welcome": "Welcome to PumpPro. Use the sidebar to open Shifts, Reconciliation, Products, or Reports."
+  },
+  "shifts": {
+    "title": "Shifts",
+    "intro": "Shift management and workers."
+  },
+  "reconciliation": {
+    "title": "Reconciliation",
+    "intro": "Shift reconciliation and cash hand-in."
+  },
+  "products": {
+    "title": "Products",
+    "intro": "Products and categories."
+  },
+  "masterData": {
+    "title": "Categories & more",
+    "intro": "Categories, workers, pumps, fuel price history."
+  },
+  "reports": {
+    "title": "Reports",
+    "intro": "Reports and profit analysis."
+  },
+  "languageSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "fr": "Français"
+  }
+}

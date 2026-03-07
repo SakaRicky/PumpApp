@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "pnpm db:generate",
     "dev:api": "pnpm --filter api dev",
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm -r build",
@@ -13,7 +14,8 @@
     "db:migrate:deploy": "prisma migrate deploy --schema=db/schema.prisma",
     "db:generate": "prisma generate --schema=db/schema.prisma",
     "db:studio": "prisma studio --schema=db/schema.prisma",
-    "db:seed": "ts-node --project tsconfig.base.json db/seed.ts"
+    "db:seed": "ts-node --project tsconfig.base.json db/seed.ts",
+    "test": "pnpm --filter api test"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
