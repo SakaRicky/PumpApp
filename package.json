@@ -7,9 +7,9 @@
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
-    "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate",
-    "db:studio": "prisma studio",
+    "db:migrate": "prisma migrate dev --schema=db/schema.prisma",
+    "db:generate": "prisma generate --schema=db/schema.prisma",
+    "db:studio": "prisma studio --schema=db/schema.prisma",
     "db:seed": "ts-node --project tsconfig.base.json db/seed.ts"
   },
   "devDependencies": {
