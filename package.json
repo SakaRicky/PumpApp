@@ -10,6 +10,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:migrate": "prisma migrate dev --schema=db/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema=db/schema.prisma",
     "db:generate": "prisma generate --schema=db/schema.prisma",
     "db:studio": "prisma studio --schema=db/schema.prisma",
     "db:seed": "ts-node --project tsconfig.base.json db/seed.ts"

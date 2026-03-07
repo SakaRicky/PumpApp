@@ -124,11 +124,9 @@ Whenever a PR is opened or updated, expect CI to:
 4. **Build**:
    - `pnpm --filter api build`
    - `pnpm --filter web build`
-5. **DB checks** (once Prisma wired):
+5. **DB checks**:
    - `pnpm db:generate`
-   - Optionally apply migrations against a disposable Postgres.
-
-**Note — CI hooks for Prisma (planned, not yet implemented):** Full CI integration for Prisma (e.g. running `db:generate` and optionally migrations against a temporary Postgres service on every PR) is planned as part of **Foundation F5 – CI & branching**. Until F5 is in place, DB checks may be run manually; the workflow above describes the target state once CI is configured.
+   - Migrations are applied against a disposable Postgres in CI (`pnpm db:migrate:deploy`). See `.github/workflows/ci.yml`.
 
 For branches that should be previewed:
 
