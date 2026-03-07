@@ -7,6 +7,7 @@ PumpApp uses PostgreSQL with Prisma as the ORM. This document summarizes the sch
 #### User
 
 - `id` (PK)
+- `workerId` (FK → Worker, unique; every user is tied to exactly one worker)
 - `name`
 - `email` / `username` (unique)
 - `passwordHash`
@@ -15,7 +16,7 @@ PumpApp uses PostgreSQL with Prisma as the ORM. This document summarizes the sch
 - `active` (boolean)
 - timestamps
 
-Only `User` with `userType = SYSTEM_USER` can log in.
+Only `User` with `userType = SYSTEM_USER` can log in. Every user must have a worker; a worker may have at most one user.
 
 #### Worker
 
@@ -25,7 +26,7 @@ Only `User` with `userType = SYSTEM_USER` can log in.
 - `active` (boolean)
 - timestamps
 
-Represents operational staff who may not have system accounts.
+Represents operational staff who may not have system accounts. A worker may have at most one linked `User` (system account); every user is linked to exactly one worker.
 
 #### Category
 

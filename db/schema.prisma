@@ -5,6 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../apps/api/node_modules/.prisma/client"
 }
 
 // Enums
@@ -35,8 +36,11 @@ enum ShopSalesSource {
 
 // Models
 
+// Login: API accepts "username" in request body; backend treats it as this email (no separate username field).
+// Every User must be tied to a Worker; a Worker may have at most one User.
 model User {
   id           Int       @id @default(autoincrement())
+  workerId     Int       @unique
   name         String
   email        String    @unique
   passwordHash String
@@ -46,10 +50,11 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  pumpReadings       PumpReading[]          @relation("PumpReadingRecordedBy")
-  cashHandIns        CashHandIn[]          @relation("CashHandInRecordedBy")
-  reviewedSummaries  ShiftReconciliationSummary[] @relation("SummaryReviewedBy")
-  createdShopSales   ShopSale[]            @relation("ShopSaleCreatedBy")
+  worker              Worker                @relation(fields: [workerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pumpReadings        PumpReading[]         @relation("PumpReadingRecordedBy")
+  cashHandIns         CashHandIn[]          @relation("CashHandInRecordedBy")
+  reviewedSummaries   ShiftReconciliationSummary[] @relation("SummaryReviewedBy")
+  createdShopSales    ShopSale[]            @relation("ShopSaleCreatedBy")
 
   @@map("users")
 }
@@ -62,6 +67,7 @@ model Worker {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  user         User?          @relation()
   shiftWorkers ShiftWorker[]
   cashHandIns  CashHandIn[]
 

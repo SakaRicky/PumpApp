@@ -6,7 +6,7 @@
  */
 
 import "dotenv/config"
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient } from "../apps/api/node_modules/.prisma/client"
 import bcrypt from "bcrypt"
 
 const prisma = new PrismaClient()
@@ -16,17 +16,24 @@ const ADMIN_EMAIL = "admin@pumpapp.local"
 const ADMIN_PASSWORD = "admin123"
 
 const seedUser = async () => {
+  let worker = await prisma.worker.findFirst({ where: { name: "Dev Admin" } })
+  if (!worker) {
+    worker = await prisma.worker.create({
+      data: { name: "Dev Admin", designation: "Admin" },
+    })
+  }
   const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, BCRYPT_ROUNDS)
   await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
     create: {
+      workerId: worker.id,
       name: "Dev Admin",
       email: ADMIN_EMAIL,
       passwordHash,
       role: "ADMIN",
       userType: "SYSTEM_USER",
     },
-    update: { name: "Dev Admin", role: "ADMIN" },
+    update: { name: "Dev Admin", role: "ADMIN", workerId: worker.id },
   })
   console.log("Seeded user:", ADMIN_EMAIL)
 }
