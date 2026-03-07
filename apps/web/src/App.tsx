@@ -1,10 +1,27 @@
-import { Button } from "@/components/ui/button"
+import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { AppShell } from "@/components/layout/AppShell"
+import {
+  HomePage,
+  ShiftsPage,
+  ReconciliationPage,
+  ProductsPage,
+  MasterDataPage,
+  ReportsPage,
+} from "@/pages"
 
 const App = () => (
-  <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
-    <h1 className="text-2xl font-semibold">PumpPro</h1>
-    <Button>Get started</Button>
-  </div>
+  <BrowserRouter>
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/shifts" element={<ShiftsPage />} />
+        <Route path="/reconciliation" element={<ReconciliationPage />} />
+        <Route path="/products" element={<ProductsPage />} />
+        <Route path="/master" element={<MasterDataPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+      </Route>
+    </Routes>
+  </BrowserRouter>
 )
 
 export default App
