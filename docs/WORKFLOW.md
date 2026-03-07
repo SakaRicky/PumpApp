@@ -22,7 +22,7 @@ It is based on the implementation plans in `docs/IMPLEMENTATION-ORDER.md` and `p
    - Either a **foundation step** (F0–F5), or
    - A **single feature slice** (S1–S8), e.g. “S1 – Auth & Users/Workers”.
 
-Write down: *"Today’s focus: [slice name] – [short description]"* in your own notes.
+Write down: _"Today’s focus: [slice name] – [short description]"_ in your own notes.
 
 ---
 
@@ -149,7 +149,7 @@ Use this as a quick daily ritual:
    - Pick **one** concrete sub-task: design, schema, API, UI, or tests for a slice.
 
 3. **Guide the agent**
-   - Tell the agent explicitly: *"Today, focus on [slice] – [sub-task]."*
+   - Tell the agent explicitly: _"Today, focus on [slice] – [sub-task]."_
    - Require references to the right docs in their reasoning.
 
 4. **Review diffs, not just summaries**

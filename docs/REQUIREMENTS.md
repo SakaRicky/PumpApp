@@ -18,6 +18,7 @@ This file is a direct copy/condensed version of the PumpPro requirements provide
   - profitability (including fixed costs).
 
 Key philosophy:
+
 - correctness and auditability over convenience,
 - explicit business rules,
 - admin control over automated decisions.
@@ -34,6 +35,7 @@ Key philosophy:
 ### 3. Scope
 
 In scope:
+
 - User & worker management.
 - Product & category management.
 - Inventory tracking (current stock, sale-driven updates).
@@ -49,6 +51,7 @@ In scope:
 - Profit analysis including fixed costs.
 
 Explicitly out of scope:
+
 - Payroll and salary deductions.
 - Refunds and cancellations.
 - Barcode scanning.
@@ -61,6 +64,7 @@ Explicitly out of scope:
 ### 4. Functional objectives (summary)
 
 The system must allow the admin to:
+
 - Maintain master data (products, categories, users, workers, pumps).
 - Record or derive sales for shop and fuel.
 - Track stock levels for shop products.
@@ -120,6 +124,7 @@ The system must allow the admin to:
 ### 8. Data & domain concepts
 
 See `docs/DATABASE.md` and `docs/GLOSSARY.md` for the data model. Major entities:
+
 - `User`, `Worker`, `Product`, `Category`, `PurchasePriceHistory`.
 - `Pump`, `PumpReading`, `Shift`, `ShiftWorker`.
 - `ShopSale`, `ShopSaleItem` (Phase 2).

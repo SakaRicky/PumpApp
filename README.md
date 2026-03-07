@@ -3,6 +3,7 @@
 PumpApp (product name **PumpPro**) is a PERN-stack (PostgreSQL, Express, React, Node.js) web application for managing a petrol station and its convenience store.
 
 It focuses on:
+
 - **Shift-based operations and reconciliation**
 - **Fuel pump readings and fuel revenue estimation**
 - **Shop sales (initially shift-end totals, later per-transaction)**
@@ -36,6 +37,7 @@ PumpApp/
 ### Core domain concepts
 
 See:
+
 - `docs/REQUIREMENTS.md` – full product requirements
 - `docs/DOMAIN-DECISIONS.md` – finalized domain decisions (shift model, fuel price, shop sales source, phased capture)
 - `docs/DATABASE.md` – schema overview

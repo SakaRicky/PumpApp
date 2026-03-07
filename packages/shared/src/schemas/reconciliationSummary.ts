@@ -1,11 +1,11 @@
-import { z } from "zod";
-import { ShopSalesSource } from "../enums.js";
+import { z } from "zod"
+import { ShopSalesSource } from "../enums.js"
 
 const shopSalesSourceValues = [
   ShopSalesSource.SHIFT_SUMMARY_ENTRY,
   ShopSalesSource.TRANSACTIONAL_SYSTEM_TOTAL,
   ShopSalesSource.MANUAL,
-] as const;
+] as const
 
 export const reconciliationSummaryCreateSchema = z.object({
   shopSalesSource: z.enum(shopSalesSourceValues),
@@ -17,7 +17,7 @@ export const reconciliationSummaryCreateSchema = z.object({
   cashHandedTotal: z.number(),
   discrepancyAmount: z.number(),
   notes: z.string().optional().nullable(),
-});
+})
 
 export const reconciliationSummaryUpdateSchema = z.object({
   shopSalesSource: z.enum(shopSalesSourceValues).optional(),
@@ -30,7 +30,11 @@ export const reconciliationSummaryUpdateSchema = z.object({
   discrepancyAmount: z.number().optional(),
   reviewedById: z.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
-});
+})
 
-export type ReconciliationSummaryCreateInput = z.infer<typeof reconciliationSummaryCreateSchema>;
-export type ReconciliationSummaryUpdateInput = z.infer<typeof reconciliationSummaryUpdateSchema>;
+export type ReconciliationSummaryCreateInput = z.infer<
+  typeof reconciliationSummaryCreateSchema
+>
+export type ReconciliationSummaryUpdateInput = z.infer<
+  typeof reconciliationSummaryUpdateSchema
+>

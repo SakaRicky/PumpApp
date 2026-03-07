@@ -111,6 +111,7 @@ Body (conceptually):
 - `PATCH /api/shifts/:id/reconciliation` (ADMIN) — update summary fields.
 
 Fields include:
+
 - `shopSalesSource` (SHIFT_SUMMARY_ENTRY | TRANSACTIONAL_SYSTEM_TOTAL | MANUAL),
 - shop totals (`systemShopSalesTotal`, `manualShopSalesTotal`, `effectiveShopSalesTotal`, `manualShopSalesReason`),
 - `fuelSalesTotal` (computed from volume + price, or overridden),

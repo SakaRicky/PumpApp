@@ -114,4 +114,3 @@ Each slice is intended to be implemented as a **vertical slice**: schema (if nee
   - **API**: per-transaction shop sale endpoints; wire into stock and reconciliation.
   - **Tests**: sale creation; stock decrement; reconciliation using transactional totals.
   - **UI**: transactional shop sales entry (basic POS-style flow) integrated with inventory.
-
