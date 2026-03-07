@@ -21,6 +21,7 @@ export interface LoginResponse {
 // --- Users ---
 
 export interface UserCreateBody {
+  workerId: number
   name: string
   email: string
   password: string
@@ -36,12 +37,14 @@ export interface UserUpdateBody {
 
 export interface UserResponse {
   id: number
+  workerId: number
   name: string
   email: string
   role: Role
   active: boolean
   createdAt: string
   updatedAt: string
+  worker?: { id: number; name: string }
 }
 
 // --- Workers ---

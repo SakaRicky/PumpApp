@@ -7,6 +7,7 @@ const roleValues = [Role.ADMIN, Role.USER, Role.SALE, Role.PUMPIST] as const
 export type { UserResponse, WorkerResponse } from "../dto/index.js"
 
 export const userCreateSchema = z.object({
+  workerId: z.number().int().positive("Worker is required"),
   name: z.string().min(1, "Name is required"),
   email: z.string().email(),
   password: z.string().min(1, "Password is required"),
