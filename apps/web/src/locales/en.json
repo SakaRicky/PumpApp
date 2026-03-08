@@ -145,7 +145,55 @@
   },
   "products": {
     "title": "Products",
-    "intro": "Products and categories."
+    "intro": "Products and categories. View and manage products; admins can add, edit, and record purchase prices.",
+    "addProduct": "Add product",
+    "edit": "Edit",
+    "editProduct": "Edit product",
+    "createProduct": "Create product",
+    "noProducts": "No products yet.",
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "category": "Category",
+      "sellingPrice": "Selling price",
+      "currentStock": "Current stock",
+      "active": "Active"
+    },
+    "form": {
+      "name": "Name",
+      "category": "Category",
+      "sellingPrice": "Selling price",
+      "currentStock": "Current stock",
+      "active": "Active"
+    },
+    "actions": "Actions",
+    "activeYes": "Yes",
+    "activeNo": "No",
+    "save": "Save",
+    "cancel": "Cancel",
+    "errors": {
+      "nameRequired": "Name is required.",
+      "nameAndCategoryRequired": "Name and category are required.",
+      "invalidSellingPrice": "Selling price must be a non-negative number.",
+      "invalidCurrentStock": "Current stock must be a non-negative number.",
+      "errorLoad": "Failed to load products.",
+      "errorCreate": "Failed to create product.",
+      "errorUpdate": "Failed to update product."
+    },
+    "priceHistory": {
+      "title": "Price history",
+      "dialogTitle": "Purchase price history",
+      "tableTitle": "History",
+      "addPrice": "Add purchase price",
+      "purchasePrice": "Purchase price",
+      "effectiveAt": "Effective at",
+      "notes": "Notes",
+      "noPrices": "No purchase prices recorded yet.",
+      "priceIncreased": "Price increased from previous.",
+      "invalidPrice": "Purchase price must be a non-negative number.",
+      "effectiveAtRequired": "Effective date/time is required.",
+      "errorCreate": "Failed to add purchase price."
+    }
   },
   "masterData": {
     "title": "Categories & more",

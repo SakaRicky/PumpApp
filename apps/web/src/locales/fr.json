@@ -145,7 +145,55 @@
   },
   "products": {
     "title": "Produits",
-    "intro": "Produits et catégories."
+    "intro": "Produits et catégories. Consulter et gérer les produits ; les admins peuvent ajouter, modifier et enregistrer les prix d'achat.",
+    "addProduct": "Ajouter un produit",
+    "edit": "Modifier",
+    "editProduct": "Modifier le produit",
+    "createProduct": "Créer un produit",
+    "noProducts": "Aucun produit pour l'instant.",
+    "table": {
+      "id": "ID",
+      "name": "Nom",
+      "category": "Catégorie",
+      "sellingPrice": "Prix de vente",
+      "currentStock": "Stock actuel",
+      "active": "Actif"
+    },
+    "form": {
+      "name": "Nom",
+      "category": "Catégorie",
+      "sellingPrice": "Prix de vente",
+      "currentStock": "Stock actuel",
+      "active": "Actif"
+    },
+    "actions": "Actions",
+    "activeYes": "Oui",
+    "activeNo": "Non",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "errors": {
+      "nameRequired": "Le nom est obligatoire.",
+      "nameAndCategoryRequired": "Le nom et la catégorie sont obligatoires.",
+      "invalidSellingPrice": "Le prix de vente doit être un nombre positif ou nul.",
+      "invalidCurrentStock": "Le stock actuel doit être un nombre positif ou nul.",
+      "errorLoad": "Impossible de charger les produits.",
+      "errorCreate": "Impossible de créer le produit.",
+      "errorUpdate": "Impossible de modifier le produit."
+    },
+    "priceHistory": {
+      "title": "Historique des prix",
+      "dialogTitle": "Historique des prix d'achat",
+      "tableTitle": "Historique",
+      "addPrice": "Ajouter un prix d'achat",
+      "purchasePrice": "Prix d'achat",
+      "effectiveAt": "Date d'effet",
+      "notes": "Notes",
+      "noPrices": "Aucun prix d'achat enregistré.",
+      "priceIncreased": "Prix en hausse par rapport au précédent.",
+      "invalidPrice": "Le prix d'achat doit être un nombre positif ou nul.",
+      "effectiveAtRequired": "La date et l'heure d'effet sont obligatoires.",
+      "errorCreate": "Impossible d'ajouter le prix d'achat."
+    }
   },
   "masterData": {
     "title": "Catégories et plus",
