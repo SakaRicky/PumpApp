@@ -53,6 +53,8 @@ Errors are returned in a consistent shape:
 - `POST /api/products` (ADMIN)
 - `PATCH /api/products/:id` (ADMIN)
 
+Product list/detail responses may optionally include `category: { id, name }` so the UI can show category name without a separate lookup.
+
 ### Purchase price history
 
 - `GET /api/products/:productId/purchase-prices`

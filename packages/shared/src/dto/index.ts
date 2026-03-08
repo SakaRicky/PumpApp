@@ -114,6 +114,8 @@ export interface ProductResponse {
   active: boolean
   createdAt: string
   updatedAt: string
+  /** Present when the API includes category (e.g. list endpoints) for list UX */
+  category?: { id: number; name: string }
 }
 
 // --- Purchase price history ---
