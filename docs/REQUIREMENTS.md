@@ -101,6 +101,7 @@ The system must allow the admin to:
 
 - **Access**: only SYSTEM_USER can log in; roles are fixed and not user-defined.
 - **Pricing**:
+  - all amounts in one configurable unit (e.g. XAF in Cameroon); no multi-currency or conversion—for tracking only,
   - purchase prices preserved historically (no overwrite),
   - higher new purchase price triggers admin alert,
   - selling prices set manually; no auto-markup.

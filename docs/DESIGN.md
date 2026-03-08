@@ -43,7 +43,7 @@ All color and radius tokens live in `apps/web/src/index.css`. Use them via Tailw
 
 - Use shadcn Table with TanStack Table for sortable, filterable data.
 - Right-align numeric columns (amounts, volumes, counts).
-- Always show units or currency in column headers or a single legend (e.g. "Amount (ZAR)", "Volume (L)").
+- Always show units or currency in column headers or a single legend (e.g. "Amount (ZAR)", "Volume (L)"). For money, use the optional `VITE_CURRENCY_LABEL` (e.g. `XAF` for Cameroon); single unit only, no conversion—for tracking only.
 - Use `muted-foreground` for secondary columns; keep primary data in `foreground`.
 
 ### Forms

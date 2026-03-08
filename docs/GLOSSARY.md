@@ -25,7 +25,7 @@ Short definitions of key domain and technical terms used in PumpApp / PumpPro.
 - **Fuel delivery**: Record of fuel received into a tank (quantity, date).
 - **Theoretical quantity (tank)**: System-calculated tank level: previous quantity − fuel sold (from pump readings) + deliveries.
 - **Actual quantity (tank)**: Physically measured tank level (dip or sensor); compared to theoretical to detect loss/theft/errors.
-- **PurchasePriceHistory**: Historical record of purchase/acquisition prices for a product. New entries are appended; old prices are never overwritten. It answers questions like *“What was the profit on product X sold 3 months ago?”* when the selling price or purchase price has changed since then: you look up the purchase price **effective at the time of the sale** to compute cost of goods and margin correctly.
+- **PurchasePriceHistory**: Historical record of purchase/acquisition prices for a product. New entries are appended; old prices are never overwritten. It answers questions like _“What was the profit on product X sold 3 months ago?”_ when the selling price or purchase price has changed since then: you look up the purchase price **effective at the time of the sale** to compute cost of goods and margin correctly.
 - **Selling price**: The retail price at which a product is sold in the shop. Controlled manually by admins; **not** auto-derived from purchase price.
 - **Inventory / stock**: Current quantity of a product on hand. In Phase 2, stock will update from transactional shop sales.
 - **Shop sale**: A sale of shop products. In Phase 1, captured only as a **shift-end total**; in Phase 2, captured per transaction (`ShopSale` + `ShopSaleItem`).

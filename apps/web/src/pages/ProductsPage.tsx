@@ -35,6 +35,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/contexts/authContext"
 import { api } from "@/lib/api"
+import { currencyLabel } from "@/lib/config"
 import { Package } from "@/components/icons"
 
 // List is sorted by effectiveAt desc (newest first). Chronologically previous = next index.
@@ -145,6 +146,8 @@ export const ProductsPage = () => {
       setLastAddedPriceId(null)
     }
   }, [priceHistoryProduct, loadPurchasePrices])
+
+  const currencySuffix = currencyLabel ? ` (${currencyLabel})` : ""
 
   const categoryName = (product: ProductResponse): string =>
     product.category?.name ??
@@ -357,8 +360,14 @@ export const ProductsPage = () => {
                   <TableHead>{t("products.table.id")}</TableHead>
                   <TableHead>{t("products.table.name")}</TableHead>
                   <TableHead>{t("products.table.category")}</TableHead>
-                  <TableHead>{t("products.table.sellingPrice")}</TableHead>
-                  <TableHead>{t("products.table.purchasePrice")}</TableHead>
+                  <TableHead>
+                    {t("products.table.sellingPrice")}
+                    {currencySuffix}
+                  </TableHead>
+                  <TableHead>
+                    {t("products.table.purchasePrice")}
+                    {currencySuffix}
+                  </TableHead>
                   <TableHead>{t("products.table.currentStock")}</TableHead>
                   <TableHead>{t("products.table.active")}</TableHead>
                   <TableHead className="w-[180px]">
@@ -459,6 +468,7 @@ export const ProductsPage = () => {
             <div className="space-y-2">
               <Label htmlFor="create-sellingPrice">
                 {t("products.form.sellingPrice")}
+                {currencySuffix}
               </Label>
               <Input
                 id="create-sellingPrice"
@@ -502,6 +512,7 @@ export const ProductsPage = () => {
                 <div className="space-y-2">
                   <Label htmlFor="create-purchasePrice">
                     {t("products.priceHistory.purchasePrice")}
+                    {currencySuffix}
                   </Label>
                   <Input
                     id="create-purchasePrice"
@@ -604,6 +615,7 @@ export const ProductsPage = () => {
               <div className="space-y-2">
                 <Label htmlFor="edit-sellingPrice">
                   {t("products.form.sellingPrice")}
+                  {currencySuffix}
                 </Label>
                 <Input
                   id="edit-sellingPrice"
@@ -687,6 +699,7 @@ export const ProductsPage = () => {
                   <div className="space-y-2">
                     <Label htmlFor="price-purchasePrice">
                       {t("products.priceHistory.purchasePrice")}
+                      {currencySuffix}
                     </Label>
                     <Input
                       id="price-purchasePrice"
@@ -751,6 +764,7 @@ export const ProductsPage = () => {
                         </TableHead>
                         <TableHead>
                           {t("products.priceHistory.purchasePrice")}
+                          {currencySuffix}
                         </TableHead>
                         <TableHead>
                           {t("products.priceHistory.notes")}
