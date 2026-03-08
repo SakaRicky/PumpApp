@@ -49,7 +49,7 @@ const isPriceIncreased = (
 }
 
 export const ProductsPage = () => {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { user } = useAuth()
   const isAdmin = user?.role === "ADMIN"
 
@@ -376,24 +376,9 @@ export const ProductsPage = () => {
                       {Number(product.sellingPrice).toFixed(2)}
                     </TableCell>
                     <TableCell>
-                      {product.currentPurchasePrice != null ? (
-                        <span className="flex flex-col">
-                          <span>
-                            {Number(product.currentPurchasePrice).toFixed(2)}
-                          </span>
-                          {product.currentPurchasePriceEffectiveAt && (
-                            <span className="text-muted-foreground text-xs">
-                              {t("products.table.effectiveSince", {
-                                date: new Date(
-                                  product.currentPurchasePriceEffectiveAt
-                                ).toLocaleDateString(i18n.language),
-                              })}
-                            </span>
-                          )}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
+                      {product.currentPurchasePrice != null
+                        ? Number(product.currentPurchasePrice).toFixed(2)
+                        : "—"}
                     </TableCell>
                     <TableCell>
                       {Number(product.currentStock).toFixed(3)}

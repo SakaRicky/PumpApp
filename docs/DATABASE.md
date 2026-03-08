@@ -52,7 +52,7 @@ Represents operational staff who may not have system accounts. A worker may have
 - `effectiveAt` (timestamp)
 - `notes`
 
-Append-only history of purchase prices.
+Append-only history of purchase prices. Used for **point-in-time lookups**: e.g. “What was the profit on product X sold 3 months ago?” when selling or purchase price has changed—use the purchase price whose `effectiveAt` is on or before the sale date to compute cost of goods and margin correctly.
 
 #### Pump
 
