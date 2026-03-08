@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
-import { Breadcrumbs, useBreadcrumbsFromPath } from "./Breadcrumbs"
+import { Breadcrumbs } from "./Breadcrumbs"
+import { useBreadcrumbsFromPath } from "./useBreadcrumbsFromPath"
 
 export interface PageLayoutProps {
   title: string
