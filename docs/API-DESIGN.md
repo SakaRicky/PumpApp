@@ -62,15 +62,32 @@ Errors are returned in a consistent shape:
 
 ### Fuel price history
 
-- `GET /api/fuel-prices` — list price records (filterable by pump or product, date range).
+- `GET /api/fuel-prices` — list price records (filterable by pump, date range). Current API filters by pump; if fuel-type-based pricing is added later, a filter by `fuelTypeId` may be added.
 - `POST /api/fuel-prices` (ADMIN) — create a new `FuelPriceHistory` row with `effectiveFrom` / `effectiveTo`.
 - `PATCH /api/fuel-prices/:id` (ADMIN) — adjust or close a range if needed (non-destructive where possible).
+
+### Fuel types
+
+- `GET /api/fuel-types` — list fuel types.
+- `POST /api/fuel-types` (ADMIN) — create fuel type.
+- `PATCH /api/fuel-types/:id` (ADMIN) — update fuel type (name, active).
+
+### Tanks
+
+- `GET /api/tanks` — list tanks (optional query: `fuelTypeId`).
+- `POST /api/tanks` (ADMIN) — create tank (fuelTypeId, name, capacity?, etc.).
+- `PATCH /api/tanks/:id` (ADMIN) — update tank. Responses may include theoretical/actual quantity; optionally `GET /api/tanks/:id` for detail including quantity.
+
+### Fuel deliveries
+
+- `GET /api/tanks/:tankId/deliveries` — list deliveries for a tank (or `GET /api/fuel-deliveries?tankId=...`).
+- `POST /api/tanks/:tankId/deliveries` (ADMIN) — record a delivery. Body: `{ "quantity": number, "deliveredAt": ISO date-time, "notes"?: string }`.
 
 ### Pumps
 
 - `GET /api/pumps`
-- `POST /api/pumps` (ADMIN)
-- `PATCH /api/pumps/:id` (ADMIN)
+- `POST /api/pumps` (ADMIN) — body may include optional `tankId`.
+- `PATCH /api/pumps/:id` (ADMIN) — may include optional `tankId`.
 
 ### Shifts & workers
 

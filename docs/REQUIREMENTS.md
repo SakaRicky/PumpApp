@@ -13,6 +13,7 @@ This file is a direct copy/condensed version of the PumpPro requirements provide
 - **Core objective**: Help the owner/admin manage:
   - shop product sales and inventory,
   - fuel sales estimation from pump readings,
+  - fuel inventory by tank (theoretical and optional actual), fuel deliveries into tanks, and theoretical vs actual quantity to support loss/discrepancy investigation,
   - shift/day reconciliation of expected sales vs cash handed in,
   - discrepancy tracking,
   - profitability (including fixed costs).
@@ -89,6 +90,7 @@ The system must allow the admin to:
   - sales auto-confirmed (no approval queue).
 - **Pump management**: register pumps.
 - **Pump reading / fuel sales estimation**: derive fuel sold from meter readings.
+- **Fuel tank and delivery tracking**: tanks per fuel type, pump–tank link, delivery records, theoretical vs actual tank quantity for loss detection; see [FUEL-TRACKING.md](FUEL-TRACKING.md).
 - **Shift management**: represent operational periods for reconciliation.
 - **Daily/shift sales summary & reconciliation**: compare expected vs cash; show discrepancies.
 - **Reporting & analytics**: by shift/day/week/month; filter by product, category, salesperson.
@@ -126,7 +128,7 @@ The system must allow the admin to:
 See `docs/DATABASE.md` and `docs/GLOSSARY.md` for the data model. Major entities:
 
 - `User`, `Worker`, `Product`, `Category`, `PurchasePriceHistory`.
-- `Pump`, `PumpReading`, `Shift`, `ShiftWorker`.
+- `FuelType`, `Tank`, `FuelDelivery`; `Pump` (optional `tankId`), `PumpReading`, `Shift`, `ShiftWorker`.
 - `ShopSale`, `ShopSaleItem` (Phase 2).
 - `CashHandIn`, `ShiftReconciliationSummary`, `FixedCost`.
 

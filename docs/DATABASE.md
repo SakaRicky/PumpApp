@@ -63,12 +63,55 @@ Append-only history of purchase prices.
 #### FuelPriceHistory
 
 - `id` (PK)
-- `pumpId` or `fuelProductId` (FK)
+- `pumpId` (FK → Pump)
 - `pricePerUnit` (decimal)
 - `effectiveFrom` (date)
 - `effectiveTo` (date or nullable for open-ended)
 
-Used to look up fuel price by shift date.
+Used to look up fuel price by shift date. Current design is per-pump pricing; pricing could later be per FuelType if needed (future).
+
+#### FuelType
+
+- `id` (PK)
+- `name` (e.g. Diesel, Petrol)
+- `active` (boolean)
+- timestamps
+
+Represents kinds of fuel; distinct from shop Product.
+
+#### Tank
+
+- `id` (PK)
+- `fuelTypeId` → FuelType
+- `name` (e.g. Tank 1)
+- `capacity` (decimal, optional)
+- `theoreticalQuantity` (decimal, optional) — system-calculated from previous quantity, fuel sold (from pump readings), and deliveries
+- `actualQuantity` (decimal, optional) — physically measured (dip/sensor)
+- `actualQuantityRecordedAt` (timestamp, optional)
+- `active` (boolean)
+- timestamps
+
+One fuel type per tank; multiple pumps may share a tank.
+
+#### FuelDelivery
+
+- `id` (PK)
+- `tankId` → Tank
+- `quantity` (decimal)
+- `deliveredAt` (timestamp)
+- `notes` (text, optional)
+- timestamps
+
+Record of fuel received into a tank.
+
+#### Pump
+
+- `id` (PK)
+- `name` / `code`
+- `active` (boolean)
+- `tankId` → Tank (optional)
+
+Draws from one tank; multiple pumps may share a tank.
 
 #### Shift
 
@@ -164,7 +207,10 @@ Recommended indexes:
 
 - `Product.categoryId`
 - `PurchasePriceHistory.productId`, `effectiveAt`
-- `FuelPriceHistory.pumpId` / `fuelProductId`, `effectiveFrom`, `effectiveTo`
+- `FuelPriceHistory.pumpId`, `effectiveFrom`, `effectiveTo`
+- `Tank.fuelTypeId`
+- `FuelDelivery.tankId`, `deliveredAt`
+- `Pump.tankId`
 - `Shift.date`, `Shift.status`
 - `ShiftWorker.shiftId`, `ShiftWorker.workerId`
 - `PumpReading.shiftId`, `PumpReading.pumpId`

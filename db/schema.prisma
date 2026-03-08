@@ -115,14 +115,64 @@ model PurchasePriceHistory {
   @@map("purchase_price_history")
 }
 
+model FuelType {
+  id        Int      @id @default(autoincrement())
+  name      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tanks Tank[]
+
+  @@map("fuel_types")
+}
+
+model Tank {
+  id                      Int       @id @default(autoincrement())
+  fuelTypeId               Int
+  name                     String
+  capacity                 Decimal?  @db.Decimal(12, 3)
+  theoreticalQuantity      Decimal?  @db.Decimal(12, 3)
+  actualQuantity           Decimal?  @db.Decimal(12, 3)
+  actualQuantityRecordedAt DateTime?
+  active                   Boolean   @default(true)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+
+  fuelType     FuelType       @relation(fields: [fuelTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  pumps        Pump[]
+  deliveries   FuelDelivery[]
+
+  @@index([fuelTypeId])
+  @@map("tanks")
+}
+
+model FuelDelivery {
+  id          Int      @id @default(autoincrement())
+  tankId      Int
+  quantity    Decimal  @db.Decimal(12, 3)
+  deliveredAt DateTime
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tank Tank @relation(fields: [tankId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([tankId, deliveredAt])
+  @@map("fuel_deliveries")
+}
+
 model Pump {
   id     Int     @id @default(autoincrement())
   name   String
   active Boolean @default(true)
+  tankId Int?
 
+  tank         Tank?             @relation(fields: [tankId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   priceHistory FuelPriceHistory[]
   readings     PumpReading[]
 
+  @@index([tankId])
   @@map("pumps")
 }
 

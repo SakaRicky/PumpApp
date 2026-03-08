@@ -42,6 +42,7 @@ See:
 - `docs/DOMAIN-DECISIONS.md` – finalized domain decisions (shift model, fuel price, shop sales source, phased capture)
 - `docs/DATABASE.md` – schema overview
 - `docs/API-DESIGN.md` – REST resources and contracts
+- `docs/FUEL-TRACKING.md` – fuel tracking (tanks, deliveries, theoretical vs actual quantity)
 
 ### Getting started (development)
 
@@ -106,6 +107,7 @@ The web app will run on the Vite dev server (typically `http://localhost:5173`).
 - `docs/DATABASE.md`: entities, relationships, indexes
 - `docs/IMPLEMENTATION-ORDER.md`: step-by-step build order
 - `docs/DOMAIN-DECISIONS.md`: resolved domain decisions
+- `docs/FUEL-TRACKING.md`: fuel tracking (tanks, deliveries, theoretical vs actual)
 
 ### Status
 

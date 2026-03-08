@@ -24,6 +24,12 @@ These decisions are **finalized** for PumpApp / PumpPro. Agents and developers m
   - must be explicitly stored,
   - must carry a note / reason,
   - must be clearly identifiable in audit and reporting.
+- Tank quantity is tracked per tank (theoretical and optional actual) for loss detection; see [FUEL-TRACKING.md](FUEL-TRACKING.md).
+
+### Fuel as a separate domain
+
+- Fuel is **not** modeled as a shop Product or ShopSaleItem. Fuel types (e.g. Diesel, Petrol) are represented by the **FuelType** entity; tanks belong to a fuel type; pumps draw from tanks; deliveries and tank quantity (theoretical vs actual) are part of this fuel subdomain.
+- For full rationale, formulas, and tank/reconciliation relationship, see [FUEL-TRACKING.md](FUEL-TRACKING.md).
 
 ### Shop sales source
 
@@ -78,5 +84,6 @@ PumpApp is **reconciliation-first**, not POS-first. It supports a phased adoptio
 
 - Reconciliation is **per shift**, not per abstract day.
 - Fuel revenue is **derived** from pump readings and a date-range fuel price table, with explicit override support.
+- Fuel is a **separate domain** from shop products (FuelType, Tank, deliveries, theoretical vs actual quantity); see [FUEL-TRACKING.md](FUEL-TRACKING.md).
 - Shop totals always have an explicit **source** and optional explanation.
 - The system starts as an **owner-driven, shift-end reconciliation tool** and later grows into a richer transactional system, without schema churn.

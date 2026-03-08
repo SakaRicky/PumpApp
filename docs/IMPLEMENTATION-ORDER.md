@@ -12,6 +12,7 @@ This document mirrors the high-level plan and turns it into a checklist.
 - [ ] Add `docs/DATABASE.md`.
 - [ ] Add `docs/DOMAIN-DECISIONS.md` (this file is already created).
 - [ ] Add `docs/IMPLEMENTATION-ORDER.md` (this file).
+- [ ] Create/update `docs/FUEL-TRACKING.md` and align DOMAIN-DECISIONS and DATABASE with the fuel-tracking model (FuelType, Tank, deliveries, theoretical vs actual).
 
 ### 2. Monorepo scaffolding
 
@@ -24,6 +25,7 @@ This document mirrors the high-level plan and turns it into a checklist.
 
 - [ ] Add `db/schema.prisma` that includes:
   - `User`, `Worker`, `Category`, `Product`, `PurchasePriceHistory`, `Pump`.
+  - `FuelType`, `Tank`, `FuelDelivery`; `Pump.tankId` (optional).
   - `Shift`, `ShiftWorker`, `FuelPriceHistory`, `PumpReading`.
   - `ShiftReconciliationSummary` with shop sales source fields.
   - `ShopSale`, `ShopSaleItem` (Phase 2), `CashHandIn`, `FixedCost`.
@@ -101,6 +103,14 @@ This document mirrors the high-level plan and turns it into a checklist.
   - inventory / product views,
   - profit including fixed costs.
 - [ ] Add UI screens using TanStack Table for the above reports.
+
+### 7b. Fuel tank and delivery tracking
+
+- [ ] Schema and migrations: FuelType, Tank, FuelDelivery, Pump.tankId (already in schema).
+- [ ] Shared: DTOs and Zod schemas for fuel types, tanks, fuel deliveries.
+- [ ] API: fuel types CRUD; tanks CRUD; tank deliveries (list, create); optional endpoint or field for theoretical/actual quantity.
+- [ ] UI: manage fuel types and tanks; record deliveries; optional view for theoretical vs actual quantity.
+- [ ] Tests: tank quantity formula; delivery recording and effect on theoretical quantity.
 
 ### 8. Phase 2 — transactional shop sales (later)
 

@@ -48,7 +48,7 @@ See `docs/DATABASE.md` for details. At a high level:
 
 - **Users & workers**: `User`, `Worker`.
 - **Merchandise**: `Category`, `Product`, `PurchasePriceHistory`.
-- **Fuel**: `Pump`, `FuelPriceHistory`, `PumpReading`.
+- **Fuel**: A separate subdomain from shop products: `FuelType`, `Tank`, `FuelDelivery`, `Pump` (optional `tankId`), `FuelPriceHistory`, `PumpReading`. See `docs/FUEL-TRACKING.md` for tanks, deliveries, and theoretical vs actual quantity.
 - **Operations**: `Shift`, `ShiftWorker`, `CashHandIn`, `ShiftReconciliationSummary`.
 - **Shop sales**: `ShopSale`, `ShopSaleItem` (Phase 2).
 - **Costs**: `FixedCost`.

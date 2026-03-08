@@ -52,13 +52,27 @@ Each slice is intended to be implemented as a **vertical slice**: schema (if nee
 ## S4 – Pumps, Fuel Price History, Pump Readings
 
 - **Scope**:
-  - `Pump`, `FuelPriceHistory`, `PumpReading` and fuel revenue computation.
+  - `Pump`, `FuelPriceHistory`, `PumpReading` and fuel revenue computation. Schema and UI support **Pump–Tank** link (optional `tankId` on Pump); see [DATABASE.md](DATABASE.md) and [FUEL-TRACKING.md](FUEL-TRACKING.md) for FuelType and Tank.
 - **Layers**:
-  - **Schema**: confirm `Pump`, `FuelPriceHistory` (date ranges), `PumpReading` match `docs/DOMAIN-DECISIONS.md`.
+  - **Schema**: confirm `Pump`, `FuelPriceHistory` (date ranges), `PumpReading` match `docs/DOMAIN-DECISIONS.md`; Pump has optional `tankId` → Tank (FuelType and Tank exist per S4b or prior).
   - **Shared**: fuel price and pump reading DTOs and Zod schemas.
-  - **API**: pumps CRUD; fuel price history; pump readings per shift; expose computed volume & fuel revenue.
+  - **API**: pumps CRUD (create/update may include `tankId`); fuel price history; pump readings per shift; expose computed volume & fuel revenue.
   - **Tests**: price lookup by date range; volume and revenue calculations.
   - **UI**: manage pumps; manage fuel prices; per-shift pump reading entry UI.
+
+---
+
+## S4b – Fuel types, tanks, deliveries
+
+- **Scope**:
+  - FuelType and Tank CRUD; Pump → Tank assignment; FuelDelivery recording; computation or display of theoretical quantity; optional actual quantity entry.
+- **Layers**:
+  - **Schema**: FuelType, Tank, FuelDelivery, Pump.tankId (see [DATABASE.md](DATABASE.md)).
+  - **Shared**: DTOs and Zod schemas for fuel types, tanks, fuel deliveries.
+  - **API**: fuel-types CRUD; tanks CRUD; tank deliveries (e.g. `GET /api/tanks/:tankId/deliveries`, `POST /api/tanks/:tankId/deliveries`); expose theoretical/actual quantity where needed.
+  - **Tests**: tank quantity formula; delivery effect on theoretical quantity.
+  - **UI**: manage fuel types and tanks; record deliveries; view theoretical vs actual quantity.
+- **Note**: S4b can follow S4 so pump readings exist for fuel_sold per tank; implementation order may vary.
 
 ---
 
