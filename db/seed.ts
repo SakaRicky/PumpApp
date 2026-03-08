@@ -3,6 +3,7 @@
  * Run with: pnpm db:seed
  *
  * Dev admin: admin@pumpapp.local / admin123
+ * Dev non-admin: user@pumpapp.local / user123
  */
 
 import "dotenv/config"
@@ -14,6 +15,8 @@ const prisma = new PrismaClient()
 const BCRYPT_ROUNDS = 10
 const ADMIN_EMAIL = "admin@pumpapp.local"
 const ADMIN_PASSWORD = "admin123"
+const USER_EMAIL = "user@pumpapp.local"
+const USER_PASSWORD = "user123"
 
 const seedUser = async () => {
   let worker = await prisma.worker.findFirst({ where: { name: "Dev Admin" } })
@@ -36,6 +39,29 @@ const seedUser = async () => {
     update: { name: "Dev Admin", role: "ADMIN", workerId: worker.id },
   })
   console.log("Seeded user:", ADMIN_EMAIL)
+}
+
+const seedNonAdminUser = async () => {
+  let worker = await prisma.worker.findFirst({ where: { name: "Test User" } })
+  if (!worker) {
+    worker = await prisma.worker.create({
+      data: { name: "Test User", designation: "Shop" },
+    })
+  }
+  const passwordHash = await bcrypt.hash(USER_PASSWORD, BCRYPT_ROUNDS)
+  await prisma.user.upsert({
+    where: { email: USER_EMAIL },
+    create: {
+      workerId: worker.id,
+      name: "Test User",
+      email: USER_EMAIL,
+      passwordHash,
+      role: "USER",
+      userType: "SYSTEM_USER",
+    },
+    update: { name: "Test User", role: "USER", workerId: worker.id },
+  })
+  console.log("Seeded user:", USER_EMAIL)
 }
 
 const seedCategories = async (): Promise<number[]> => {
@@ -168,6 +194,7 @@ const seedShiftAndWorkers = async (workerIds: number[]) => {
 
 const main = async () => {
   await seedUser()
+  await seedNonAdminUser()
   const categoryIds = await seedCategories()
   await seedProducts(categoryIds)
   await seedPumps()

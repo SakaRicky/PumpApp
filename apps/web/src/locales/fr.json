@@ -7,15 +7,40 @@
     "groups": {
       "operations": "Opérations",
       "masterData": "Données de base",
-      "reports": "Rapports"
+      "reports": "Rapports",
+      "admin": "Admin"
     },
     "links": {
       "shifts": "Postes",
       "reconciliation": "Réconciliation",
       "products": "Produits",
       "categoriesAndMore": "Catégories et plus",
-      "reports": "Rapports"
+      "reports": "Rapports",
+      "users": "Utilisateurs",
+      "workers": "Employés"
     }
+  },
+  "login": {
+    "title": "Connexion",
+    "username": "Identifiant (e-mail)",
+    "password": "Mot de passe",
+    "submit": "Connexion",
+    "submitting": "Connexion…",
+    "error": "Identifiants incorrects"
+  },
+  "auth": {
+    "loading": "Chargement…",
+    "logout": "Déconnexion",
+    "forbidden": "Accès interdit",
+    "forbiddenHint": "Vous devez être administrateur pour accéder à cette page."
+  },
+  "users": {
+    "title": "Utilisateurs",
+    "intro": "Liste et gestion des utilisateurs (admin)."
+  },
+  "workers": {
+    "title": "Employés",
+    "intro": "Liste et gestion des employés (admin)."
   },
   "breadcrumbs": {
     "ariaLabel": "Fil d'Ariane",

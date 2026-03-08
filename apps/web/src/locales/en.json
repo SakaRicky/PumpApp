@@ -7,15 +7,40 @@
     "groups": {
       "operations": "Operations",
       "masterData": "Master data",
-      "reports": "Reports"
+      "reports": "Reports",
+      "admin": "Admin"
     },
     "links": {
       "shifts": "Shifts",
       "reconciliation": "Reconciliation",
       "products": "Products",
       "categoriesAndMore": "Categories & more",
-      "reports": "Reports"
+      "reports": "Reports",
+      "users": "Users",
+      "workers": "Workers"
     }
+  },
+  "login": {
+    "title": "Sign in",
+    "username": "Username (email)",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "error": "Invalid credentials"
+  },
+  "auth": {
+    "loading": "Loading…",
+    "logout": "Sign out",
+    "forbidden": "Forbidden",
+    "forbiddenHint": "You must be an administrator to view this page."
+  },
+  "users": {
+    "title": "Users",
+    "intro": "List and manage users (admin)."
+  },
+  "workers": {
+    "title": "Workers",
+    "intro": "List and manage workers (admin)."
   },
   "breadcrumbs": {
     "ariaLabel": "Breadcrumb",

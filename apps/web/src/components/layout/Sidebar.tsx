@@ -1,5 +1,5 @@
 import type { ComponentType } from "react"
-import { NavLink } from "react-router-dom"
+import { NavLink, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 import {
@@ -9,8 +9,12 @@ import {
   Package,
   FolderOpen,
   BarChart3,
+  Users,
+  LogOut,
 } from "@/components/icons"
 import { LanguageSwitcher } from "@/components/LanguageSwitcher"
+import { useAuth } from "@/contexts/authContext"
+import { Button } from "@/components/ui/button"
 
 interface NavLinkConfig {
   to: string
@@ -23,7 +27,7 @@ interface NavGroup {
   links: NavLinkConfig[]
 }
 
-const navGroups: NavGroup[] = [
+const baseNavGroups: NavGroup[] = [
   {
     groupKey: "operations",
     links: [
@@ -44,8 +48,20 @@ const navGroups: NavGroup[] = [
   },
 ]
 
+const adminNavGroup: NavGroup = {
+  groupKey: "admin",
+  links: [
+    { to: "/users", labelKey: "users", icon: Users },
+    { to: "/workers", labelKey: "workers", icon: Users },
+  ],
+}
+
 export const Sidebar = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+  const navGroups =
+    user?.role === "ADMIN" ? [...baseNavGroups, adminNavGroup] : baseNavGroups
 
   return (
     <aside
@@ -91,6 +107,25 @@ export const Sidebar = () => {
           </div>
         ))}
       </nav>
+      <div className="border-t border-sidebar-border p-3 space-y-2">
+        {user && (
+          <p className="px-3 py-1 text-xs text-muted-foreground truncate" title={user.name}>
+            {user.name}
+          </p>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            logout()
+            navigate("/login", { replace: true })
+          }}
+        >
+          <LogOut className="size-4 shrink-0" aria-hidden />
+          {t("auth.logout")}
+        </Button>
+      </div>
       <LanguageSwitcher />
     </aside>
   )
