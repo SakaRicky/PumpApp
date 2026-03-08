@@ -85,6 +85,7 @@ export const ProductsPage = () => {
   const [priceAlertMessage, setPriceAlertMessage] = useState<string | null>(
     null
   )
+  const [lastAddedPriceId, setLastAddedPriceId] = useState<number | null>(null)
   const [priceSubmitting, setPriceSubmitting] = useState(false)
 
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -129,12 +130,14 @@ export const ProductsPage = () => {
     if (priceHistoryProduct) {
       loadPurchasePrices(priceHistoryProduct.id)
       setPriceAlertMessage(null)
+      setLastAddedPriceId(null)
       setPriceFormPurchasePrice("")
       setPriceFormEffectiveAt("")
       setPriceFormNotes("")
       setPriceSubmitError(null)
     } else {
       setPurchasePrices([])
+      setLastAddedPriceId(null)
     }
   }, [priceHistoryProduct, loadPurchasePrices])
 
@@ -274,10 +277,13 @@ export const ProductsPage = () => {
       setPriceFormPurchasePrice("")
       setPriceFormEffectiveAt("")
       setPriceFormNotes("")
+      setLastAddedPriceId(res.id)
       await loadPurchasePrices(priceHistoryProduct.id)
-      if (res.alert) {
-        setPriceAlertMessage(t("products.priceHistory.priceIncreased"))
-      }
+      setPriceAlertMessage(
+        res.alert
+          ? t("products.priceHistory.priceRecordedWithIncrease")
+          : t("products.priceHistory.priceRecorded")
+      )
     } catch (e) {
       setPriceSubmitError(
         e instanceof Error ? e.message : t("products.priceHistory.errorCreate")
@@ -673,7 +679,14 @@ export const ProductsPage = () => {
                     </TableHeader>
                     <TableBody>
                       {sortedPrices.map((row, index) => (
-                        <TableRow key={row.id}>
+                        <TableRow
+                          key={row.id}
+                          className={
+                            row.id === lastAddedPriceId
+                              ? "bg-amber-50 dark:bg-amber-950/20"
+                              : undefined
+                          }
+                        >
                           <TableCell>
                             {new Date(row.effectiveAt).toLocaleString()}
                           </TableCell>

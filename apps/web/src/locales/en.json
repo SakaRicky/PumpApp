@@ -190,6 +190,8 @@
       "notes": "Notes",
       "noPrices": "No purchase prices recorded yet.",
       "priceIncreased": "Price increased from previous.",
+      "priceRecorded": "Purchase price recorded.",
+      "priceRecordedWithIncrease": "Purchase price recorded; note: price increased from previous.",
       "invalidPrice": "Purchase price must be a non-negative number.",
       "effectiveAtRequired": "Effective date/time is required.",
       "errorCreate": "Failed to add purchase price."

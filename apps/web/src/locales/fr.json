@@ -190,6 +190,8 @@
       "notes": "Notes",
       "noPrices": "Aucun prix d'achat enregistré.",
       "priceIncreased": "Prix en hausse par rapport au précédent.",
+      "priceRecorded": "Prix d'achat enregistré.",
+      "priceRecordedWithIncrease": "Prix d'achat enregistré ; note : prix en hausse par rapport au précédent.",
       "invalidPrice": "Le prix d'achat doit être un nombre positif ou nul.",
       "effectiveAtRequired": "La date et l'heure d'effet sont obligatoires.",
       "errorCreate": "Impossible d'ajouter le prix d'achat."
