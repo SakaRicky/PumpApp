@@ -109,7 +109,10 @@ export const Sidebar = () => {
       </nav>
       <div className="border-t border-sidebar-border p-3 space-y-2">
         {user && (
-          <p className="px-3 py-1 text-xs text-muted-foreground truncate" title={user.name}>
+          <p
+            className="px-3 py-1 text-xs text-muted-foreground truncate"
+            title={user.name}
+          >
             {user.name}
           </p>
         )}

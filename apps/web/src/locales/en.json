@@ -36,11 +36,69 @@
   },
   "users": {
     "title": "Users",
-    "intro": "List and manage users (admin)."
+    "intro": "List and manage users (admin).",
+    "addUser": "Add user",
+    "editUser": "Edit user",
+    "createUser": "Create user",
+    "noUsers": "No users yet.",
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "active": "Active",
+      "worker": "Worker"
+    },
+    "form": {
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "role": "Role",
+      "worker": "Worker",
+      "active": "Active"
+    },
+    "role": {
+      "ADMIN": "Admin",
+      "USER": "User",
+      "SALE": "Sale",
+      "PUMPIST": "Pumpist"
+    },
+    "activeYes": "Yes",
+    "activeNo": "No",
+    "save": "Save",
+    "cancel": "Cancel",
+    "errorLoad": "Failed to load users.",
+    "errorCreate": "Failed to create user.",
+    "errorUpdate": "Failed to update user."
   },
   "workers": {
     "title": "Workers",
-    "intro": "List and manage workers (admin)."
+    "intro": "List and manage workers (admin).",
+    "addWorker": "Add worker",
+    "editWorker": "Edit worker",
+    "createWorker": "Create worker",
+    "noWorkers": "No workers yet.",
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "designation": "Designation",
+      "active": "Active",
+      "hasAccount": "Has account"
+    },
+    "form": {
+      "name": "Name",
+      "designation": "Designation",
+      "active": "Active"
+    },
+    "hasAccountYes": "Yes",
+    "hasAccountNo": "No",
+    "activeYes": "Yes",
+    "activeNo": "No",
+    "save": "Save",
+    "cancel": "Cancel",
+    "errorLoad": "Failed to load workers.",
+    "errorCreate": "Failed to create worker.",
+    "errorUpdate": "Failed to update worker."
   },
   "breadcrumbs": {
     "ariaLabel": "Breadcrumb",

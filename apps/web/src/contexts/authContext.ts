@@ -14,7 +14,10 @@ export interface AuthContextValue {
 
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
-export const readStored = (): { token: string | null; user: AuthUser | null } => {
+export const readStored = (): {
+  token: string | null
+  user: AuthUser | null
+} => {
   if (typeof window === "undefined") return { token: null, user: null }
   const token = localStorage.getItem(TOKEN_KEY)
   const userRaw = localStorage.getItem(USER_KEY)

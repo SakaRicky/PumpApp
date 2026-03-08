@@ -1,9 +1,5 @@
 import { useCallback, useState, type ReactNode } from "react"
-import {
-  AuthContext,
-  getInitialState,
-  getStorageKeys,
-} from "./authContext"
+import { AuthContext, getInitialState, getStorageKeys } from "./authContext"
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState(getInitialState)

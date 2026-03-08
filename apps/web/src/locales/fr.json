@@ -36,11 +36,69 @@
   },
   "users": {
     "title": "Utilisateurs",
-    "intro": "Liste et gestion des utilisateurs (admin)."
+    "intro": "Liste et gestion des utilisateurs (admin).",
+    "addUser": "Ajouter un utilisateur",
+    "editUser": "Modifier l'utilisateur",
+    "createUser": "Créer un utilisateur",
+    "noUsers": "Aucun utilisateur pour l'instant.",
+    "table": {
+      "id": "ID",
+      "name": "Nom",
+      "email": "E-mail",
+      "role": "Rôle",
+      "active": "Actif",
+      "worker": "Employé"
+    },
+    "form": {
+      "name": "Nom",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "role": "Rôle",
+      "worker": "Employé",
+      "active": "Actif"
+    },
+    "role": {
+      "ADMIN": "Admin",
+      "USER": "Utilisateur",
+      "SALE": "Vente",
+      "PUMPIST": "Pompiste"
+    },
+    "activeYes": "Oui",
+    "activeNo": "Non",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "errorLoad": "Impossible de charger les utilisateurs.",
+    "errorCreate": "Impossible de créer l'utilisateur.",
+    "errorUpdate": "Impossible de modifier l'utilisateur."
   },
   "workers": {
     "title": "Employés",
-    "intro": "Liste et gestion des employés (admin)."
+    "intro": "Liste et gestion des employés (admin).",
+    "addWorker": "Ajouter un employé",
+    "editWorker": "Modifier l'employé",
+    "createWorker": "Créer un employé",
+    "noWorkers": "Aucun employé pour l'instant.",
+    "table": {
+      "id": "ID",
+      "name": "Nom",
+      "designation": "Fonction",
+      "active": "Actif",
+      "hasAccount": "Compte"
+    },
+    "form": {
+      "name": "Nom",
+      "designation": "Fonction",
+      "active": "Actif"
+    },
+    "hasAccountYes": "Oui",
+    "hasAccountNo": "Non",
+    "activeYes": "Oui",
+    "activeNo": "Non",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "errorLoad": "Impossible de charger les employés.",
+    "errorCreate": "Impossible de créer l'employé.",
+    "errorUpdate": "Impossible de modifier l'employé."
   },
   "breadcrumbs": {
     "ariaLabel": "Fil d'Ariane",
