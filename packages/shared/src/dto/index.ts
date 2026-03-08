@@ -116,6 +116,10 @@ export interface ProductResponse {
   updatedAt: string
   /** Present when the API includes category (e.g. list endpoints) for list UX */
   category?: { id: number; name: string }
+  /** Latest purchase price (most recent effectiveAt) when the API includes it (e.g. list) */
+  currentPurchasePrice?: number
+  /** ISO date when currentPurchasePrice became effective; present when currentPurchasePrice is set */
+  currentPurchasePriceEffectiveAt?: string
 }
 
 // --- Purchase price history ---

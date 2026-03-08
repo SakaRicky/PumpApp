@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
   Select,
   SelectContent,
@@ -48,7 +49,7 @@ const isPriceIncreased = (
 }
 
 export const ProductsPage = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const isAdmin = user?.role === "ADMIN"
 
@@ -67,6 +68,10 @@ export const ProductsPage = () => {
   const [createSellingPrice, setCreateSellingPrice] = useState("")
   const [createCurrentStock, setCreateCurrentStock] = useState("")
   const [createActive, setCreateActive] = useState(true)
+  const [createPurchasePrice, setCreatePurchasePrice] = useState("")
+  const [createPurchasePriceEffectiveAt, setCreatePurchasePriceEffectiveAt] =
+    useState("")
+  const [createPurchasePriceNotes, setCreatePurchasePriceNotes] = useState("")
 
   const [editName, setEditName] = useState("")
   const [editCategoryId, setEditCategoryId] = useState("")
@@ -152,6 +157,9 @@ export const ProductsPage = () => {
     setCreateSellingPrice("")
     setCreateCurrentStock("0")
     setCreateActive(true)
+    setCreatePurchasePrice("")
+    setCreatePurchasePriceEffectiveAt("")
+    setCreatePurchasePriceNotes("")
     setSubmitError(null)
     setCreateOpen(true)
   }
@@ -173,16 +181,36 @@ export const ProductsPage = () => {
       setSubmitError(t("products.errors.invalidCurrentStock"))
       return
     }
+    const purchasePriceStr = createPurchasePrice.trim()
+    if (purchasePriceStr) {
+      const purchasePrice = parseFloat(purchasePriceStr)
+      if (Number.isNaN(purchasePrice) || purchasePrice < 0) {
+        setSubmitError(t("products.priceHistory.invalidPrice"))
+        return
+      }
+    }
     setSubmitting(true)
     setSubmitError(null)
     try {
-      await api.createProduct({
+      const product = await api.createProduct({
         name: createName.trim(),
         categoryId,
         sellingPrice,
         currentStock,
         active: createActive,
       })
+      if (createPurchasePrice.trim()) {
+        const effectiveAt = createPurchasePriceEffectiveAt.trim()
+        const isoDate =
+          effectiveAt.length <= 10
+            ? `${effectiveAt}T00:00:00.000Z`
+            : new Date(effectiveAt).toISOString()
+        await api.createPurchasePrice(product.id, {
+          purchasePrice: parseFloat(createPurchasePrice),
+          effectiveAt: effectiveAt ? isoDate : new Date().toISOString(),
+          notes: createPurchasePriceNotes.trim() || undefined,
+        })
+      }
       setCreateOpen(false)
       await load()
     } catch (e) {
@@ -330,6 +358,7 @@ export const ProductsPage = () => {
                   <TableHead>{t("products.table.name")}</TableHead>
                   <TableHead>{t("products.table.category")}</TableHead>
                   <TableHead>{t("products.table.sellingPrice")}</TableHead>
+                  <TableHead>{t("products.table.purchasePrice")}</TableHead>
                   <TableHead>{t("products.table.currentStock")}</TableHead>
                   <TableHead>{t("products.table.active")}</TableHead>
                   <TableHead className="w-[180px]">
@@ -345,6 +374,26 @@ export const ProductsPage = () => {
                     <TableCell>{categoryName(product)}</TableCell>
                     <TableCell>
                       {Number(product.sellingPrice).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {product.currentPurchasePrice != null ? (
+                        <span className="flex flex-col">
+                          <span>
+                            {Number(product.currentPurchasePrice).toFixed(2)}
+                          </span>
+                          {product.currentPurchasePriceEffectiveAt && (
+                            <span className="text-muted-foreground text-xs">
+                              {t("products.table.effectiveSince", {
+                                date: new Date(
+                                  product.currentPurchasePriceEffectiveAt
+                                ).toLocaleDateString(i18n.language),
+                              })}
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
                     </TableCell>
                     <TableCell>
                       {Number(product.currentStock).toFixed(3)}
@@ -459,6 +508,53 @@ export const ProductsPage = () => {
               />
               <Label htmlFor="create-active">{t("products.form.active")}</Label>
             </div>
+
+            <div className="border-t pt-4">
+              <h4 className="mb-3 text-sm font-medium">
+                {t("products.form.initialPurchasePriceSection")}
+              </h4>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="space-y-2">
+                  <Label htmlFor="create-purchasePrice">
+                    {t("products.priceHistory.purchasePrice")}
+                  </Label>
+                  <Input
+                    id="create-purchasePrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={t("products.form.optional")}
+                    value={createPurchasePrice}
+                    onChange={(e) => setCreatePurchasePrice(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-purchasePriceEffectiveAt">
+                    {t("products.priceHistory.effectiveAt")}
+                  </Label>
+                  <DatePicker
+                    id="create-purchasePriceEffectiveAt"
+                    value={createPurchasePriceEffectiveAt}
+                    onChange={setCreatePurchasePriceEffectiveAt}
+                    placeholder={t("products.priceHistory.pickDate")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="create-purchasePriceNotes">
+                    {t("products.priceHistory.notes")}
+                  </Label>
+                  <Input
+                    id="create-purchasePriceNotes"
+                    placeholder={t("products.form.optional")}
+                    value={createPurchasePriceNotes}
+                    onChange={(e) =>
+                      setCreatePurchasePriceNotes(e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
             <DialogFooter>
               <Button
                 type="button"
@@ -622,11 +718,11 @@ export const ProductsPage = () => {
                     <Label htmlFor="price-effectiveAt">
                       {t("products.priceHistory.effectiveAt")}
                     </Label>
-                    <Input
+                    <DatePicker
                       id="price-effectiveAt"
-                      type="datetime-local"
                       value={priceFormEffectiveAt}
-                      onChange={(e) => setPriceFormEffectiveAt(e.target.value)}
+                      onChange={setPriceFormEffectiveAt}
+                      placeholder={t("products.priceHistory.pickDate")}
                     />
                   </div>
                   <div className="space-y-2">

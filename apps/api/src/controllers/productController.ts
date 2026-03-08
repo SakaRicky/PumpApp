@@ -7,11 +7,23 @@ import {
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
 
+type ProductListInclude = {
+  include: {
+    category: true
+    purchasePriceHistory: { orderBy: { effectiveAt: "desc" }; take: 1 }
+  }
+}
+type ProductWithCategoryAndPrice = Awaited<
+  ReturnType<typeof prisma.product.findMany<ProductListInclude>>
+>[number]
+
 type ProductWithCategory = Awaited<
   ReturnType<typeof prisma.product.findMany<{ include: { category: true } }>>
 >[number]
 
-const toProductResponse = (row: ProductWithCategory): ProductResponse => ({
+const toProductResponse = (
+  row: ProductWithCategoryAndPrice | ProductWithCategory
+): ProductResponse => ({
   id: row.id,
   name: row.name,
   categoryId: row.categoryId,
@@ -23,11 +35,23 @@ const toProductResponse = (row: ProductWithCategory): ProductResponse => ({
   ...(row.category && {
     category: { id: row.category.id, name: row.category.name },
   }),
+  ...("purchasePriceHistory" in row &&
+    row.purchasePriceHistory?.[0] !== undefined && {
+      currentPurchasePrice: Number(row.purchasePriceHistory[0].purchasePrice),
+      currentPurchasePriceEffectiveAt:
+        row.purchasePriceHistory[0].effectiveAt.toISOString(),
+    }),
 })
 
 const list = async (_req: Request, res: Response): Promise<void> => {
   const products = await prisma.product.findMany({
-    include: { category: true },
+    include: {
+      category: true,
+      purchasePriceHistory: {
+        orderBy: { effectiveAt: "desc" },
+        take: 1,
+      },
+    },
     orderBy: { name: "asc" },
   })
   res.status(200).json(products.map(toProductResponse))

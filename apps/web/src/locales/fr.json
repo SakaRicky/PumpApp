@@ -156,6 +156,8 @@
       "name": "Nom",
       "category": "Catégorie",
       "sellingPrice": "Prix de vente",
+      "purchasePrice": "Prix d'achat",
+      "effectiveSince": "Depuis le {{date}}",
       "currentStock": "Stock actuel",
       "active": "Actif"
     },
@@ -164,7 +166,9 @@
       "category": "Catégorie",
       "sellingPrice": "Prix de vente",
       "currentStock": "Stock actuel",
-      "active": "Actif"
+      "active": "Actif",
+      "optional": "Optionnel",
+      "initialPurchasePriceSection": "Prix d'achat initial (optionnel)"
     },
     "actions": "Actions",
     "activeYes": "Oui",
@@ -187,6 +191,7 @@
       "addPrice": "Ajouter un prix d'achat",
       "purchasePrice": "Prix d'achat",
       "effectiveAt": "Date d'effet",
+      "pickDate": "Choisir une date",
       "notes": "Notes",
       "noPrices": "Aucun prix d'achat enregistré.",
       "priceIncreased": "Prix en hausse par rapport au précédent.",

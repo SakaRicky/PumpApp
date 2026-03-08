@@ -156,6 +156,8 @@
       "name": "Name",
       "category": "Category",
       "sellingPrice": "Selling price",
+      "purchasePrice": "Purchase price",
+      "effectiveSince": "Since {{date}}",
       "currentStock": "Current stock",
       "active": "Active"
     },
@@ -164,7 +166,9 @@
       "category": "Category",
       "sellingPrice": "Selling price",
       "currentStock": "Current stock",
-      "active": "Active"
+      "active": "Active",
+      "optional": "Optional",
+      "initialPurchasePriceSection": "Initial purchase price (optional)"
     },
     "actions": "Actions",
     "activeYes": "Yes",
@@ -187,6 +191,7 @@
       "addPrice": "Add purchase price",
       "purchasePrice": "Purchase price",
       "effectiveAt": "Effective at",
+      "pickDate": "Pick a date",
       "notes": "Notes",
       "noPrices": "No purchase prices recorded yet.",
       "priceIncreased": "Price increased from previous.",

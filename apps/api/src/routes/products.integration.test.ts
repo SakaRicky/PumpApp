@@ -110,7 +110,13 @@ describe("Products API (integration)", () => {
 
     expect(mockProductFindMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        include: { category: true },
+        include: {
+          category: true,
+          purchasePriceHistory: {
+            orderBy: { effectiveAt: "desc" },
+            take: 1,
+          },
+        },
         orderBy: { name: "asc" },
       })
     )
