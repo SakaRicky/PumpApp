@@ -117,7 +117,7 @@ export const CategoriesPage = () => {
     try {
       await api.updateCategory(editCategory.id, {
         name: editName.trim(),
-        description: editDescription.trim() || null,
+        description: editDescription.trim() || undefined,
       })
       closeEdit()
       await load()
