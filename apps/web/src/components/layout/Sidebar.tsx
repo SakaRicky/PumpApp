@@ -38,6 +38,7 @@ const baseNavGroups: NavGroup[] = [
   {
     groupKey: "masterData",
     links: [
+      { to: "/categories", labelKey: "categories", icon: FolderOpen },
       { to: "/products", labelKey: "products", icon: Package },
       { to: "/master", labelKey: "categoriesAndMore", icon: FolderOpen },
     ],

@@ -13,11 +13,38 @@
     "links": {
       "shifts": "Postes",
       "reconciliation": "Réconciliation",
+      "categories": "Catégories",
       "products": "Produits",
       "categoriesAndMore": "Catégories et plus",
       "reports": "Rapports",
       "users": "Utilisateurs",
       "workers": "Employés"
+    }
+  },
+  "categories": {
+    "title": "Catégories",
+    "intro": "Gérer les catégories de produits (admin).",
+    "add": "Ajouter une catégorie",
+    "edit": "Modifier",
+    "createCategory": "Créer une catégorie",
+    "editCategory": "Modifier la catégorie",
+    "noCategories": "Aucune catégorie pour l'instant.",
+    "table": {
+      "id": "ID",
+      "name": "Nom",
+      "description": "Description"
+    },
+    "form": {
+      "name": "Nom",
+      "description": "Description"
+    },
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "errors": {
+      "nameRequired": "Le nom est obligatoire.",
+      "errorLoad": "Impossible de charger les catégories.",
+      "errorCreate": "Impossible de créer la catégorie.",
+      "errorUpdate": "Impossible de modifier la catégorie."
     }
   },
   "login": {

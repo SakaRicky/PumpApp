@@ -13,11 +13,38 @@
     "links": {
       "shifts": "Shifts",
       "reconciliation": "Reconciliation",
+      "categories": "Categories",
       "products": "Products",
       "categoriesAndMore": "Categories & more",
       "reports": "Reports",
       "users": "Users",
       "workers": "Workers"
+    }
+  },
+  "categories": {
+    "title": "Categories",
+    "intro": "Manage product categories (admin).",
+    "add": "Add category",
+    "edit": "Edit",
+    "createCategory": "Create category",
+    "editCategory": "Edit category",
+    "noCategories": "No categories yet.",
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "description": "Description"
+    },
+    "form": {
+      "name": "Name",
+      "description": "Description"
+    },
+    "save": "Save",
+    "cancel": "Cancel",
+    "errors": {
+      "nameRequired": "Name is required.",
+      "errorLoad": "Failed to load categories.",
+      "errorCreate": "Failed to create category.",
+      "errorUpdate": "Failed to update category."
     }
   },
   "login": {

@@ -1,11 +1,20 @@
 import type {
+  CategoryCreateBody,
+  CategoryResponse,
+  CategoryUpdateBody,
   LoginResponse,
   LoginResponseUser,
-  UserResponse,
+  ProductCreateBody,
+  ProductResponse,
+  ProductUpdateBody,
+  PurchasePriceCreateBody,
+  PurchasePriceCreateResponse,
+  PurchasePriceResponse,
   UserCreateBody,
+  UserResponse,
   UserUpdateBody,
-  WorkerResponse,
   WorkerCreateBody,
+  WorkerResponse,
   WorkerUpdateBody,
 } from "@pumpapp/shared"
 
@@ -72,6 +81,37 @@ export const api = {
     request<WorkerResponse>("/workers", { method: "POST", body }),
   updateWorker: (id: number, body: WorkerUpdateBody): Promise<WorkerResponse> =>
     request<WorkerResponse>(`/workers/${id}`, { method: "PATCH", body }),
+
+  getCategories: (): Promise<CategoryResponse[]> =>
+    request<CategoryResponse[]>("/categories"),
+  createCategory: (body: CategoryCreateBody): Promise<CategoryResponse> =>
+    request<CategoryResponse>("/categories", { method: "POST", body }),
+  updateCategory: (
+    id: number,
+    body: CategoryUpdateBody
+  ): Promise<CategoryResponse> =>
+    request<CategoryResponse>(`/categories/${id}`, { method: "PATCH", body }),
+
+  getProducts: (): Promise<ProductResponse[]> =>
+    request<ProductResponse[]>("/products"),
+  createProduct: (body: ProductCreateBody): Promise<ProductResponse> =>
+    request<ProductResponse>("/products", { method: "POST", body }),
+  updateProduct: (
+    id: number,
+    body: ProductUpdateBody
+  ): Promise<ProductResponse> =>
+    request<ProductResponse>(`/products/${id}`, { method: "PATCH", body }),
+
+  getPurchasePrices: (productId: number): Promise<PurchasePriceResponse[]> =>
+    request<PurchasePriceResponse[]>(`/products/${productId}/purchase-prices`),
+  createPurchasePrice: (
+    productId: number,
+    body: PurchasePriceCreateBody
+  ): Promise<PurchasePriceCreateResponse> =>
+    request<PurchasePriceCreateResponse>(
+      `/products/${productId}/purchase-prices`,
+      { method: "POST", body }
+    ),
 }
 
 export type { LoginResponseUser }

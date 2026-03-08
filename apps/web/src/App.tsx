@@ -3,13 +3,14 @@ import { AppShell } from "@/components/layout/AppShell"
 import { RequireAuth } from "@/components/auth/RequireAuth"
 import { RequireAdmin } from "@/components/auth/RequireAdmin"
 import {
+  CategoriesPage,
   HomePage,
   LoginPage,
-  ShiftsPage,
-  ReconciliationPage,
-  ProductsPage,
   MasterDataPage,
+  ProductsPage,
+  ReconciliationPage,
   ReportsPage,
+  ShiftsPage,
   UsersPage,
   WorkersPage,
 } from "@/pages"
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/master" element={<MasterDataPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route element={<RequireAdmin />}>
+            <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/workers" element={<WorkersPage />} />
           </Route>
