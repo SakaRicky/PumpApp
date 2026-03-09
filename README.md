@@ -98,8 +98,25 @@ pnpm dev:web
 
 The web app will run on the Vite dev server (typically `http://localhost:5173`).
 
+### Run CI locally
+
+To check that the same steps as GitHub Actions will pass before you push:
+
+```bash
+pnpm ci:local
+```
+
+This runs: `install --frozen-lockfile`, `db:generate`, `lint`, and `build`. It does not run migrations (that step in CI uses a dedicated Postgres service). To run migrations too, use a CI-style database and run:
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/pumpapp_ci" pnpm db:migrate:deploy
+```
+
+For full workflow parity (including the same Node/Postgres environment), you can use [act](https://github.com/nektos/act) (requires Docker): `act push` or `act -j ci`.
+
 ### Documentation
 
+- `docs/DEPLOYMENT.md`: deploy with Supabase, GitHub Secrets, migrations, seed, and single build.
 - `docs/REQUIREMENTS.md`: product requirements (PumpPro spec)
 - `docs/GLOSSARY.md`: domain terms (Shift, PumpReading, CashHandIn, etc.)
 - `docs/ARCHITECTURE.md`: monorepo architecture and data flow
