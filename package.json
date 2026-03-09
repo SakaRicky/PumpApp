@@ -17,7 +17,8 @@
     "db:seed": "ts-node --project tsconfig.base.json db/seed.ts",
     "test": "pnpm --filter api test",
     "ci:local": "pnpm install --frozen-lockfile && pnpm db:generate && pnpm lint && pnpm build",
-    "build:deploy": "pnpm --filter web build && node -e \"const fs=require('fs');const path=require('path');const src=path.join('apps','web','dist');const dest=path.join('apps','api','public');fs.mkdirSync(dest,{recursive:true});for(const e of fs.readdirSync(src)){const s=path.join(src,e);const d=path.join(dest,e);fs.cpSync(s,d,{recursive:true});}\" && pnpm --filter api build"
+    "build:deploy": "pnpm --filter @pumpapp/shared build && pnpm --filter web build && node -e \"const fs=require('fs');const path=require('path');const src=path.join('apps','web','dist');const dest=path.join('apps','api','public');fs.mkdirSync(dest,{recursive:true});for(const e of fs.readdirSync(src)){const s=path.join(src,e);const d=path.join(dest,e);fs.cpSync(s,d,{recursive:true});}\" && pnpm --filter api build",
+    "start:prod": "pnpm build:deploy && NODE_ENV=production pnpm --filter api start"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
