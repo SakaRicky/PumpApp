@@ -59,6 +59,24 @@ export const shiftWorkerAssignSchema = z
     }
   )
 
+export const shiftStockItemSchema = z.object({
+  productId: z.number().int().positive(),
+  openingQty: z.number().nonnegative().optional(),
+  closingQty: z.number().nonnegative(),
+})
+
+export const shiftStockBulkUpdateSchema = z
+  .array(shiftStockItemSchema)
+  .min(1)
+
+export const shiftPumpAssignmentSchema = z.object({
+  pumpId: z.number().int().positive(),
+  workerId: z.number().int().positive(),
+})
+
 export type ShiftCreateInput = z.infer<typeof shiftCreateSchema>
 export type ShiftUpdateInput = z.infer<typeof shiftUpdateSchema>
 export type ShiftWorkerAssignInput = z.infer<typeof shiftWorkerAssignSchema>
+export type ShiftStockItemInput = z.infer<typeof shiftStockItemSchema>
+export type ShiftStockBulkUpdateInput = z.infer<typeof shiftStockBulkUpdateSchema>
+export type ShiftPumpAssignmentInput = z.infer<typeof shiftPumpAssignmentSchema>

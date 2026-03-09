@@ -115,6 +115,54 @@ const seedProducts = async (categoryIds: number[]) => {
       sellingPrice: "8.00",
       currentStock: "20",
     },
+    {
+      name: "Orange juice 1L",
+      categoryId: bevId,
+      sellingPrice: "3.20",
+      currentStock: "40",
+    },
+    {
+      name: "Energy drink 0.25L",
+      categoryId: bevId,
+      sellingPrice: "2.80",
+      currentStock: "35",
+    },
+    {
+      name: "Still water 1.5L",
+      categoryId: bevId,
+      sellingPrice: "2.10",
+      currentStock: "45",
+    },
+    {
+      name: "Salted peanuts",
+      categoryId: snacksId,
+      sellingPrice: "1.90",
+      currentStock: "70",
+    },
+    {
+      name: "Cookies",
+      categoryId: snacksId,
+      sellingPrice: "2.20",
+      currentStock: "55",
+    },
+    {
+      name: "Gum (pack)",
+      categoryId: snacksId,
+      sellingPrice: "1.20",
+      currentStock: "90",
+    },
+    {
+      name: "Windshield washer fluid",
+      categoryId: additivesId,
+      sellingPrice: "5.50",
+      currentStock: "25",
+    },
+    {
+      name: "Engine oil 1L",
+      categoryId: additivesId,
+      sellingPrice: "10.00",
+      currentStock: "15",
+    },
   ]
   for (const p of products) {
     const existing = await prisma.product.findFirst({

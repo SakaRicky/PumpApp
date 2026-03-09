@@ -40,9 +40,15 @@ export {
   shiftCreateSchema,
   shiftUpdateSchema,
   shiftWorkerAssignSchema,
+  shiftPumpAssignmentSchema,
   type ShiftCreateInput,
   type ShiftUpdateInput,
   type ShiftWorkerAssignInput,
+  type ShiftPumpAssignmentInput,
+  shiftStockItemSchema,
+  shiftStockBulkUpdateSchema,
+  type ShiftStockItemInput,
+  type ShiftStockBulkUpdateInput,
 } from "./shifts.js"
 
 export {

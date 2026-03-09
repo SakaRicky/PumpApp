@@ -16,6 +16,19 @@ import type {
   WorkerCreateBody,
   WorkerResponse,
   WorkerUpdateBody,
+  ShiftCreateBody,
+  ShiftResponse,
+  ShiftUpdateBody,
+  ShiftWorkerAssignBody,
+  ShiftStockItemBody,
+  ShiftStockItemResponse,
+  PumpCreateBody,
+  PumpUpdateBody,
+  PumpResponse,
+  FuelPriceCreateBody,
+  FuelPriceUpdateBody,
+  FuelPriceResponse,
+  ShiftPumpAssignmentBody,
 } from "@pumpapp/shared"
 
 // In dev: use relative /api so Vite proxy forwards to the API. In prod: same (empty = same origin).
@@ -125,6 +138,101 @@ export const api = {
       `/products/${productId}/purchase-prices`,
       { method: "POST", body }
     ),
+
+  getPumps: (): Promise<PumpResponse[]> => request<PumpResponse[]>("/pumps"),
+  createPump: (body: PumpCreateBody): Promise<PumpResponse> =>
+    request<PumpResponse>("/pumps", { method: "POST", body }),
+  updatePump: (id: number, body: PumpUpdateBody): Promise<PumpResponse> =>
+    request<PumpResponse>(`/pumps/${id}`, { method: "PATCH", body }),
+
+  getFuelPrices: (): Promise<FuelPriceResponse[]> =>
+    request<FuelPriceResponse[]>("/fuel-prices"),
+  createFuelPrice: (body: FuelPriceCreateBody): Promise<FuelPriceResponse> =>
+    request<FuelPriceResponse>("/fuel-prices", { method: "POST", body }),
+  updateFuelPrice: (
+    id: number,
+    body: FuelPriceUpdateBody
+  ): Promise<FuelPriceResponse> =>
+    request<FuelPriceResponse>(`/fuel-prices/${id}`, {
+      method: "PATCH",
+      body,
+    }),
+
+  // Shifts & workers on shifts
+  getShifts: (): Promise<ShiftResponse[]> =>
+    request<ShiftResponse[]>("/shifts"),
+  createShift: (body: ShiftCreateBody): Promise<ShiftResponse> =>
+    request<ShiftResponse>("/shifts", { method: "POST", body }),
+  updateShift: (id: number, body: ShiftUpdateBody): Promise<ShiftResponse> =>
+    request<ShiftResponse>(`/shifts/${id}`, { method: "PATCH", body }),
+
+  getShiftWorkers: (shiftId: number): Promise<WorkerResponse[]> =>
+    request<WorkerResponse[]>(`/shifts/${shiftId}/workers`),
+  assignShiftWorkers: (
+    shiftId: number,
+    body: ShiftWorkerAssignBody
+  ): Promise<void> =>
+    request<void>(`/shifts/${shiftId}/workers`, { method: "POST", body }),
+  unassignShiftWorker: (shiftId: number, workerId: number): Promise<void> =>
+    request<void>(`/shifts/${shiftId}/workers/${workerId}`, {
+      method: "DELETE",
+    }),
+
+  getShiftPumpAssignments: (
+    shiftId: number
+  ): Promise<
+    {
+      pumpId: number
+      pumpName: string
+      workerId: number | null
+      workerName: string | null
+    }[]
+  > => request(`/shifts/${shiftId}/pump-assignments`),
+  assignShiftPump: (
+    shiftId: number,
+    body: ShiftPumpAssignmentBody
+  ): Promise<void> =>
+    request<void>(`/shifts/${shiftId}/pump-assignments`, {
+      method: "POST",
+      body,
+    }),
+
+  getShiftStock: (shiftId: number): Promise<ShiftStockItemResponse[]> =>
+    request<ShiftStockItemResponse[]>(`/shifts/${shiftId}/stock`),
+  upsertShiftStock: (
+    shiftId: number,
+    items: ShiftStockItemBody[]
+  ): Promise<void> =>
+    request<void>(`/shifts/${shiftId}/stock`, {
+      method: "PUT",
+      body: items,
+    }),
+
+  getShiftPumpReadings: (shiftId: number) =>
+    request<
+      {
+        id: number
+        pumpId: number
+        shiftId: number
+        openingReading: number
+        closingReading: number
+        recordedById: number
+        recordedAt: string
+        volume?: number
+      }[]
+    >(`/shifts/${shiftId}/pump-readings`),
+  createShiftPumpReading: (
+    shiftId: number,
+    body: {
+      pumpId: number
+      openingReading: number
+      closingReading: number
+    }
+  ): Promise<void> =>
+    request<void>(`/shifts/${shiftId}/pump-readings`, {
+      method: "POST",
+      body,
+    }),
 }
 
 export type { LoginResponseUser }

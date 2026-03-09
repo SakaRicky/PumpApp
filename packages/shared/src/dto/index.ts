@@ -145,7 +145,7 @@ export interface PurchasePriceCreateResponse extends PurchasePriceResponse {
 // --- Fuel price history ---
 
 export interface FuelPriceCreateBody {
-  pumpId: number
+  fuelTypeId: number
   pricePerUnit: number
   effectiveFrom: string
   effectiveTo?: string
@@ -159,7 +159,7 @@ export interface FuelPriceUpdateBody {
 
 export interface FuelPriceResponse {
   id: number
-  pumpId: number
+  fuelTypeId: number
   pricePerUnit: number
   effectiveFrom: string
   effectiveTo: string | null
@@ -181,6 +181,9 @@ export interface PumpResponse {
   id: number
   name: string
   active: boolean
+  tankId?: number | null
+  fuelTypeId?: number | null
+  fuelTypeName?: string | null
 }
 
 // --- Shifts ---
@@ -215,6 +218,40 @@ export interface ShiftResponse {
 export interface ShiftWorkerAssignBody {
   workerId?: number
   workerIds?: number[]
+}
+
+// --- Shift pump assignments ---
+
+export interface ShiftPumpAssignmentBody {
+  pumpId: number
+  workerId: number
+}
+
+// --- Shift stock (per-shift product snapshot) ---
+
+export interface ShiftStockItemBody {
+  productId: number
+  /**
+   * Optional on write; when omitted, the API will default this
+   * from the previous shift's closing quantity (or current stock for the first shift).
+   */
+  openingQty?: number
+  closingQty: number
+}
+
+export type ShiftStockBulkUpdateBody = ShiftStockItemBody[]
+
+export interface ShiftStockItemResponse {
+  productId: number
+  openingQty: number
+  closingQty: number
+  soldQty?: number
+  product?: {
+    id: number
+    name: string
+    categoryId: number
+    categoryName?: string
+  }
 }
 
 // --- Pump readings ---

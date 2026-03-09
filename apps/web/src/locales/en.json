@@ -18,7 +18,8 @@
       "categoriesAndMore": "Categories & more",
       "reports": "Reports",
       "users": "Users",
-      "workers": "Workers"
+      "workers": "Workers",
+      "pumps": "Pumps"
     }
   },
   "categories": {
@@ -137,7 +138,76 @@
   },
   "shifts": {
     "title": "Shifts",
-    "intro": "Shift management and workers."
+    "intro": "Manage shifts, their times, and who is working.",
+    "addShift": "Add shift",
+    "editShift": "Edit shift",
+    "createShift": "Create shift",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "noShifts": "No shifts yet.",
+    "table": {
+      "date": "Date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "form": {
+      "date": "Shift date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "notes": "Notes",
+      "status": "Status",
+      "pickDate": "Pick a date"
+    },
+    "status": {
+      "PLANNED": "Planned",
+      "OPEN": "Open",
+      "CLOSED": "Closed",
+      "RECONCILED": "Reconciled"
+    },
+    "manageWorkers": "Manage workers",
+    "manageWorkersTitle": "Workers on this shift",
+    "manageWorkersForShift": "Assign workers for shift #{{id}} ({{date}}).",
+    "assignWorkerCheckbox": "Assign {{name}} to this shift",
+    "close": "Close",
+    "pumpReadings": "Pump readings",
+    "assignPumps": "Assign pumps",
+    "pump": "Pump",
+    "worker": "Worker",
+    "assignPumpsSelectWorker": "Select worker",
+    "stock": {
+      "title": "Shop stock for this shift",
+      "openButton": "Shop stock",
+      "table": {
+        "product": "Product",
+        "category": "Category",
+        "opening": "Opening",
+        "closing": "Closing",
+        "sold": "Sold",
+        "revenue": "Revenue"
+      },
+      "summary": {
+        "totalRevenue": "Total shop revenue",
+        "editedCount": "Products edited",
+        "warningCount": "Rows with warnings"
+      },
+      "filters": {
+        "search": "Search products",
+        "onlyChanged": "Only products with changes"
+      }
+    },
+    "errors": {
+      "dateAndTimesRequired": "Date, start time, and end time are required.",
+      "errorLoad": "Failed to load shifts.",
+      "createFailed": "Failed to create shift.",
+      "updateFailed": "Failed to update shift.",
+      "loadWorkersFailed": "Failed to load workers for this shift.",
+      "updateWorkersFailed": "Failed to update workers on this shift.",
+      "loadStockFailed": "Failed to load shop stock for this shift.",
+      "saveStockFailed": "Failed to save shop stock for this shift."
+    }
   },
   "reconciliation": {
     "title": "Reconciliation",
@@ -205,6 +275,28 @@
   "masterData": {
     "title": "Categories & more",
     "intro": "Categories, workers, pumps, fuel price history."
+  },
+  "pumps": {
+    "title": "Pumps",
+    "intro": "Manage fuel pumps (admin).",
+    "addPump": "Add pump",
+    "editPump": "Edit pump",
+    "createPump": "Create pump",
+    "noPumps": "No pumps yet.",
+    "table": {
+      "id": "ID",
+      "name": "Name",
+      "active": "Active"
+    },
+    "form": {
+      "name": "Name",
+      "active": "Active"
+    },
+    "save": "Save",
+    "cancel": "Cancel",
+    "errorLoad": "Failed to load pumps.",
+    "errorCreate": "Failed to create pump.",
+    "errorUpdate": "Failed to update pump."
   },
   "reports": {
     "title": "Reports",

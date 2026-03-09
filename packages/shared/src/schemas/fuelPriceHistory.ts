@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const fuelPriceCreateSchema = z.object({
-  pumpId: z.number().int().positive(),
+  fuelTypeId: z.number().int().positive(),
   pricePerUnit: z.number().nonnegative(),
   effectiveFrom: z
     .string()

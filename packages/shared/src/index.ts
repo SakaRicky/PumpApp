@@ -29,6 +29,7 @@ export type {
   ShiftUpdateBody,
   ShiftResponse,
   ShiftWorkerAssignBody,
+  ShiftPumpAssignmentBody,
   PumpReadingCreateBody,
   PumpReadingUpdateBody,
   PumpReadingResponse,
@@ -40,6 +41,9 @@ export type {
   FixedCostCreateBody,
   FixedCostUpdateBody,
   FixedCostResponse,
+  ShiftStockItemBody,
+  ShiftStockBulkUpdateBody,
+  ShiftStockItemResponse,
 } from "./dto/index.js"
 
 export {
@@ -57,6 +61,8 @@ export {
   shiftCreateSchema,
   shiftUpdateSchema,
   shiftWorkerAssignSchema,
+  shiftStockItemSchema,
+  shiftStockBulkUpdateSchema,
   fuelPriceCreateSchema,
   fuelPriceUpdateSchema,
   pumpReadingCreateSchema,
@@ -93,4 +99,6 @@ export type {
   FixedCostCreateInput,
   FixedCostUpdateInput,
   PurchasePriceCreateInput,
+  ShiftStockItemInput,
+  ShiftStockBulkUpdateInput,
 } from "./schemas/index.js"

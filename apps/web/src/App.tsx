@@ -13,6 +13,7 @@ import {
   ShiftsPage,
   UsersPage,
   WorkersPage,
+  PumpsPage,
 } from "@/pages"
 
 const App = () => (
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/workers" element={<WorkersPage />} />
+            <Route path="/pumps" element={<PumpsPage />} />
           </Route>
         </Route>
       </Route>

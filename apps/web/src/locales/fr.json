@@ -18,7 +18,8 @@
       "categoriesAndMore": "Catégories et plus",
       "reports": "Rapports",
       "users": "Utilisateurs",
-      "workers": "Employés"
+      "workers": "Employés",
+      "pumps": "Pompes"
     }
   },
   "categories": {
@@ -137,7 +138,76 @@
   },
   "shifts": {
     "title": "Postes",
-    "intro": "Gestion des postes et des employés."
+    "intro": "Gérer les postes, leurs horaires et les employés affectés.",
+    "addShift": "Ajouter un poste",
+    "editShift": "Modifier le poste",
+    "createShift": "Créer un poste",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "noShifts": "Aucun poste pour l'instant.",
+    "table": {
+      "date": "Date",
+      "startTime": "Heure de début",
+      "endTime": "Heure de fin",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "form": {
+      "date": "Date du poste",
+      "startTime": "Heure de début",
+      "endTime": "Heure de fin",
+      "notes": "Notes",
+      "status": "Statut",
+      "pickDate": "Choisir une date"
+    },
+    "status": {
+      "PLANNED": "Planifié",
+      "OPEN": "Ouvert",
+      "CLOSED": "Clôturé",
+      "RECONCILED": "Réconcilié"
+    },
+    "manageWorkers": "Gérer les employés",
+    "manageWorkersTitle": "Employés sur ce poste",
+    "manageWorkersForShift": "Affecter les employés au poste n°{{id}} ({{date}}).",
+    "assignWorkerCheckbox": "Affecter {{name}} à ce poste",
+    "close": "Fermer",
+    "pumpReadings": "Relevés pompes",
+    "assignPumps": "Affecter les pompes",
+    "pump": "Pompe",
+    "worker": "Employé",
+    "assignPumpsSelectWorker": "Sélectionner un employé",
+    "stock": {
+      "title": "Stock boutique pour ce poste",
+      "openButton": "Stock boutique",
+      "table": {
+        "product": "Produit",
+        "category": "Catégorie",
+        "opening": "Ouverture",
+        "closing": "Fermeture",
+        "sold": "Vendu",
+        "revenue": "Revenu"
+      },
+      "summary": {
+        "totalRevenue": "Revenu boutique total",
+        "editedCount": "Produits modifiés",
+        "warningCount": "Lignes avec avertissements"
+      },
+      "filters": {
+        "search": "Rechercher un produit",
+        "onlyChanged": "Uniquement les produits modifiés"
+      }
+    },
+    "errors": {
+      "dateAndTimesRequired": "La date, l'heure de début et l'heure de fin sont obligatoires.",
+      "errorLoad": "Impossible de charger les postes.",
+      "createFailed": "Impossible de créer le poste.",
+      "updateFailed": "Impossible de modifier le poste.",
+      "loadWorkersFailed": "Impossible de charger les employés pour ce poste.",
+      "updateWorkersFailed": "Impossible de mettre à jour les employés sur ce poste.",
+      "loadStockFailed": "Impossible de charger le stock boutique pour ce poste.",
+      "saveStockFailed": "Impossible d'enregistrer le stock boutique pour ce poste."
+    }
   },
   "reconciliation": {
     "title": "Réconciliation",
@@ -205,6 +275,28 @@
   "masterData": {
     "title": "Catégories et plus",
     "intro": "Catégories, employés, pompes, historique des prix des carburants."
+  },
+  "pumps": {
+    "title": "Pompes",
+    "intro": "Gérer les pompes à carburant (admin).",
+    "addPump": "Ajouter une pompe",
+    "editPump": "Modifier la pompe",
+    "createPump": "Créer une pompe",
+    "noPumps": "Aucune pompe pour l'instant.",
+    "table": {
+      "id": "ID",
+      "name": "Nom",
+      "active": "Active"
+    },
+    "form": {
+      "name": "Nom",
+      "active": "Active"
+    },
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "errorLoad": "Impossible de charger les pompes.",
+    "errorCreate": "Impossible de créer la pompe.",
+    "errorUpdate": "Impossible de modifier la pompe."
   },
   "reports": {
     "title": "Rapports",

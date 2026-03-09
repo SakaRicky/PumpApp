@@ -54,6 +54,7 @@ const adminNavGroup: NavGroup = {
   links: [
     { to: "/users", labelKey: "users", icon: Users },
     { to: "/workers", labelKey: "workers", icon: Users },
+    { to: "/pumps", labelKey: "pumps", icon: Package },
   ],
 }
 

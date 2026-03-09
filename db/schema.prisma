@@ -67,9 +67,11 @@ model Worker {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  user         User?          @relation()
-  shiftWorkers ShiftWorker[]
-  cashHandIns  CashHandIn[]
+  user              User?                @relation()
+  shiftWorkers      ShiftWorker[]
+  cashHandIns       CashHandIn[]
+  pumpAssignments   ShiftPumpAssignment[]
+  pumpReadings      PumpReading[]
 
   @@map("workers")
 }
@@ -123,7 +125,8 @@ model FuelType {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tanks Tank[]
+  tanks        Tank[]
+  priceHistory FuelPriceHistory[]
 
   @@map("fuel_types")
 }
@@ -169,9 +172,9 @@ model Pump {
   active Boolean @default(true)
   tankId Int?
 
-  tank         Tank?             @relation(fields: [tankId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  priceHistory FuelPriceHistory[]
-  readings     PumpReading[]
+  tank        Tank?                 @relation(fields: [tankId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  readings    PumpReading[]
+  assignments ShiftPumpAssignment[]
 
   @@index([tankId])
   @@map("pumps")
@@ -179,14 +182,14 @@ model Pump {
 
 model FuelPriceHistory {
   id            Int      @id @default(autoincrement())
-  pumpId        Int
+  fuelTypeId    Int
   pricePerUnit  Decimal  @db.Decimal(10, 2)
   effectiveFrom DateTime
   effectiveTo   DateTime?
 
-  pump Pump @relation(fields: [pumpId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fuelType FuelType @relation(fields: [fuelTypeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
-  @@index([pumpId, effectiveFrom, effectiveTo])
+  @@index([fuelTypeId, effectiveFrom, effectiveTo])
   @@map("fuel_price_history")
 }
 
@@ -204,6 +207,7 @@ model Shift {
   reconciliation      ShiftReconciliationSummary?
   shopSales           ShopSale[]
   productStocks       ShiftProductStock[]
+  pumpAssignments     ShiftPumpAssignment[]
 
   @@index([date])
   @@index([status])
@@ -245,13 +249,30 @@ model PumpReading {
   closingReading  Decimal  @db.Decimal(12, 3)
   recordedById    Int
   recordedAt      DateTime @default(now())
+  workerId        Int?
 
   pump        Pump @relation(fields: [pumpId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   shift       Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   recordedBy  User @relation("PumpReadingRecordedBy", fields: [recordedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  worker      Worker? @relation(fields: [workerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([shiftId, pumpId])
   @@map("pump_readings")
+}
+
+model ShiftPumpAssignment {
+  shiftId  Int
+  pumpId   Int
+  workerId Int
+
+  shift  Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  pump   Pump   @relation(fields: [pumpId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  worker Worker @relation(fields: [workerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([shiftId, pumpId])
+  @@index([workerId])
+  @@index([shiftId, pumpId])
+  @@map("shift_pump_assignments")
 }
 
 model CashHandIn {
