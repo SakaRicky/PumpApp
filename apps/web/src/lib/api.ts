@@ -18,9 +18,11 @@ import type {
   WorkerUpdateBody,
 } from "@pumpapp/shared"
 
+// In dev: use relative /api so Vite proxy forwards to the API. In prod: same (empty = same origin).
 const API_BASE =
   (import.meta as unknown as { env: { VITE_API_URL?: string } }).env
-    .VITE_API_URL ?? "http://localhost:5000/api"
+    .VITE_API_URL ?? ""
+const API_PREFIX = API_BASE || "/api"
 
 const TOKEN_KEY = "pumpapp_token"
 
@@ -43,7 +45,9 @@ const request = async <T>(
   options: RequestOptions = {}
 ): Promise<T> => {
   const { method = "GET", body } = options
-  const url = `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`
+  const pathStr = path.startsWith("/") ? path : `/${path}`
+  const base = API_BASE || API_PREFIX
+  const url = `${base}${pathStr}`
   const token = getToken()
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -55,6 +59,15 @@ const request = async <T>(
     ...(body !== undefined && { body: JSON.stringify(body) }),
   })
   const data = (await res.json().catch(() => ({}))) as T | ApiError
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem("pumpapp_user")
+      window.location.href = "/login"
+    }
+    const err = data as ApiError
+    throw new Error(err?.error ?? "Session expired")
+  }
   if (!res.ok) {
     const err = data as ApiError
     throw new Error(err?.error ?? `Request failed: ${res.status}`)

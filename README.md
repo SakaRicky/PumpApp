@@ -96,7 +96,7 @@ The API will run on the port configured in `apps/api` (typically `http://localho
 pnpm dev:web
 ```
 
-The web app will run on the Vite dev server (typically `http://localhost:5173`).
+The web app will run on the Vite dev server (typically `http://localhost:5173`). In dev, API requests are proxied from `/api` to the backend, so you can run both `pnpm dev:api` and `pnpm dev:web` and use the app without CORS or setting `VITE_API_URL`.
 
 ### Run CI locally
 
