@@ -9,7 +9,10 @@ const start = async () => {
     await prisma.$connect()
     console.log("Connected to database")
   } catch (e) {
-    console.error("Failed to connect to database:", e instanceof Error ? e.message : e)
+    console.error(
+      "Failed to connect to database:",
+      e instanceof Error ? e.message : e
+    )
     process.exit(1)
   }
   app.listen(PORT, () => {

@@ -46,15 +46,15 @@ Keep this full URL secret (do not commit it). You’ll use it as `DATABASE_URL` 
 1. On GitHub, open your repo → **Settings** → **Secrets and variables** → **Actions**.
 2. Click **New repository secret** and add:
 
-   | Name            | Description |
-   |-----------------|-------------|
-   | `DATABASE_URL`  | Full Supabase PostgreSQL URI (with your real password substituted). |
-   | `JWT_SECRET`    | A long random string (e.g. run `openssl rand -base64 32` and paste the result). Use the same value when running the app. |
+   | Name           | Description                                                                                                              |
+   | -------------- | ------------------------------------------------------------------------------------------------------------------------ |
+   | `DATABASE_URL` | Full Supabase PostgreSQL URI (with your real password substituted).                                                      |
+   | `JWT_SECRET`   | A long random string (e.g. run `openssl rand -base64 32` and paste the result). Use the same value when running the app. |
 
 3. **VITE_API_URL** (for production build):  
    When you use **single deploy** (frontend built into the API), leave this **unset** or set it to **empty** in the build environment. The app then uses the same origin for `/api`. Only set `VITE_API_URL` (e.g. `https://api.yourdomain.com/api`) if you deploy the frontend and API on different hosts.
 
-4. **Optional variables** (can be repo variables or in `.env.production`):  
+4. **Optional variables** (can be repo variables or in `.env.production`):
    - `VITE_CURRENCY_LABEL` — e.g. `XAF` for Cameroon; shown next to prices. If you use it in the build, set it in the deploy workflow or in `.env.production`.
 
 Use the secrets in your deployment workflow by mapping them to the app’s environment variables on your host. Do not commit secrets.
