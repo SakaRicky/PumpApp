@@ -8,6 +8,8 @@ import { workersRouter } from "./workers.js"
 import { shiftsRouter } from "./shifts.js"
 import { pumpsRouter } from "./pumps.js"
 import { fuelPricesRouter } from "./fuelPrices.js"
+import { fuelTypesRouter } from "./fuelTypes.js"
+import { tanksRouter } from "./tanks.js"
 
 const apiRouter = Router()
 
@@ -18,6 +20,8 @@ apiRouter.use("/health", healthRouter)
 apiRouter.use("/auth", authRouter)
 apiRouter.use("/categories", categoriesRouter)
 apiRouter.use("/products", productsRouter)
+apiRouter.use("/fuel-types", fuelTypesRouter)
+apiRouter.use("/tanks", tanksRouter)
 apiRouter.use("/users", usersRouter)
 apiRouter.use("/workers", workersRouter)
 apiRouter.use("/shifts", shiftsRouter)

@@ -15,9 +15,41 @@ import {
   WorkersPage,
   PumpsPage,
 } from "@/pages"
+import { useAlert } from "@/contexts/AlertProvider"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+
+const GlobalAlert = () => {
+  const { alert, clearAlert } = useAlert()
+
+  if (!alert) return null
+
+  const variant = alert.variant === "error" ? "destructive" : "default"
+
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4 sm:px-8">
+      <div className="pointer-events-auto w-full max-w-2xl">
+        <Alert variant={variant}>
+          <AlertDescription className="flex items-center justify-between gap-4">
+            <span className="font-medium">{alert.message}</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={clearAlert}
+            >
+              ×
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    </div>
+  )
+}
 
 const App = () => (
   <BrowserRouter>
+    <GlobalAlert />
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<RequireAuth />}>

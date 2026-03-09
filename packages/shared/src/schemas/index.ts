@@ -37,6 +37,20 @@ export {
 } from "./pumps.js"
 
 export {
+  fuelTypeCreateSchema,
+  fuelTypeUpdateSchema,
+  type FuelTypeCreateInput,
+  type FuelTypeUpdateInput,
+} from "./fuelTypes.js"
+
+export {
+  tankCreateSchema,
+  tankUpdateSchema,
+  type TankCreateInput,
+  type TankUpdateInput,
+} from "./tanks.js"
+
+export {
   shiftCreateSchema,
   shiftUpdateSchema,
   shiftWorkerAssignSchema,

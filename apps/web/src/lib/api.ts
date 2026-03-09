@@ -28,6 +28,12 @@ import type {
   FuelPriceCreateBody,
   FuelPriceUpdateBody,
   FuelPriceResponse,
+  FuelTypeCreateBody,
+  FuelTypeUpdateBody,
+  FuelTypeResponse,
+  TankCreateBody,
+  TankUpdateBody,
+  TankResponse,
   ShiftPumpAssignmentBody,
 } from "@pumpapp/shared"
 
@@ -144,6 +150,25 @@ export const api = {
     request<PumpResponse>("/pumps", { method: "POST", body }),
   updatePump: (id: number, body: PumpUpdateBody): Promise<PumpResponse> =>
     request<PumpResponse>(`/pumps/${id}`, { method: "PATCH", body }),
+
+  getFuelTypes: (): Promise<FuelTypeResponse[]> =>
+    request<FuelTypeResponse[]>("/fuel-types"),
+  createFuelType: (body: FuelTypeCreateBody): Promise<FuelTypeResponse> =>
+    request<FuelTypeResponse>("/fuel-types", { method: "POST", body }),
+  updateFuelType: (
+    id: number,
+    body: FuelTypeUpdateBody
+  ): Promise<FuelTypeResponse> =>
+    request<FuelTypeResponse>(`/fuel-types/${id}`, { method: "PATCH", body }),
+
+  getTanks: (fuelTypeId?: number): Promise<TankResponse[]> =>
+    request<TankResponse[]>(
+      fuelTypeId !== undefined ? `/tanks?fuelTypeId=${fuelTypeId}` : "/tanks"
+    ),
+  createTank: (body: TankCreateBody): Promise<TankResponse> =>
+    request<TankResponse>("/tanks", { method: "POST", body }),
+  updateTank: (id: number, body: TankUpdateBody): Promise<TankResponse> =>
+    request<TankResponse>(`/tanks/${id}`, { method: "PATCH", body }),
 
   getFuelPrices: (): Promise<FuelPriceResponse[]> =>
     request<FuelPriceResponse[]>("/fuel-prices"),

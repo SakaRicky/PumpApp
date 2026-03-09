@@ -277,8 +277,8 @@
     "intro": "Categories, workers, pumps, fuel price history."
   },
   "pumps": {
-    "title": "Pumps",
-    "intro": "Manage fuel pumps (admin).",
+    "title": "Fuel setup",
+    "intro": "Manage pumps, fuel types, tanks, and fuel price history (admin).",
     "addPump": "Add pump",
     "editPump": "Edit pump",
     "createPump": "Create pump",
@@ -286,7 +286,8 @@
     "table": {
       "id": "ID",
       "name": "Name",
-      "active": "Active"
+      "active": "Active",
+      "fuelType": "Fuel type"
     },
     "form": {
       "name": "Name",
@@ -296,7 +297,59 @@
     "cancel": "Cancel",
     "errorLoad": "Failed to load pumps.",
     "errorCreate": "Failed to create pump.",
-    "errorUpdate": "Failed to update pump."
+    "errorUpdate": "Failed to update pump.",
+    "messages": {
+      "pumpCreated": "Pump saved.",
+      "pumpUpdated": "Pump updated.",
+      "fuelTypeSaved": "Fuel type saved.",
+      "tankSaved": "Tank saved.",
+      "fuelPriceSaved": "Fuel price saved."
+    },
+    "tabs": {
+      "pumps": "Pumps",
+      "fuelTypes": "Fuel types",
+      "tanks": "Tanks"
+    },
+    "section": {
+      "pumps": "Pumps",
+      "fuelTypes": "Fuel types",
+      "tanks": "Tanks"
+    },
+    "fuelTypes": {
+      "add": "Add fuel type",
+      "edit": "Edit fuel type",
+      "create": "Create fuel type",
+      "empty": "No fuel types yet.",
+      "errorLoad": "Failed to load fuel types.",
+      "errorCreate": "Failed to create fuel type.",
+      "errorUpdate": "Failed to update fuel type.",
+      "missingForPump": "This pump is not linked to any fuel type yet.",
+      "form": {
+        "name": "Name"
+      }
+    },
+    "tanks": {
+      "add": "Add tank",
+      "edit": "Edit tank",
+      "create": "Create tank",
+      "empty": "No tanks yet.",
+      "errorLoad": "Failed to load tanks.",
+      "errorCreate": "Failed to create tank.",
+      "errorUpdate": "Failed to update tank.",
+      "table": {
+        "capacity": "Capacity",
+        "theoreticalQuantity": "Theoretical quantity",
+        "actualQuantity": "Actual quantity"
+      },
+      "form": {
+        "name": "Name",
+        "fuelType": "Fuel type",
+        "fuelTypePlaceholder": "Select fuel type",
+        "capacity": "Capacity",
+        "required": "Name and fuel type are required.",
+        "invalidCapacity": "Capacity must be a non-negative number."
+      }
+    }
   },
   "reports": {
     "title": "Reports",

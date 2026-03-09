@@ -165,16 +165,38 @@ export interface FuelPriceResponse {
   effectiveTo: string | null
 }
 
+// --- Fuel types ---
+
+export interface FuelTypeCreateBody {
+  name: string
+  active?: boolean
+}
+
+export interface FuelTypeUpdateBody {
+  name?: string
+  active?: boolean
+}
+
+export interface FuelTypeResponse {
+  id: number
+  name: string
+  active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 // --- Pumps ---
 
 export interface PumpCreateBody {
   name: string
   active?: boolean
+  tankId?: number
 }
 
 export interface PumpUpdateBody {
   name?: string
   active?: boolean
+  tankId?: number
 }
 
 export interface PumpResponse {
@@ -184,6 +206,37 @@ export interface PumpResponse {
   tankId?: number | null
   fuelTypeId?: number | null
   fuelTypeName?: string | null
+}
+
+// --- Tanks ---
+
+export interface TankCreateBody {
+  fuelTypeId: number
+  name: string
+  capacity?: number
+  active?: boolean
+}
+
+export interface TankUpdateBody {
+  fuelTypeId?: number
+  name?: string
+  capacity?: number
+  active?: boolean
+  actualQuantity?: number
+}
+
+export interface TankResponse {
+  id: number
+  fuelTypeId: number
+  name: string
+  capacity: number | null
+  theoreticalQuantity: number | null
+  actualQuantity: number | null
+  actualQuantityRecordedAt: string | null
+  active: boolean
+  createdAt: string
+  updatedAt: string
+  fuelTypeName?: string
 }
 
 // --- Shifts ---

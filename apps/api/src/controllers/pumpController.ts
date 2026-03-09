@@ -52,12 +52,27 @@ const create = async (req: Request, res: Response): Promise<void> => {
     })
   }
 
-  const { name, active } = parsed.data
+  const { name, active, tankId } = parsed.data
+
+  if (tankId !== undefined) {
+    const tank = await prisma.tank.findUnique({ where: { id: tankId } })
+    if (!tank) {
+      throw new AppError("Tank not found", 400, ErrorCode.VALIDATION_ERROR)
+    }
+  }
 
   const pump = await prisma.pump.create({
     data: {
       name,
       active: active ?? true,
+      ...(tankId !== undefined && { tankId }),
+    },
+    include: {
+      tank: {
+        include: {
+          fuelType: true,
+        },
+      },
     },
   })
 
@@ -82,11 +97,28 @@ const update = async (req: Request, res: Response): Promise<void> => {
     throw new AppError("Pump not found", 404, ErrorCode.NOT_FOUND)
   }
 
+  if (parsed.data.tankId !== undefined) {
+    const tank = await prisma.tank.findUnique({
+      where: { id: parsed.data.tankId },
+    })
+    if (!tank) {
+      throw new AppError("Tank not found", 400, ErrorCode.VALIDATION_ERROR)
+    }
+  }
+
   const pump = await prisma.pump.update({
     where: { id },
     data: {
       ...(parsed.data.name !== undefined && { name: parsed.data.name }),
       ...(parsed.data.active !== undefined && { active: parsed.data.active }),
+      ...(parsed.data.tankId !== undefined && { tankId: parsed.data.tankId }),
+    },
+    include: {
+      tank: {
+        include: {
+          fuelType: true,
+        },
+      },
     },
   })
 

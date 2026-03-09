@@ -4,6 +4,8 @@ import type {
   PumpResponse,
   FuelPriceResponse,
   FuelPriceCreateBody,
+  FuelTypeResponse,
+  TankResponse,
 } from "@pumpapp/shared"
 import { PageLayout } from "@/components/layout/PageLayout"
 import { Button } from "@/components/ui/button"
@@ -25,58 +27,150 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { DatePicker } from "@/components/ui/date-picker"
 import { api } from "@/lib/api"
+import { useAlert } from "@/contexts/AlertProvider"
 
 export const PumpsPage = () => {
   const { t } = useTranslation()
+  const { showAlert } = useAlert()
+  const [activeTab, setActiveTab] = useState<"pumps" | "fuelTypes" | "tanks">(
+    "pumps",
+  )
+
   const [pumps, setPumps] = useState<PumpResponse[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
+  const [pumpsLoading, setPumpsLoading] = useState(true)
+  const [pumpsError, setPumpsError] = useState<string | null>(null)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editPump, setEditPump] = useState<PumpResponse | null>(null)
 
   const [createName, setCreateName] = useState("")
   const [createActive, setCreateActive] = useState(true)
+  const [createPumpTankId, setCreatePumpTankId] = useState<number | "">("")
 
   const [editName, setEditName] = useState("")
   const [editActive, setEditActive] = useState(true)
+  const [editPumpTankId, setEditPumpTankId] = useState<number | "">("")
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const [priceDialogPump, setPriceDialogPump] = useState<PumpResponse | null>(
-    null
+  const [fuelTypes, setFuelTypes] = useState<FuelTypeResponse[]>([])
+  const [fuelTypesLoading, setFuelTypesLoading] = useState(false)
+  const [fuelTypesError, setFuelTypesError] = useState<string | null>(null)
+  const [fuelTypePrices, setFuelTypePrices] = useState<
+    Record<number, FuelPriceResponse | undefined>
+  >({})
+
+  const [tanks, setTanks] = useState<TankResponse[]>([])
+  const [tanksLoading, setTanksLoading] = useState(false)
+  const [tanksError, setTanksError] = useState<string | null>(null)
+
+  const [createFuelTypeOpen, setCreateFuelTypeOpen] = useState(false)
+  const [editFuelType, setEditFuelType] = useState<FuelTypeResponse | null>(
+    null,
   )
+  const [createFuelTypeName, setCreateFuelTypeName] = useState("")
+  const [createFuelTypeActive, setCreateFuelTypeActive] = useState(true)
+  const [editFuelTypeName, setEditFuelTypeName] = useState("")
+  const [editFuelTypeActive, setEditFuelTypeActive] = useState(true)
+
+  const [createTankOpen, setCreateTankOpen] = useState(false)
+  const [editTank, setEditTank] = useState<TankResponse | null>(null)
+  const [createTankName, setCreateTankName] = useState("")
+  const [createTankFuelTypeId, setCreateTankFuelTypeId] = useState<number | "">(
+    "",
+  )
+  const [createTankCapacity, setCreateTankCapacity] = useState<string>("")
+  const [createTankActive, setCreateTankActive] = useState(true)
+  const [editTankName, setEditTankName] = useState("")
+  const [editTankFuelTypeId, setEditTankFuelTypeId] = useState<number | "">("")
+  const [editTankCapacity, setEditTankCapacity] = useState<string>("")
+  const [editTankActive, setEditTankActive] = useState(true)
+
+  const [priceDialogFuelType, setPriceDialogFuelType] = useState<
+    { id: number; name: string } | null
+  >(null)
   const [prices, setPrices] = useState<FuelPriceResponse[]>([])
   const [pricesLoading, setPricesLoading] = useState(false)
   const [priceError, setPriceError] = useState<string | null>(null)
   const [priceForm, setPriceForm] = useState<FuelPriceCreateBody>({
-    pumpId: 0,
+    fuelTypeId: 0,
     pricePerUnit: 0,
     effectiveFrom: "",
   })
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setLoadError(null)
+  const loadPumps = useCallback(async () => {
+    setPumpsLoading(true)
+    setPumpsError(null)
     try {
       const res = await api.getPumps()
       setPumps(res)
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : t("pumps.errorLoad"))
+      setPumpsError(e instanceof Error ? e.message : t("pumps.errorLoad"))
     } finally {
-      setLoading(false)
+      setPumpsLoading(false)
+    }
+  }, [t])
+
+  const loadFuelTypes = useCallback(async () => {
+    setFuelTypesLoading(true)
+    setFuelTypesError(null)
+    try {
+      const [fuelTypeList, priceList] = await Promise.all([
+        api.getFuelTypes(),
+        api.getFuelPrices(),
+      ])
+      setFuelTypes(fuelTypeList)
+
+      const latestByFuelType: Record<number, FuelPriceResponse> = {}
+      for (const price of priceList) {
+        const existing = latestByFuelType[price.fuelTypeId]
+        if (!existing) {
+          latestByFuelType[price.fuelTypeId] = price
+          continue
+        }
+        if (
+          new Date(price.effectiveFrom).getTime() >
+          new Date(existing.effectiveFrom).getTime()
+        ) {
+          latestByFuelType[price.fuelTypeId] = price
+        }
+      }
+      setFuelTypePrices(latestByFuelType)
+    } catch (e) {
+      setFuelTypesError(
+        e instanceof Error ? e.message : t("pumps.fuelTypes.errorLoad"),
+      )
+    } finally {
+      setFuelTypesLoading(false)
+    }
+  }, [t])
+
+  const loadTanks = useCallback(async () => {
+    setTanksLoading(true)
+    setTanksError(null)
+    try {
+      const res = await api.getTanks()
+      setTanks(res)
+    } catch (e) {
+      setTanksError(
+        e instanceof Error ? e.message : t("pumps.tanks.errorLoad"),
+      )
+    } finally {
+      setTanksLoading(false)
     }
   }, [t])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    void Promise.all([loadPumps(), loadFuelTypes(), loadTanks()])
+  }, [loadPumps, loadFuelTypes, loadTanks])
 
   const openCreate = () => {
     setCreateName("")
     setCreateActive(true)
+    setCreatePumpTankId("")
     setSubmitError(null)
     setCreateOpen(true)
   }
@@ -93,13 +187,18 @@ export const PumpsPage = () => {
       await api.createPump({
         name: createName.trim(),
         active: createActive,
+        ...(createPumpTankId !== "" && {
+          tankId: Number(createPumpTankId),
+        }),
       })
       setCreateOpen(false)
-      await load()
+      showAlert(t("pumps.messages.pumpCreated"), "success")
+      await loadPumps()
     } catch (e) {
-      setSubmitError(
+      const message =
         e instanceof Error ? e.message : t("pumps.errorCreate")
-      )
+      setSubmitError(message)
+      showAlert(message, "error")
     } finally {
       setSubmitting(false)
     }
@@ -109,6 +208,7 @@ export const PumpsPage = () => {
     setEditPump(pump)
     setEditName(pump.name)
     setEditActive(pump.active)
+    setEditPumpTankId(pump.tankId ?? "")
     setSubmitError(null)
   }
 
@@ -130,32 +230,35 @@ export const PumpsPage = () => {
       await api.updatePump(editPump.id, {
         name: editName.trim(),
         active: editActive,
+        ...(editPumpTankId !== "" && {
+          tankId: Number(editPumpTankId),
+        }),
       })
       closeEdit()
-      await load()
+      showAlert(t("pumps.messages.pumpUpdated"), "success")
+      await loadPumps()
     } catch (e) {
-      setSubmitError(
+      const message =
         e instanceof Error ? e.message : t("pumps.errorUpdate")
-      )
+      setSubmitError(message)
+      showAlert(message, "error")
     } finally {
       setSubmitting(false)
     }
   }
 
-  const openPrices = async (pump: PumpResponse) => {
-    setPriceDialogPump(pump)
+  const openPricesForFuelType = async (fuelType: {
+    id: number
+    name: string
+  }) => {
+    setPriceDialogFuelType(fuelType)
     setPricesLoading(true)
     setPriceError(null)
     try {
-      if (!pump.fuelTypeId) {
-        setPriceError("This pump is not linked to any fuel type yet.")
-        setPrices([])
-        return
-      }
       const res = await api.getFuelPrices()
-      setPrices(res.filter((p) => p.fuelTypeId === pump.fuelTypeId))
+      setPrices(res.filter((p) => p.fuelTypeId === fuelType.id))
       setPriceForm({
-        fuelTypeId: pump.fuelTypeId,
+        fuelTypeId: fuelType.id,
         pricePerUnit: 0,
         effectiveFrom: "",
       })
@@ -169,14 +272,14 @@ export const PumpsPage = () => {
   }
 
   const closePrices = () => {
-    setPriceDialogPump(null)
+    setPriceDialogFuelType(null)
     setPrices([])
     setPriceError(null)
   }
 
   const handleAddPrice = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!priceDialogPump) return
+    if (!priceDialogFuelType) return
     if (!priceForm.effectiveFrom) {
       setPriceError(t("products.priceHistory.effectiveAtRequired"))
       return
@@ -189,90 +292,481 @@ export const PumpsPage = () => {
     setPriceError(null)
     try {
       await api.createFuelPrice({
-        fuelTypeId: priceDialogPump.fuelTypeId!,
+        fuelTypeId: priceDialogFuelType.id,
         pricePerUnit: priceForm.pricePerUnit,
         effectiveFrom: priceForm.effectiveFrom,
       })
       const res = await api.getFuelPrices()
       setPrices(
-        res.filter((p) => p.fuelTypeId === priceDialogPump.fuelTypeId)
+        res.filter((p) => p.fuelTypeId === priceDialogFuelType.id),
       )
       setPriceForm((prev) => ({
         ...prev,
         pricePerUnit: 0,
         effectiveFrom: "",
       }))
+      showAlert(t("pumps.messages.fuelPriceSaved"), "success")
     } catch (e) {
-      setPriceError(
-        e instanceof Error ? e.message : t("products.priceHistory.errorCreate")
-      )
+      const message =
+        e instanceof Error
+          ? e.message
+          : t("products.priceHistory.errorCreate")
+      setPriceError(message)
+      showAlert(message, "error")
     } finally {
       setPricesLoading(false)
+    }
+  }
+
+  const openCreateFuelType = () => {
+    setCreateFuelTypeName("")
+    setCreateFuelTypeActive(true)
+    setSubmitError(null)
+    setCreateFuelTypeOpen(true)
+  }
+
+  const handleCreateFuelType = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!createFuelTypeName.trim()) {
+      setSubmitError(t("pumps.fuelTypes.form.name"))
+      return
+    }
+    setSubmitting(true)
+    setSubmitError(null)
+    try {
+      await api.createFuelType({
+        name: createFuelTypeName.trim(),
+        active: createFuelTypeActive,
+      })
+      setCreateFuelTypeOpen(false)
+      showAlert(t("pumps.messages.fuelTypeSaved"), "success")
+      await loadFuelTypes()
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : t("pumps.fuelTypes.errorCreate")
+      setSubmitError(message)
+      showAlert(message, "error")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const openEditFuelType = (fuelType: FuelTypeResponse) => {
+    setEditFuelType(fuelType)
+    setEditFuelTypeName(fuelType.name)
+    setEditFuelTypeActive(fuelType.active)
+    setSubmitError(null)
+  }
+
+  const closeEditFuelType = () => {
+    setEditFuelType(null)
+    setSubmitError(null)
+  }
+
+  const handleEditFuelType = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editFuelType) return
+    if (!editFuelTypeName.trim()) {
+      setSubmitError(t("pumps.fuelTypes.form.name"))
+      return
+    }
+    setSubmitting(true)
+    setSubmitError(null)
+    try {
+      await api.updateFuelType(editFuelType.id, {
+        name: editFuelTypeName.trim(),
+        active: editFuelTypeActive,
+      })
+      closeEditFuelType()
+      showAlert(t("pumps.messages.fuelTypeSaved"), "success")
+      await loadFuelTypes()
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : t("pumps.fuelTypes.errorUpdate")
+      setSubmitError(message)
+      showAlert(message, "error")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const openCreateTank = () => {
+    setCreateTankName("")
+    setCreateTankFuelTypeId("")
+    setCreateTankCapacity("")
+    setCreateTankActive(true)
+    setSubmitError(null)
+    setCreateTankOpen(true)
+  }
+
+  const handleCreateTank = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!createTankName.trim() || createTankFuelTypeId === "") {
+      setSubmitError(t("pumps.tanks.form.required"))
+      return
+    }
+    const capacity =
+      createTankCapacity.trim() === ""
+        ? undefined
+        : Number(createTankCapacity)
+    if (capacity !== undefined && Number.isNaN(capacity)) {
+      setSubmitError(t("pumps.tanks.form.invalidCapacity"))
+      return
+    }
+    setSubmitting(true)
+    setSubmitError(null)
+    try {
+      await api.createTank({
+        fuelTypeId: Number(createTankFuelTypeId),
+        name: createTankName.trim(),
+        ...(capacity !== undefined && { capacity }),
+        active: createTankActive,
+      })
+      setCreateTankOpen(false)
+      showAlert(t("pumps.messages.tankSaved"), "success")
+      await loadTanks()
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : t("pumps.tanks.errorCreate")
+      setSubmitError(message)
+      showAlert(message, "error")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const openEditTank = (tank: TankResponse) => {
+    setEditTank(tank)
+    setEditTankName(tank.name)
+    setEditTankFuelTypeId(tank.fuelTypeId)
+    setEditTankCapacity(
+      tank.capacity !== null ? String(tank.capacity) : "",
+    )
+    setEditTankActive(tank.active)
+    setSubmitError(null)
+  }
+
+  const closeEditTank = () => {
+    setEditTank(null)
+    setSubmitError(null)
+  }
+
+  const handleEditTank = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editTank) return
+    if (!editTankName.trim() || editTankFuelTypeId === "") {
+      setSubmitError(t("pumps.tanks.form.required"))
+      return
+    }
+    const capacity =
+      editTankCapacity.trim() === ""
+        ? undefined
+        : Number(editTankCapacity)
+    if (capacity !== undefined && Number.isNaN(capacity)) {
+      setSubmitError(t("pumps.tanks.form.invalidCapacity"))
+      return
+    }
+    setSubmitting(true)
+    setSubmitError(null)
+    try {
+      await api.updateTank(editTank.id, {
+        fuelTypeId: Number(editTankFuelTypeId),
+        name: editTankName.trim(),
+        ...(capacity !== undefined && { capacity }),
+        active: editTankActive,
+      })
+      closeEditTank()
+      showAlert(t("pumps.messages.tankSaved"), "success")
+      await loadTanks()
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : t("pumps.tanks.errorUpdate")
+      setSubmitError(message)
+      showAlert(message, "error")
+    } finally {
+      setSubmitting(false)
     }
   }
 
   return (
     <PageLayout title={t("pumps.title")}>
       <div className="space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
           <p className="text-muted-foreground">{t("pumps.intro")}</p>
-          <Button onClick={openCreate}>{t("pumps.addPump")}</Button>
+          <div className="inline-flex rounded-md border bg-muted p-1">
+            <button
+              type="button"
+              className={`px-3 py-1 text-sm font-medium ${
+                activeTab === "pumps"
+                  ? "bg-background text-foreground rounded-md shadow"
+                  : "text-muted-foreground"
+              }`}
+              onClick={() => setActiveTab("pumps")}
+            >
+              {t("pumps.tabs.pumps")}
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 text-sm font-medium ${
+                activeTab === "fuelTypes"
+                  ? "bg-background text-foreground rounded-md shadow"
+                  : "text-muted-foreground"
+              }`}
+              onClick={() => setActiveTab("fuelTypes")}
+            >
+              {t("pumps.tabs.fuelTypes")}
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 text-sm font-medium ${
+                activeTab === "tanks"
+                  ? "bg-background text-foreground rounded-md shadow"
+                  : "text-muted-foreground"
+              }`}
+              onClick={() => setActiveTab("tanks")}
+            >
+              {t("pumps.tabs.tanks")}
+            </button>
+          </div>
         </div>
 
-        {loadError && (
+        {pumpsError && activeTab === "pumps" && (
           <Alert variant="destructive">
-            <AlertDescription>{loadError}</AlertDescription>
+            <AlertDescription>{pumpsError}</AlertDescription>
           </Alert>
         )}
 
-        {loading ? (
-          <p className="text-muted-foreground">{t("auth.loading")}</p>
-        ) : pumps.length === 0 ? (
-          <p className="text-muted-foreground">{t("pumps.noPumps")}</p>
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("pumps.table.id")}</TableHead>
-                  <TableHead>{t("pumps.table.name")}</TableHead>
-                  <TableHead>{t("pumps.table.active")}</TableHead>
-                  <TableHead className="w-[120px]">
-                    {t("products.actions")}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pumps.map((pump) => (
-                  <TableRow key={pump.id}>
-                    <TableCell>{pump.id}</TableCell>
-                    <TableCell>{pump.name}</TableCell>
-                    <TableCell>
-                      {pump.active
-                        ? t("products.activeYes")
-                        : t("products.activeNo")}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(pump)}
-                      >
-                        {t("pumps.editPump")}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="ml-2"
-                        onClick={() => void openPrices(pump)}
-                      >
-                        {t("products.priceHistory.title")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+        {activeTab === "pumps" && (
+          <div className="space-y-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-medium">
+                {t("pumps.section.pumps")}
+              </span>
+              <Button onClick={openCreate}>{t("pumps.addPump")}</Button>
+            </div>
+            {pumpsLoading ? (
+              <p className="text-muted-foreground">{t("auth.loading")}</p>
+            ) : pumps.length === 0 ? (
+              <p className="text-muted-foreground">{t("pumps.noPumps")}</p>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("pumps.table.id")}</TableHead>
+                      <TableHead>{t("pumps.table.name")}</TableHead>
+                      <TableHead>{t("pumps.table.active")}</TableHead>
+                      <TableHead>{t("pumps.table.fuelType")}</TableHead>
+                      <TableHead className="w-[220px]">
+                        {t("products.actions")}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pumps.map((pump) => (
+                      <TableRow key={pump.id}>
+                        <TableCell>{pump.id}</TableCell>
+                        <TableCell>{pump.name}</TableCell>
+                        <TableCell>
+                          {pump.active
+                            ? t("products.activeYes")
+                            : t("products.activeNo")}
+                        </TableCell>
+                        <TableCell>{pump.fuelTypeName ?? "—"}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEdit(pump)}
+                          >
+                            {t("pumps.editPump")}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "fuelTypes" && (
+          <div className="space-y-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-medium">
+                {t("pumps.section.fuelTypes")}
+              </span>
+              <Button onClick={openCreateFuelType}>
+                {t("pumps.fuelTypes.add")}
+              </Button>
+            </div>
+            {fuelTypesError && (
+              <Alert variant="destructive">
+                <AlertDescription>{fuelTypesError}</AlertDescription>
+              </Alert>
+            )}
+            {fuelTypesLoading ? (
+              <p className="text-muted-foreground">{t("auth.loading")}</p>
+            ) : fuelTypes.length === 0 ? (
+              <p className="text-muted-foreground">
+                {t("pumps.fuelTypes.empty")}
+              </p>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("pumps.table.id")}</TableHead>
+                      <TableHead>{t("pumps.table.name")}</TableHead>
+                      <TableHead>
+                        {t("products.priceHistory.purchasePrice")}
+                      </TableHead>
+                      <TableHead>{t("pumps.table.active")}</TableHead>
+                      <TableHead className="w-[260px]">
+                        {t("products.actions")}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {fuelTypes.map((fuelType) => {
+                      const latestPrice = fuelTypePrices[fuelType.id]
+                      return (
+                        <TableRow key={fuelType.id}>
+                          <TableCell>{fuelType.id}</TableCell>
+                          <TableCell>{fuelType.name}</TableCell>
+                          <TableCell>
+                            {latestPrice
+                              ? latestPrice.pricePerUnit.toFixed(2)
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {fuelType.active
+                              ? t("products.activeYes")
+                              : t("products.activeNo")}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditFuelType(fuelType)}
+                              >
+                                {t("pumps.fuelTypes.edit")}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() =>
+                                  void openPricesForFuelType({
+                                    id: fuelType.id,
+                                    name: fuelType.name,
+                                  })
+                                }
+                              >
+                                {t("products.priceHistory.title")}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "tanks" && (
+          <div className="space-y-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm font-medium">
+                {t("pumps.section.tanks")}
+              </span>
+              <Button onClick={openCreateTank}>
+                {t("pumps.tanks.add")}
+              </Button>
+            </div>
+            {tanksError && (
+              <Alert variant="destructive">
+                <AlertDescription>{tanksError}</AlertDescription>
+              </Alert>
+            )}
+            {tanksLoading ? (
+              <p className="text-muted-foreground">{t("auth.loading")}</p>
+            ) : tanks.length === 0 ? (
+              <p className="text-muted-foreground">
+                {t("pumps.tanks.empty")}
+              </p>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("pumps.table.id")}</TableHead>
+                      <TableHead>{t("pumps.table.name")}</TableHead>
+                      <TableHead>{t("pumps.table.fuelType")}</TableHead>
+                      <TableHead>{t("pumps.tanks.table.capacity")}</TableHead>
+                      <TableHead>
+                        {t("pumps.tanks.table.theoreticalQuantity")}
+                      </TableHead>
+                      <TableHead>
+                        {t("pumps.tanks.table.actualQuantity")}
+                      </TableHead>
+                      <TableHead>{t("pumps.table.active")}</TableHead>
+                      <TableHead className="w-[180px]">
+                        {t("products.actions")}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tanks.map((tank) => (
+                      <TableRow key={tank.id}>
+                        <TableCell>{tank.id}</TableCell>
+                        <TableCell>{tank.name}</TableCell>
+                        <TableCell>{tank.fuelTypeName ?? "—"}</TableCell>
+                        <TableCell>
+                          {tank.capacity !== null ? tank.capacity : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {tank.theoreticalQuantity !== null
+                            ? tank.theoreticalQuantity
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {tank.actualQuantity !== null
+                            ? tank.actualQuantity
+                            : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {tank.active
+                            ? t("products.activeYes")
+                            : t("products.activeNo")}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditTank(tank)}
+                          >
+                            {t("pumps.tanks.edit")}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -297,6 +791,31 @@ export const PumpsPage = () => {
                 onChange={(e) => setCreateName(e.target.value)}
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-pump-tank">
+                {t("pumps.tanks.form.fuelType")}
+              </Label>
+              <select
+                id="create-pump-tank"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                value={createPumpTankId}
+                onChange={(e) =>
+                  setCreatePumpTankId(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+              >
+                <option value="">
+                  {t("pumps.tanks.form.fuelTypePlaceholder")}
+                </option>
+                {tanks.map((tank) => (
+                  <option key={tank.id} value={tank.id}>
+                    {tank.name}
+                    {tank.fuelTypeName ? ` — ${tank.fuelTypeName}` : ""}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -346,6 +865,31 @@ export const PumpsPage = () => {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-pump-tank">
+                  {t("pumps.tanks.form.fuelType")}
+                </Label>
+                <select
+                  id="edit-pump-tank"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  value={editPumpTankId}
+                  onChange={(e) =>
+                    setEditPumpTankId(
+                      e.target.value === "" ? "" : Number(e.target.value),
+                    )
+                  }
+                >
+                  <option value="">
+                    {t("pumps.tanks.form.fuelTypePlaceholder")}
+                  </option>
+                  {tanks.map((tank) => (
+                    <option key={tank.id} value={tank.id}>
+                      {tank.name}
+                      {tank.fuelTypeName ? ` — ${tank.fuelTypeName}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -371,14 +915,14 @@ export const PumpsPage = () => {
 
       {/* Fuel price history dialog */}
       <Dialog
-        open={!!priceDialogPump}
+        open={!!priceDialogFuelType}
         onOpenChange={(open) => !open && closePrices()}
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {t("products.priceHistory.dialogTitle")}
-              {priceDialogPump && ` — ${priceDialogPump.name}`}
+              {priceDialogFuelType && ` — ${priceDialogFuelType.name}`}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -388,7 +932,7 @@ export const PumpsPage = () => {
               </Alert>
             )}
 
-            {priceDialogPump && (
+            {priceDialogFuelType && (
               <form
                 onSubmit={handleAddPrice}
                 className="space-y-3 rounded-md border p-3"
@@ -419,16 +963,16 @@ export const PumpsPage = () => {
                     <Label htmlFor="pump-effectiveFrom">
                       {t("products.priceHistory.effectiveAt")}
                     </Label>
-                    <Input
+                    <DatePicker
                       id="pump-effectiveFrom"
-                      type="date"
                       value={priceForm.effectiveFrom}
-                      onChange={(e) =>
+                      onChange={(value) =>
                         setPriceForm((prev) => ({
                           ...prev,
-                          effectiveFrom: e.target.value,
+                          effectiveFrom: value,
                         }))
                       }
+                      placeholder={t("products.priceHistory.pickDate")}
                     />
                   </div>
                 </div>
@@ -486,6 +1030,288 @@ export const PumpsPage = () => {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fuel type dialogs */}
+      <Dialog
+        open={createFuelTypeOpen}
+        onOpenChange={setCreateFuelTypeOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("pumps.fuelTypes.create")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateFuelType} className="space-y-4">
+            {submitError && (
+              <Alert variant="destructive">
+                <AlertDescription>{submitError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="create-fueltype-name">
+                {t("pumps.fuelTypes.form.name")}
+              </Label>
+              <Input
+                id="create-fueltype-name"
+                value={createFuelTypeName}
+                onChange={(e) => setCreateFuelTypeName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="create-fueltype-active"
+                checked={createFuelTypeActive}
+                onChange={(e) => setCreateFuelTypeActive(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="create-fueltype-active">
+                {t("pumps.form.active")}
+              </Label>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateFuelTypeOpen(false)}
+              >
+                {t("pumps.cancel")}
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? t("auth.loading") : t("pumps.save")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!editFuelType}
+        onOpenChange={(open) => !open && closeEditFuelType()}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("pumps.fuelTypes.edit")}</DialogTitle>
+          </DialogHeader>
+          {editFuelType && (
+            <form onSubmit={handleEditFuelType} className="space-y-4">
+              {submitError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{submitError}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="edit-fueltype-name">
+                  {t("pumps.fuelTypes.form.name")}
+                </Label>
+                <Input
+                  id="edit-fueltype-name"
+                  value={editFuelTypeName}
+                  onChange={(e) => setEditFuelTypeName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-fueltype-active"
+                  checked={editFuelTypeActive}
+                  onChange={(e) => setEditFuelTypeActive(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="edit-fueltype-active">
+                  {t("pumps.form.active")}
+                </Label>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeEditFuelType}
+                >
+                  {t("pumps.cancel")}
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? t("auth.loading") : t("pumps.save")}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Tank dialogs */}
+      <Dialog open={createTankOpen} onOpenChange={setCreateTankOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("pumps.tanks.create")}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateTank} className="space-y-4">
+            {submitError && (
+              <Alert variant="destructive">
+                <AlertDescription>{submitError}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="create-tank-name">
+                {t("pumps.tanks.form.name")}
+              </Label>
+              <Input
+                id="create-tank-name"
+                value={createTankName}
+                onChange={(e) => setCreateTankName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-tank-fuelType">
+                {t("pumps.tanks.form.fuelType")}
+              </Label>
+              <select
+                id="create-tank-fuelType"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                value={createTankFuelTypeId}
+                onChange={(e) =>
+                  setCreateTankFuelTypeId(
+                    e.target.value === "" ? "" : Number(e.target.value),
+                  )
+                }
+              >
+                <option value="">
+                  {t("pumps.tanks.form.fuelTypePlaceholder")}
+                </option>
+                {fuelTypes.map((fuelType) => (
+                  <option key={fuelType.id} value={fuelType.id}>
+                    {fuelType.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-tank-capacity">
+                {t("pumps.tanks.form.capacity")}
+              </Label>
+              <Input
+                id="create-tank-capacity"
+                type="number"
+                min="0"
+                step="0.001"
+                value={createTankCapacity}
+                onChange={(e) => setCreateTankCapacity(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="create-tank-active"
+                checked={createTankActive}
+                onChange={(e) => setCreateTankActive(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="create-tank-active">
+                {t("pumps.form.active")}
+              </Label>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCreateTankOpen(false)}
+              >
+                {t("pumps.cancel")}
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? t("auth.loading") : t("pumps.save")}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editTank} onOpenChange={(open) => !open && closeEditTank()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("pumps.tanks.edit")}</DialogTitle>
+          </DialogHeader>
+          {editTank && (
+            <form onSubmit={handleEditTank} className="space-y-4">
+              {submitError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{submitError}</AlertDescription>
+                </Alert>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="edit-tank-name">
+                  {t("pumps.tanks.form.name")}
+                </Label>
+                <Input
+                  id="edit-tank-name"
+                  value={editTankName}
+                  onChange={(e) => setEditTankName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-tank-fuelType">
+                  {t("pumps.tanks.form.fuelType")}
+                </Label>
+                <select
+                  id="edit-tank-fuelType"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  value={editTankFuelTypeId}
+                  onChange={(e) =>
+                    setEditTankFuelTypeId(
+                      e.target.value === "" ? "" : Number(e.target.value),
+                    )
+                  }
+                >
+                  <option value="">
+                    {t("pumps.tanks.form.fuelTypePlaceholder")}
+                  </option>
+                  {fuelTypes.map((fuelType) => (
+                    <option key={fuelType.id} value={fuelType.id}>
+                      {fuelType.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-tank-capacity">
+                  {t("pumps.tanks.form.capacity")}
+                </Label>
+                <Input
+                  id="edit-tank-capacity"
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={editTankCapacity}
+                  onChange={(e) => setEditTankCapacity(e.target.value)}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-tank-active"
+                  checked={editTankActive}
+                  onChange={(e) => setEditTankActive(e.target.checked)}
+                  className="h-4 w-4 rounded border-input"
+                />
+                <Label htmlFor="edit-tank-active">
+                  {t("pumps.form.active")}
+                </Label>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeEditTank}>
+                  {t("pumps.cancel")}
+                </Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? t("auth.loading") : t("pumps.save")}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
         </DialogContent>
       </Dialog>
     </PageLayout>
