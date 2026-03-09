@@ -86,7 +86,7 @@ The system must allow the admin to:
 - **Historical purchase price tracking**: append-only price history; alerts on increases.
 - **Inventory management**: stock levels updated by shop sales; no explicit damage/theft tracking.
 - **Shop sales recording**:
-  - clarified to support **shift-end totals first**, later per-transaction.
+  - clarified to support **shift-end totals first** (per-shift stock snapshots and derived totals), later per-transaction.
   - sales auto-confirmed (no approval queue).
 - **Pump management**: register pumps.
 - **Pump reading / fuel sales estimation**: derive fuel sold from meter readings.
@@ -136,7 +136,7 @@ See `docs/DATABASE.md` and `docs/GLOSSARY.md` for the data model. Major entities
 ### 9. Workflows (condensed)
 
 - **Product setup**: create categories → create products → set selling price → record purchase price → alert on price increase.
-- **Shop sale (Phase 1)**: shift runs → owner/admin enters shift-end shop total → reconciliation uses that.
+- **Shop sale (Phase 1)**: shift runs → owner/admin enters per-product opening/closing stock for the shift → system derives quantity sold and shift-end shop total → reconciliation uses that.
 - **Shop sale (Phase 2)**: per-transaction sales → totals derived automatically.
 - **Pump reading**: select pump & shift → enter opening and closing readings → system computes volume and revenue.
 - **Cash hand-in & reconciliation**: worker hands in cash → admin records hand-in → system aggregates expected totals (shop + fuel) vs cash → discrepancy shown.

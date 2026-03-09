@@ -54,7 +54,7 @@ PumpApp is **reconciliation-first**, not POS-first. It supports a phased adoptio
 #### Phase 1 — Shift-end summary only (initial mode)
 
 - Shop sales **are not recorded per transaction** during the shift.
-- At the **end of each shift**, the owner/admin enters the **shift-end shop sales total** into the system.
+- At the **end of each shift**, the owner/admin uses the system as a **digital replacement for the existing paper/Excel sheet** by entering per-product stock counts (opening and closing) for that shift.
 - Reconciliation for a shift is based on:
   - shift-end shop total (source: `SHIFT_SUMMARY_ENTRY`),
   - fuel volume from pump readings and fuel price from `FuelPriceHistory`,

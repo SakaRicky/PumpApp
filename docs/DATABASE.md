@@ -128,6 +128,20 @@ Draws from one tank; multiple pumps may share a tank.
 - `workerId` → `Worker`
 - (composite primary key on `shiftId`, `workerId`)
 
+#### ShiftProductStock
+
+- `shiftId` → `Shift`
+- `productId` → `Product`
+- `openingQty` (decimal)
+- `closingQty` (decimal)
+- (composite primary key on `shiftId`, `productId`)
+
+Represents the per-shift stock snapshot for a given product. `soldQty` is derived as `openingQty − closingQty`. Used to compute:
+
+- shift-end shop revenue (via `soldQty × sellingPrice`),
+- inventory changes (decrement `Product.currentStock`),
+- discrepancy/loss analysis at shift and product level.
+
 #### PumpReading
 
 - `id` (PK)
@@ -213,6 +227,7 @@ Recommended indexes:
 - `Pump.tankId`
 - `Shift.date`, `Shift.status`
 - `ShiftWorker.shiftId`, `ShiftWorker.workerId`
+- `ShiftProductStock.shiftId`, `ShiftProductStock.productId`
 - `PumpReading.shiftId`, `PumpReading.pumpId`
 - `CashHandIn.shiftId`, `CashHandIn.workerId`
 - `ShiftReconciliationSummary.shiftId`

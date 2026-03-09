@@ -101,6 +101,33 @@ Product list/detail responses may optionally include `category: { id, name }` so
 - `POST /api/shifts/:id/workers` (ADMIN) — assign workers to shift (ShiftWorker entries).
 - `DELETE /api/shifts/:id/workers/:workerId` (ADMIN) — remove worker from shift.
 
+### Shift stock snapshots (shop side)
+
+- `GET /api/shifts/:id/stock` — get per-product stock snapshot for a shift.
+  - Response: array of:
+    - `productId`
+    - `openingQty`
+    - `closingQty`
+    - optionally `soldQty` (derived)
+    - product metadata as needed for the UI, e.g. `{ id, name, categoryId, categoryName? }`.
+- `PUT /api/shifts/:id/stock` (ADMIN) — bulk upsert stock snapshot for a shift.
+  - Body: array of:
+    - `productId`
+    - `openingQty?` (optional; defaults to previous shift’s `closingQty` for that product when omitted)
+    - `closingQty` (required when the product was present and counted this shift)
+
+Notes:
+
+- The API must allow **partial updates**: clients can submit only the products that are relevant for that shift.
+- When a shift transitions to `CLOSED`, the backend enforces:
+  - If any `SALE` worker is assigned:
+    - There exists at least one `ShiftProductStock` row for that shift.
+    - For all products included in that shift’s stock snapshot, `closingQty` is present and valid.
+  - When the shift is successfully closed:
+    - `soldQty = openingQty − closingQty` is computed per product.
+    - `Product.currentStock` is decremented by `soldQty`.
+- The stock snapshot for a shift is immutable once the shift is `RECONCILED`. Changes after reconciliation are admin-only and should require an audit note.
+
 ### Pump readings
 
 - `GET /api/shifts/:id/pump-readings` — list pump readings for a shift.

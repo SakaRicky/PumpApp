@@ -39,13 +39,30 @@ Each slice is intended to be implemented as a **vertical slice**: schema (if nee
 
 - **Scope**:
   - `Shift` and `ShiftWorker` management.
-  - Ability to create, open/close, and assign workers to shifts.
+  - Shift lifecycle with status transitions (`PLANNED → OPEN → CLOSED → RECONCILED`, with `RECONCILED → CLOSED` for admin redo).
+  - Per-shift, per-product stock snapshots (digital replacement of the paper/Excel sheet).
+  - Preconditions for closing shifts based on which domains (fuel / shop) are active on that shift.
 - **Layers**:
-  - **Schema**: `Shift`, `ShiftWorker`, and `ShiftStatus` enum finalized.
-  - **Shared**: shift DTOs and Zod schemas.
-  - **API**: shift CRUD; worker assignment/unassignment endpoints.
-  - **Tests**: open/close flow; worker assignment invariants.
-  - **UI**: shift list; create/edit shift; assign workers to a shift.
+  - **Schema**:
+    - `Shift`, `ShiftWorker`, and `ShiftStatus` enum finalized.
+    - `ShiftProductStock` model for per-shift per-product stock snapshots.
+  - **Shared**:
+    - DTOs and Zod schemas for shifts, ShiftWorker assignment, and shift stock snapshots.
+  - **API**:
+    - Shift CRUD.
+    - Worker assignment/unassignment endpoints.
+    - Bulk read/write endpoints for `ShiftProductStock` for a shift.
+  - **Tests**:
+    - Shift open/close flow and allowed status transitions.
+    - Worker assignment invariants (no duplicates, only active workers, at least one worker before close).
+    - Closure preconditions based on assigned worker roles:
+      - PUMPIST present → pump readings required.
+      - SALE present → shop stock snapshot required.
+  - **UI**:
+    - Shift list with filters.
+    - Create/edit shift.
+    - Assign workers to a shift.
+    - Shift stock entry UI (smart table for entering closing counts, with pre-filled opening from previous shift).
 
 ---
 
