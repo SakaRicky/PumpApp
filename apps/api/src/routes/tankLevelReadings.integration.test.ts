@@ -6,7 +6,9 @@ const ADMIN_TOKEN = "admin-token"
 
 const mockTankFindUnique = vi.fn()
 const mockTankLevelReadingFindMany = vi.fn()
+const mockTankLevelReadingFindFirst = vi.fn()
 const mockTankLevelReadingCreate = vi.fn()
+const mockTankLevelReadingUpdate = vi.fn()
 const mockTankUpdate = vi.fn()
 
 vi.mock("../db.js", () => ({
@@ -17,12 +19,26 @@ vi.mock("../db.js", () => ({
     },
     tankLevelReading: {
       findMany: (...args: unknown[]) => mockTankLevelReadingFindMany(...args),
+      findFirst: (...args: unknown[]) => mockTankLevelReadingFindFirst(...args),
       create: (...args: unknown[]) => mockTankLevelReadingCreate(...args),
+      update: (...args: unknown[]) => mockTankLevelReadingUpdate(...args),
     },
     $transaction: (arg: unknown) =>
       Array.isArray(arg)
         ? Promise.all(arg as Promise<unknown>[])
-        : Promise.resolve(),
+        : typeof arg === "function"
+          ? (arg as (tx: unknown) => Promise<unknown>)({
+              tankLevelReading: {
+                findFirst: (...args: unknown[]) =>
+                  mockTankLevelReadingFindFirst(...args),
+                update: (...args: unknown[]) =>
+                  mockTankLevelReadingUpdate(...args),
+              },
+              tank: {
+                update: (...args: unknown[]) => mockTankUpdate(...args),
+              },
+            })
+          : Promise.resolve(),
   },
 }))
 
@@ -175,6 +191,51 @@ describe("Tank level readings API (integration)", () => {
       where: { id: 1 },
       data: {
         actualQuantity: 4800,
+        actualQuantityRecordedAt: expect.any(Date),
+      },
+    })
+  })
+
+  it("PATCH /api/tanks/:tankId/level-readings/:id updates reading and syncs tank if latest", async () => {
+    const now = new Date()
+    const existingReading = {
+      id: 1,
+      tankId: 1,
+      measuredAt: now,
+      quantity: 4800,
+      theoreticalQuantityAtTime: 5000,
+      createdAt: now,
+    }
+    const updatedReading = {
+      ...existingReading,
+      quantity: 4900,
+      measuredAt: now,
+    }
+    mockTankLevelReadingFindFirst
+      .mockResolvedValueOnce(existingReading)
+      .mockResolvedValueOnce(updatedReading)
+    mockTankLevelReadingUpdate.mockResolvedValue(updatedReading)
+    mockTankUpdate.mockResolvedValue({})
+
+    const res = await request(app)
+      .patch("/api/tanks/1/level-readings/1")
+      .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
+      .send({ quantity: 4900 })
+      .expect(200)
+
+    expect(res.body).toMatchObject({
+      id: 1,
+      tankId: 1,
+      quantity: 4900,
+    })
+    expect(mockTankLevelReadingUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { quantity: 4900, measuredAt: expect.any(Date) },
+    })
+    expect(mockTankUpdate).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: {
+        actualQuantity: 4900,
         actualQuantityRecordedAt: expect.any(Date),
       },
     })

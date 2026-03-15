@@ -298,7 +298,72 @@
     "errorCreate": "Impossible de créer la pompe.",
     "errorUpdate": "Impossible de modifier la pompe.",
     "messages": {
-      "deliveryRecorded": "Livraison enregistrée."
+      "deliveryRecorded": "Livraison enregistrée.",
+      "dipRecorded": "Jauge enregistrée."
+    },
+    "section": {
+      "pumps": "Pompes",
+      "fuelTypes": "Types de carburant",
+      "tanks": "Cuves"
+    },
+    "fuelTypes": {
+      "add": "Ajouter un type de carburant",
+      "edit": "Modifier le type de carburant",
+      "create": "Créer un type de carburant",
+      "empty": "Aucun type de carburant.",
+      "errorLoad": "Impossible de charger les types de carburant.",
+      "errorCreate": "Impossible de créer le type de carburant.",
+      "errorUpdate": "Impossible de modifier le type de carburant.",
+      "missingForPump": "Cette pompe n'est liée à aucun type de carburant.",
+      "form": {
+        "name": "Nom"
+      }
+    },
+    "tanks": {
+      "add": "Ajouter une cuve",
+      "edit": "Modifier la cuve",
+      "create": "Créer une cuve",
+      "empty": "Aucune cuve pour l'instant.",
+      "errorLoad": "Impossible de charger les cuves.",
+      "errorCreate": "Impossible de créer la cuve.",
+      "errorUpdate": "Impossible de modifier la cuve.",
+      "table": {
+        "capacity": "Capacité",
+        "theoreticalQuantity": "Quantité théorique",
+        "actualQuantity": "Quantité réelle",
+        "difference": "Écart"
+      },
+      "levelHistory": "Historique des niveaux",
+      "recordDip": "Enregistrer une jauge",
+      "levelHistoryTitle": "Historique des niveaux — {{name}}",
+      "dipForm": {
+        "quantity": "Quantité",
+        "quantityPlaceholder": "Niveau mesuré",
+        "measuredAt": "Date / heure",
+        "measuredAtPlaceholder": "Laisser vide pour maintenant",
+        "submit": "Enregistrer la jauge"
+      },
+      "editDip": "Modifier la jauge",
+      "levelReadings": {
+        "empty": "Aucune jauge enregistrée.",
+        "errorLoad": "Impossible de charger les niveaux.",
+        "errorCreate": "Impossible d'enregistrer la jauge.",
+        "updated": "Niveau mis à jour.",
+        "table": {
+          "measuredAt": "Date / heure",
+          "quantity": "Réel",
+          "theoreticalAtTime": "Théorique (à la jauge)",
+          "difference": "Écart"
+        }
+      },
+      "form": {
+        "name": "Nom",
+        "fuelType": "Type de carburant",
+        "fuelTypePlaceholder": "Choisir un type",
+        "capacity": "Capacité",
+        "required": "Nom et type de carburant obligatoires.",
+        "invalidCapacity": "La capacité doit être un nombre positif ou nul."
+      }
     },
     "tabs": {
       "pumps": "Pompes",

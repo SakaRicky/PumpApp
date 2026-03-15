@@ -34,6 +34,7 @@ export type {
   FuelDeliveryCreateBody,
   FuelDeliveryResponse,
   TankLevelReadingCreateBody,
+  TankLevelReadingUpdateBody,
   TankLevelReadingResponse,
   ShiftCreateBody,
   ShiftUpdateBody,
@@ -89,6 +90,7 @@ export {
   fixedCostCreateSchema,
   fixedCostUpdateSchema,
   purchasePriceCreateSchema,
+  tankLevelReadingUpdateSchema,
 } from "./schemas/index.js"
 export type {
   LoginInput,
@@ -121,6 +123,7 @@ export type {
   TankUpdateInput,
   FuelDeliveryCreateInput,
   TankLevelReadingCreateInput,
+  TankLevelReadingUpdateInput,
   ShiftStockItemInput,
   ShiftStockBulkUpdateInput,
 } from "./schemas/index.js"

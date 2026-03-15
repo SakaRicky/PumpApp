@@ -34,6 +34,9 @@ import type {
   TankCreateBody,
   TankUpdateBody,
   TankResponse,
+  TankLevelReadingCreateBody,
+  TankLevelReadingUpdateBody,
+  TankLevelReadingResponse,
   FuelDeliveryCreateBody,
   FuelDeliveryResponse,
   ShiftPumpAssignmentBody,
@@ -171,6 +174,37 @@ export const api = {
     request<TankResponse>("/tanks", { method: "POST", body }),
   updateTank: (id: number, body: TankUpdateBody): Promise<TankResponse> =>
     request<TankResponse>(`/tanks/${id}`, { method: "PATCH", body }),
+
+  getTankLevelReadings: (
+    tankId: number,
+    params?: { from?: string; to?: string; limit?: number }
+  ): Promise<TankLevelReadingResponse[]> => {
+    const sp = new URLSearchParams()
+    if (params?.from) sp.set("from", params.from)
+    if (params?.to) sp.set("to", params.to)
+    if (params?.limit !== undefined) sp.set("limit", String(params.limit))
+    const qs = sp.toString()
+    return request<TankLevelReadingResponse[]>(
+      `/tanks/${tankId}/level-readings${qs ? `?${qs}` : ""}`
+    )
+  },
+  createTankLevelReading: (
+    tankId: number,
+    body: TankLevelReadingCreateBody
+  ): Promise<TankLevelReadingResponse> =>
+    request<TankLevelReadingResponse>(`/tanks/${tankId}/level-readings`, {
+      method: "POST",
+      body,
+    }),
+  updateTankLevelReading: (
+    tankId: number,
+    readingId: number,
+    body: TankLevelReadingUpdateBody
+  ): Promise<TankLevelReadingResponse> =>
+    request<TankLevelReadingResponse>(
+      `/tanks/${tankId}/level-readings/${readingId}`,
+      { method: "PATCH", body }
+    ),
 
   getDeliveries: (tankId?: number): Promise<FuelDeliveryResponse[]> =>
     request<FuelDeliveryResponse[]>(

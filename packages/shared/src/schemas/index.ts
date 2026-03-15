@@ -57,7 +57,9 @@ export {
 
 export {
   tankLevelReadingCreateSchema,
+  tankLevelReadingUpdateSchema,
   type TankLevelReadingCreateInput,
+  type TankLevelReadingUpdateInput,
 } from "./tankLevelReadings.js"
 
 export {

@@ -304,7 +304,8 @@
       "fuelTypeSaved": "Fuel type saved.",
       "tankSaved": "Tank saved.",
       "fuelPriceSaved": "Fuel price saved.",
-      "deliveryRecorded": "Delivery recorded."
+      "deliveryRecorded": "Delivery recorded.",
+      "dipRecorded": "Dip recorded."
     },
     "tabs": {
       "pumps": "Pumps",
@@ -341,7 +342,31 @@
       "table": {
         "capacity": "Capacity",
         "theoreticalQuantity": "Theoretical quantity",
-        "actualQuantity": "Actual quantity"
+        "actualQuantity": "Actual quantity",
+        "difference": "Difference"
+      },
+      "levelHistory": "Level history",
+      "recordDip": "Record dip",
+      "levelHistoryTitle": "Level history — {{name}}",
+      "dipForm": {
+        "quantity": "Quantity",
+        "quantityPlaceholder": "Measured level",
+        "measuredAt": "Date / time",
+        "measuredAtPlaceholder": "Leave empty for now",
+        "submit": "Record dip"
+      },
+      "editDip": "Edit dip",
+      "levelReadings": {
+        "empty": "No level readings yet.",
+        "errorLoad": "Failed to load level readings.",
+        "errorCreate": "Failed to record dip.",
+        "updated": "Level reading updated.",
+        "table": {
+          "measuredAt": "Date / time",
+          "quantity": "Actual",
+          "theoreticalAtTime": "Theoretical (at dip)",
+          "difference": "Difference"
+        }
       },
       "form": {
         "name": "Name",

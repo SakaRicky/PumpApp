@@ -269,6 +269,11 @@ export interface TankLevelReadingCreateBody {
   measuredAt?: string
 }
 
+export interface TankLevelReadingUpdateBody {
+  quantity?: number
+  measuredAt?: string
+}
+
 export interface TankLevelReadingResponse {
   id: number
   tankId: number

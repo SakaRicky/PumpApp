@@ -6,6 +6,7 @@ import { create as createDelivery } from "../controllers/fuelDeliveryController.
 import {
   listByTank as listLevelReadings,
   create as createLevelReading,
+  update as updateLevelReading,
 } from "../controllers/tankLevelReadingController.js"
 
 const tanksRouter = Router()
@@ -25,6 +26,11 @@ tanksRouter.post(
   "/:tankId/level-readings",
   requireAdmin,
   asyncHandler(createLevelReading)
+)
+tanksRouter.patch(
+  "/:tankId/level-readings/:id",
+  requireAdmin,
+  asyncHandler(updateLevelReading)
 )
 tanksRouter.patch("/:id", requireAdmin, asyncHandler(update))
 tanksRouter.post(

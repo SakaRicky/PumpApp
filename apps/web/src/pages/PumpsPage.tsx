@@ -6,6 +6,7 @@ import type {
   FuelPriceCreateBody,
   FuelTypeResponse,
   TankResponse,
+  TankLevelReadingResponse,
   FuelDeliveryResponse,
 } from "@pumpapp/shared"
 import { PageLayout } from "@/components/layout/PageLayout"
@@ -129,6 +130,27 @@ export const PumpsPage = () => {
   const [deliveryNotes, setDeliveryNotes] = useState<string>("")
   const [deliverySubmitting, setDeliverySubmitting] = useState(false)
   const [deliveriesRefreshing, setDeliveriesRefreshing] = useState(false)
+
+  const [levelHistoryTank, setLevelHistoryTank] = useState<TankResponse | null>(
+    null
+  )
+  const [levelReadings, setLevelReadings] = useState<
+    TankLevelReadingResponse[]
+  >([])
+  const [levelReadingsLoading, setLevelReadingsLoading] = useState(false)
+  const [levelReadingsError, setLevelReadingsError] = useState<string | null>(
+    null
+  )
+  const [dipQuantity, setDipQuantity] = useState<string>("")
+  const [dipMeasuredAt, setDipMeasuredAt] = useState<string>("")
+  const [dipSubmitting, setDipSubmitting] = useState(false)
+  const [dipError, setDipError] = useState<string | null>(null)
+
+  const [editingReadingId, setEditingReadingId] = useState<number | null>(null)
+  const [editQuantity, setEditQuantity] = useState<string>("")
+  const [editMeasuredAt, setEditMeasuredAt] = useState<string>("")
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const loadPumps = useCallback(async () => {
     setPumpsLoading(true)
@@ -655,6 +677,125 @@ export const PumpsPage = () => {
     }
   }
 
+  const loadLevelReadings = useCallback(
+    async (tankId: number) => {
+      setLevelReadingsLoading(true)
+      setLevelReadingsError(null)
+      try {
+        const list = await api.getTankLevelReadings(tankId, { limit: 100 })
+        setLevelReadings(list)
+      } catch (e) {
+        setLevelReadingsError(
+          e instanceof Error
+            ? e.message
+            : t("pumps.tanks.levelReadings.errorLoad")
+        )
+        setLevelReadings([])
+      } finally {
+        setLevelReadingsLoading(false)
+      }
+    },
+    [t]
+  )
+
+  const openLevelHistory = (tank: TankResponse) => {
+    setLevelHistoryTank(tank)
+    setLevelReadings([])
+    setLevelReadingsError(null)
+    setDipQuantity("")
+    setDipMeasuredAt("")
+    setDipError(null)
+    void loadLevelReadings(tank.id)
+  }
+
+  const closeLevelHistory = () => {
+    setLevelHistoryTank(null)
+    setLevelReadings([])
+    setLevelReadingsError(null)
+    setDipQuantity("")
+    setDipMeasuredAt("")
+    setDipError(null)
+    setEditingReadingId(null)
+    setEditError(null)
+  }
+
+  const startEditReading = (r: TankLevelReadingResponse) => {
+    setEditingReadingId(r.id)
+    setEditQuantity(String(r.quantity))
+    setEditMeasuredAt(r.measuredAt.slice(0, 16))
+    setEditError(null)
+  }
+
+  const cancelEditReading = () => {
+    setEditingReadingId(null)
+    setEditError(null)
+  }
+
+  const saveEditReading = async () => {
+    if (!levelHistoryTank || editingReadingId == null) return
+    const qty = Number(editQuantity)
+    if (Number.isNaN(qty) || qty < 0) {
+      setEditError(t("pumps.deliveries.invalidQuantity"))
+      return
+    }
+    setEditSubmitting(true)
+    setEditError(null)
+    try {
+      await api.updateTankLevelReading(levelHistoryTank.id, editingReadingId, {
+        quantity: qty,
+        ...(editMeasuredAt.trim() && {
+          measuredAt: new Date(editMeasuredAt).toISOString(),
+        }),
+      })
+      showAlert(t("pumps.messages.dipRecorded"), "success")
+      showAlert(t("pumps.tanks.levelReadings.updated"), "success")
+      cancelEditReading()
+      await Promise.all([loadLevelReadings(levelHistoryTank.id), loadTanks()])
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : t("pumps.tanks.levelReadings.errorCreate")
+      setEditError(message)
+      showAlert(message, "error")
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  const handleRecordDip = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!levelHistoryTank) return
+    const qty = Number(dipQuantity)
+    if (Number.isNaN(qty) || qty < 0) {
+      setDipError(t("pumps.deliveries.invalidQuantity"))
+      return
+    }
+    setDipSubmitting(true)
+    setDipError(null)
+    try {
+      await api.createTankLevelReading(levelHistoryTank.id, {
+        quantity: qty,
+        ...(dipMeasuredAt.trim() && {
+          measuredAt: new Date(dipMeasuredAt).toISOString(),
+        }),
+      })
+      setDipQuantity("")
+      setDipMeasuredAt("")
+      showAlert(t("pumps.messages.dipRecorded"), "success")
+      await Promise.all([loadLevelReadings(levelHistoryTank.id), loadTanks()])
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : t("pumps.tanks.levelReadings.errorCreate")
+      setDipError(message)
+      showAlert(message, "error")
+    } finally {
+      setDipSubmitting(false)
+    }
+  }
+
   return (
     <PageLayout title={t("pumps.title")}>
       <div className="space-y-4">
@@ -892,47 +1033,65 @@ export const PumpsPage = () => {
                       <TableHead>
                         {t("pumps.tanks.table.actualQuantity")}
                       </TableHead>
+                      <TableHead>{t("pumps.tanks.table.difference")}</TableHead>
                       <TableHead>{t("pumps.table.active")}</TableHead>
-                      <TableHead className="w-[180px]">
+                      <TableHead className="w-[220px]">
                         {t("products.actions")}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tanks.map((tank) => (
-                      <TableRow key={tank.id}>
-                        <TableCell>{tank.id}</TableCell>
-                        <TableCell>{tank.name}</TableCell>
-                        <TableCell>{tank.fuelTypeName ?? "—"}</TableCell>
-                        <TableCell>
-                          {tank.capacity !== null ? tank.capacity : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {tank.theoreticalQuantity !== null
-                            ? tank.theoreticalQuantity
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {tank.actualQuantity !== null
-                            ? tank.actualQuantity
-                            : "—"}
-                        </TableCell>
-                        <TableCell>
-                          {tank.active
-                            ? t("products.activeYes")
-                            : t("products.activeNo")}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditTank(tank)}
-                          >
-                            {t("pumps.tanks.edit")}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {tanks.map((tank) => {
+                      const diff =
+                        tank.theoreticalQuantity != null &&
+                        tank.actualQuantity != null
+                          ? tank.theoreticalQuantity - tank.actualQuantity
+                          : null
+                      return (
+                        <TableRow key={tank.id}>
+                          <TableCell>{tank.id}</TableCell>
+                          <TableCell>{tank.name}</TableCell>
+                          <TableCell>{tank.fuelTypeName ?? "—"}</TableCell>
+                          <TableCell>
+                            {tank.capacity !== null ? tank.capacity : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {tank.theoreticalQuantity !== null
+                              ? tank.theoreticalQuantity
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {tank.actualQuantity !== null
+                              ? tank.actualQuantity
+                              : "—"}
+                          </TableCell>
+                          <TableCell>{diff !== null ? diff : "—"}</TableCell>
+                          <TableCell>
+                            {tank.active
+                              ? t("products.activeYes")
+                              : t("products.activeNo")}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openLevelHistory(tank)}
+                              >
+                                {t("pumps.tanks.levelHistory")}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditTank(tank)}
+                              >
+                                {t("pumps.tanks.edit")}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -1775,6 +1934,219 @@ export const PumpsPage = () => {
               </DialogFooter>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Level history (dip) dialog */}
+      <Dialog
+        open={!!levelHistoryTank}
+        onOpenChange={(open) => !open && closeLevelHistory()}
+      >
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {levelHistoryTank
+                ? t("pumps.tanks.levelHistoryTitle", {
+                    name: levelHistoryTank.name,
+                  })
+                : t("pumps.tanks.levelHistory")}
+            </DialogTitle>
+          </DialogHeader>
+          {levelHistoryTank && (
+            <div className="space-y-4">
+              <form
+                onSubmit={handleRecordDip}
+                className="rounded-md border bg-muted/40 p-3 space-y-3"
+              >
+                <h4 className="text-sm font-medium">
+                  {t("pumps.tanks.recordDip")}
+                </h4>
+                {dipError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{dipError}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="flex flex-wrap gap-3 items-end">
+                  <div className="space-y-1 min-w-[120px]">
+                    <Label htmlFor="dip-quantity">
+                      {t("pumps.tanks.dipForm.quantity")} *
+                    </Label>
+                    <Input
+                      id="dip-quantity"
+                      type="number"
+                      min="0"
+                      step="0.001"
+                      value={dipQuantity}
+                      onChange={(e) => setDipQuantity(e.target.value)}
+                      placeholder={t("pumps.tanks.dipForm.quantityPlaceholder")}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1 min-w-[200px]">
+                    <Label htmlFor="dip-measuredAt">
+                      {t("pumps.tanks.dipForm.measuredAt")}
+                    </Label>
+                    <DatePicker
+                      id="dip-measuredAt"
+                      value={dipMeasuredAt}
+                      onChange={setDipMeasuredAt}
+                      placeholder={t(
+                        "pumps.tanks.dipForm.measuredAtPlaceholder"
+                      )}
+                      includeTime
+                    />
+                  </div>
+                  <Button type="submit" disabled={dipSubmitting}>
+                    {dipSubmitting
+                      ? t("auth.loading")
+                      : t("pumps.tanks.dipForm.submit")}
+                  </Button>
+                </div>
+              </form>
+
+              <div>
+                <h4 className="text-sm font-medium mb-2">
+                  {t("pumps.tanks.levelReadings.table.measuredAt")} /{" "}
+                  {t("pumps.tanks.levelReadings.table.quantity")} /{" "}
+                  {t("pumps.tanks.levelReadings.table.difference")}
+                </h4>
+                {levelReadingsError && (
+                  <Alert variant="destructive" className="mb-2">
+                    <AlertDescription>{levelReadingsError}</AlertDescription>
+                  </Alert>
+                )}
+                {editError && (
+                  <Alert variant="destructive" className="mb-2">
+                    <AlertDescription>{editError}</AlertDescription>
+                  </Alert>
+                )}
+                {levelReadingsLoading ? (
+                  <p className="text-muted-foreground text-sm">
+                    {t("auth.loading")}
+                  </p>
+                ) : levelReadings.length === 0 ? (
+                  <p className="text-muted-foreground text-sm">
+                    {t("pumps.tanks.levelReadings.empty")}
+                  </p>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>
+                            {t("pumps.tanks.levelReadings.table.measuredAt")}
+                          </TableHead>
+                          <TableHead>
+                            {t("pumps.tanks.levelReadings.table.quantity")}
+                          </TableHead>
+                          <TableHead>
+                            {t(
+                              "pumps.tanks.levelReadings.table.theoreticalAtTime"
+                            )}
+                          </TableHead>
+                          <TableHead>
+                            {t("pumps.tanks.levelReadings.table.difference")}
+                          </TableHead>
+                          <TableHead className="w-[140px]">
+                            {t("products.actions")}
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {levelReadings.map((r) => {
+                          const diff =
+                            r.theoreticalQuantityAtTime != null
+                              ? r.theoreticalQuantityAtTime - r.quantity
+                              : null
+                          const isEditing = editingReadingId === r.id
+                          return (
+                            <TableRow key={r.id}>
+                              <TableCell>
+                                {isEditing ? (
+                                  <DatePicker
+                                    value={editMeasuredAt}
+                                    onChange={setEditMeasuredAt}
+                                    placeholder={t(
+                                      "pumps.tanks.dipForm.measuredAtPlaceholder"
+                                    )}
+                                    includeTime
+                                    className="min-w-[180px]"
+                                  />
+                                ) : (
+                                  new Date(r.measuredAt).toLocaleString()
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {isEditing ? (
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.001"
+                                    value={editQuantity}
+                                    onChange={(e) =>
+                                      setEditQuantity(e.target.value)
+                                    }
+                                    className="w-24"
+                                  />
+                                ) : (
+                                  r.quantity
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {r.theoreticalQuantityAtTime != null
+                                  ? r.theoreticalQuantityAtTime
+                                  : "—"}
+                              </TableCell>
+                              <TableCell>
+                                {diff !== null ? diff : "—"}
+                              </TableCell>
+                              <TableCell className="w-[140px]">
+                                {isEditing ? (
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={saveEditReading}
+                                      disabled={editSubmitting}
+                                    >
+                                      {editSubmitting
+                                        ? t("auth.loading")
+                                        : t("pumps.save")}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={cancelEditReading}
+                                      disabled={editSubmitting}
+                                    >
+                                      {t("pumps.cancel")}
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => startEditReading(r)}
+                                  >
+                                    {t("pumps.tanks.editDip")}
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={closeLevelHistory}>
+              {t("pumps.cancel")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </PageLayout>
