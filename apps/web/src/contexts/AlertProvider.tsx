@@ -25,7 +25,7 @@ interface AlertProviderProps {
   children: ReactNode
 }
 
-export const AlertProvider = ({ children }: AlertProviderProps): JSX.Element => {
+export const AlertProvider = ({ children }: AlertProviderProps) => {
   const [alert, setAlert] = useState<AlertState | null>(null)
 
   const showAlert = useCallback((message: string, variant: AlertVariant = "info") => {
