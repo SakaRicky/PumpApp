@@ -7,18 +7,14 @@ import {
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
 
-type PumpRow = Awaited<
-  ReturnType<typeof prisma.pump.findMany>
->[number]
+type PumpRow = Awaited<ReturnType<typeof prisma.pump.findMany>>[number]
 
 const toPumpResponse = (row: PumpRow): PumpResponse => {
   const withTank = row as PumpRow & {
-    tank?:
-      | {
-          fuelTypeId: number | null
-          fuelType?: { name: string } | null
-        }
-      | null
+    tank?: {
+      fuelTypeId: number | null
+      fuelType?: { name: string } | null
+    } | null
   }
   return {
     id: row.id,
@@ -126,4 +122,3 @@ const update = async (req: Request, res: Response): Promise<void> => {
 }
 
 export { list, create, update, toPumpResponse }
-

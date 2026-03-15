@@ -85,7 +85,11 @@ describe("Fuel prices API (integration)", () => {
   })
 
   it("POST /api/fuel-prices creates record with admin token", async () => {
-    mockPumpFindUnique.mockResolvedValue({ id: 1, name: "Pump 1", active: true })
+    mockPumpFindUnique.mockResolvedValue({
+      id: 1,
+      name: "Pump 1",
+      active: true,
+    })
     mockFindMany.mockResolvedValue([])
     mockCreate.mockResolvedValue({
       id: 1,
@@ -108,4 +112,3 @@ describe("Fuel prices API (integration)", () => {
     })
   })
 })
-

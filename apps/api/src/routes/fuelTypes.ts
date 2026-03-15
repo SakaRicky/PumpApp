@@ -18,4 +18,3 @@ fuelTypesRouter.post("/", requireAdmin, asyncHandler(create))
 fuelTypesRouter.patch("/:id", requireAdmin, asyncHandler(update))
 
 export { fuelTypesRouter }
-

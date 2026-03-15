@@ -109,7 +109,11 @@ const createForShift = async (req: Request, res: Response): Promise<void> => {
 const updateReading = async (req: Request, res: Response): Promise<void> => {
   const id = Number.parseInt(req.params.id, 10)
   if (Number.isNaN(id)) {
-    throw new AppError("Invalid pump reading id", 400, ErrorCode.VALIDATION_ERROR)
+    throw new AppError(
+      "Invalid pump reading id",
+      400,
+      ErrorCode.VALIDATION_ERROR
+    )
   }
 
   const parsed = pumpReadingUpdateSchema.safeParse(req.body)
@@ -153,4 +157,3 @@ const updateReading = async (req: Request, res: Response): Promise<void> => {
 }
 
 export { listByShift, createForShift, updateReading, toPumpReadingResponse }
-

@@ -138,7 +138,10 @@ const update = async (req: Request, res: Response): Promise<void> => {
     throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
   }
 
-  if (parsed.data.status && !isValidStatusTransition(existing.status, parsed.data.status)) {
+  if (
+    parsed.data.status &&
+    !isValidStatusTransition(existing.status, parsed.data.status)
+  ) {
     throw new AppError(
       "Invalid shift status transition",
       400,
@@ -202,7 +205,9 @@ const update = async (req: Request, res: Response): Promise<void> => {
     where: { id },
     data: {
       ...(parsed.data.date && { date: new Date(parsed.data.date) }),
-      ...(parsed.data.startTime && { startTime: new Date(parsed.data.startTime) }),
+      ...(parsed.data.startTime && {
+        startTime: new Date(parsed.data.startTime),
+      }),
       ...(parsed.data.endTime && { endTime: new Date(parsed.data.endTime) }),
       ...(parsed.data.status && { status: parsed.data.status }),
       ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
@@ -386,25 +391,25 @@ const upsertStock = async (req: Request, res: Response): Promise<void> => {
   }
 
   await prisma.$transaction(
-    items.map((item: { productId: number; openingQty?: number; closingQty: number }) =>
-      prisma.shiftProductStock.upsert({
-        where: {
-          shiftId_productId: { shiftId, productId: item.productId },
-        },
-        create: {
-          shiftId,
-          productId: item.productId,
-          openingQty:
-            item.openingQty !== undefined ? item.openingQty : 0,
-          closingQty: item.closingQty,
-        },
-        update: {
-          ...(item.openingQty !== undefined && {
-            openingQty: item.openingQty,
-          }),
-          closingQty: item.closingQty,
-        },
-      })
+    items.map(
+      (item: { productId: number; openingQty?: number; closingQty: number }) =>
+        prisma.shiftProductStock.upsert({
+          where: {
+            shiftId_productId: { shiftId, productId: item.productId },
+          },
+          create: {
+            shiftId,
+            productId: item.productId,
+            openingQty: item.openingQty !== undefined ? item.openingQty : 0,
+            closingQty: item.closingQty,
+          },
+          update: {
+            ...(item.openingQty !== undefined && {
+              openingQty: item.openingQty,
+            }),
+            closingQty: item.closingQty,
+          },
+        })
     )
   )
 
@@ -438,9 +443,7 @@ const listPumpAssignments = async (
     }),
   ])
 
-  const assignmentByPumpId = new Map(
-    assignments.map((a) => [a.pumpId, a])
-  )
+  const assignmentByPumpId = new Map(assignments.map((a) => [a.pumpId, a]))
 
   const result = pumps.map((pump) => {
     const assignment = assignmentByPumpId.get(pump.id)
@@ -539,4 +542,3 @@ export {
   assignPump,
   toShiftResponse,
 }
-

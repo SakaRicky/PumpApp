@@ -16,9 +16,7 @@ const toFuelPriceResponse = (row: FuelPriceRow): FuelPriceResponse => ({
   fuelTypeId: row.fuelTypeId,
   pricePerUnit: Number(row.pricePerUnit),
   purchasePricePerUnit:
-    row.purchasePricePerUnit !== null
-      ? Number(row.purchasePricePerUnit)
-      : null,
+    row.purchasePricePerUnit !== null ? Number(row.purchasePricePerUnit) : null,
   effectiveFrom: row.effectiveFrom.toISOString(),
   effectiveTo: row.effectiveTo ? row.effectiveTo.toISOString() : null,
 })
@@ -110,13 +108,35 @@ const create = async (req: Request, res: Response): Promise<void> => {
     effectiveTo,
   } = parsed.data
 
-  const fuelType = await prisma.fuelType.findUnique({ where: { id: fuelTypeId } })
+  const fuelType = await prisma.fuelType.findUnique({
+    where: { id: fuelTypeId },
+  })
   if (!fuelType) {
     throw new AppError("Fuel type not found", 400, ErrorCode.VALIDATION_ERROR)
   }
 
   const fromDate = new Date(effectiveFrom)
   const toDate = effectiveTo ? new Date(effectiveTo) : null
+
+  // If the new price is open-ended, automatically close the previous open-ended
+  // price (if any) so we don't end up with overlapping "current" prices.
+  if (!toDate) {
+    const currentOpen = await prisma.fuelPriceHistory.findFirst({
+      where: { fuelTypeId, effectiveTo: null },
+      orderBy: { effectiveFrom: "desc" },
+    })
+
+    if (
+      currentOpen &&
+      currentOpen.effectiveFrom.getTime() <= fromDate.getTime()
+    ) {
+      const closedTo = new Date(fromDate.getTime() - 1)
+      await prisma.fuelPriceHistory.update({
+        where: { id: currentOpen.id },
+        data: { effectiveTo: closedTo },
+      })
+    }
+  }
 
   await ensureNoOverlap(fuelTypeId, fromDate, toDate)
 
@@ -211,4 +231,3 @@ const getPriceForShift = async (
 }
 
 export { list, create, update, getPriceForShift }
-

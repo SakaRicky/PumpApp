@@ -8,6 +8,7 @@
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
+    "check:prepush": "pnpm lint && pnpm build",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:migrate": "prisma migrate dev --schema=db/schema.prisma",

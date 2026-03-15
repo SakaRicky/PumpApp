@@ -34,6 +34,8 @@ import type {
   TankCreateBody,
   TankUpdateBody,
   TankResponse,
+  FuelDeliveryCreateBody,
+  FuelDeliveryResponse,
   ShiftPumpAssignmentBody,
 } from "@pumpapp/shared"
 
@@ -169,6 +171,21 @@ export const api = {
     request<TankResponse>("/tanks", { method: "POST", body }),
   updateTank: (id: number, body: TankUpdateBody): Promise<TankResponse> =>
     request<TankResponse>(`/tanks/${id}`, { method: "PATCH", body }),
+
+  getDeliveries: (tankId?: number): Promise<FuelDeliveryResponse[]> =>
+    request<FuelDeliveryResponse[]>(
+      tankId !== undefined
+        ? `/fuel-deliveries?tankId=${tankId}`
+        : "/fuel-deliveries"
+    ),
+  createDelivery: (
+    tankId: number,
+    body: FuelDeliveryCreateBody
+  ): Promise<FuelDeliveryResponse> =>
+    request<FuelDeliveryResponse>(`/tanks/${tankId}/deliveries`, {
+      method: "POST",
+      body,
+    }),
 
   getFuelPrices: (): Promise<FuelPriceResponse[]> =>
     request<FuelPriceResponse[]>("/fuel-prices"),

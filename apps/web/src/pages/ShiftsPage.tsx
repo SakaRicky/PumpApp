@@ -117,8 +117,9 @@ export const ShiftsPage = () => {
     pumpName: string
     workerId: number | null
   }
-  const [pumpAssignmentRows, setPumpAssignmentRows] =
-    useState<PumpAssignmentRow[]>([])
+  const [pumpAssignmentRows, setPumpAssignmentRows] = useState<
+    PumpAssignmentRow[]
+  >([])
   const [pumpAssignmentsError, setPumpAssignmentsError] = useState<
     string | null
   >(null)
@@ -311,15 +312,17 @@ export const ShiftsPage = () => {
         .map((p: ProductResponse) => {
           const s = stockByProduct.get(p.id)
           const opening =
-            s?.openingQty != null ? Number(s.openingQty) : Number(p.currentStock)
+            s?.openingQty != null
+              ? Number(s.openingQty)
+              : Number(p.currentStock)
           const closing =
-            s?.closingQty != null ? Number(s.closingQty) : Number(p.currentStock)
+            s?.closingQty != null
+              ? Number(s.closingQty)
+              : Number(p.currentStock)
           return {
             productId: p.id,
             productName: p.name,
-            categoryName:
-              p.category?.name ??
-              `#${p.categoryId.toString()}`,
+            categoryName: p.category?.name ?? `#${p.categoryId.toString()}`,
             openingQty: opening.toString(),
             closingQty: closing.toString(),
             sellingPrice: Number(p.sellingPrice),
@@ -535,9 +538,7 @@ export const ShiftsPage = () => {
         workerId,
       })
       setPumpAssignmentRows((prev) =>
-        prev.map((row) =>
-          row.pumpId === pumpId ? { ...row, workerId } : row
-        )
+        prev.map((row) => (row.pumpId === pumpId ? { ...row, workerId } : row))
       )
     } catch (e) {
       setPumpAssignmentsError(
@@ -668,9 +669,7 @@ export const ShiftsPage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="create-endTime">
-                {t("shifts.form.endTime")}
-              </Label>
+              <Label htmlFor="create-endTime">{t("shifts.form.endTime")}</Label>
               <Input
                 id="create-endTime"
                 type="datetime-local"
@@ -728,9 +727,7 @@ export const ShiftsPage = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-endTime">
-                  {t("shifts.form.endTime")}
-                </Label>
+                <Label htmlFor="edit-endTime">{t("shifts.form.endTime")}</Label>
                 <Input
                   id="edit-endTime"
                   type="datetime-local"
@@ -835,8 +832,7 @@ export const ShiftsPage = () => {
                             {worker.designation ?? t("workers.noDesignation")}
                           </TableCell>
                           <TableCell>
-                            {workerRoleLabel(worker.id) ??
-                              t("users.role.USER")}
+                            {workerRoleLabel(worker.id) ?? t("users.role.USER")}
                           </TableCell>
                           <TableCell>
                             {worker.active
@@ -850,7 +846,11 @@ export const ShiftsPage = () => {
                 </div>
               )}
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={closeManageWorkers}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={closeManageWorkers}
+                >
                   {t("shifts.close")}
                 </Button>
               </DialogFooter>
@@ -1154,9 +1154,7 @@ export const ShiftsPage = () => {
                               onChange={(e) =>
                                 handleAssignPumpWorker(
                                   row.pumpId,
-                                  e.target.value
-                                    ? Number(e.target.value)
-                                    : null
+                                  e.target.value ? Number(e.target.value) : null
                                 )
                               }
                             >

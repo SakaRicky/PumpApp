@@ -28,9 +28,12 @@ interface AlertProviderProps {
 export const AlertProvider = ({ children }: AlertProviderProps) => {
   const [alert, setAlert] = useState<AlertState | null>(null)
 
-  const showAlert = useCallback((message: string, variant: AlertVariant = "info") => {
-    setAlert({ message, variant })
-  }, [])
+  const showAlert = useCallback(
+    (message: string, variant: AlertVariant = "info") => {
+      setAlert({ message, variant })
+    },
+    []
+  )
 
   const clearAlert = useCallback(() => {
     setAlert(null)
@@ -53,4 +56,3 @@ export const useAlert = (): AlertContextValue => {
 }
 
 export default AlertProvider
-

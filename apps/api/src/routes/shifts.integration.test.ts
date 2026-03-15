@@ -81,7 +81,9 @@ describe("Shifts API (integration, basic rules)", () => {
       .send({ status: "CLOSED" })
       .expect(400)
 
-    expect(res.body.error).toBe("Shift must have at least one worker before closing")
+    expect(res.body.error).toBe(
+      "Shift must have at least one worker before closing"
+    )
     expect(mockShiftProductStockCount).not.toHaveBeenCalled()
   })
 
@@ -129,8 +131,9 @@ describe("Shifts API (integration, basic rules)", () => {
       .send({ status: "CLOSED" })
       .expect(400)
 
-    expect(res.body.error).toBe("Cannot close shift without shop stock snapshot")
+    expect(res.body.error).toBe(
+      "Cannot close shift without shop stock snapshot"
+    )
     expect(mockPumpReadingCount).not.toHaveBeenCalled()
   })
 })
-

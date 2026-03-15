@@ -7,9 +7,7 @@ import {
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
 
-type FuelTypeRow = Awaited<
-  ReturnType<typeof prisma.fuelType.findMany>
->[number]
+type FuelTypeRow = Awaited<ReturnType<typeof prisma.fuelType.findMany>>[number]
 
 const toFuelTypeResponse = (row: FuelTypeRow): FuelTypeResponse => ({
   id: row.id,
@@ -76,4 +74,3 @@ const update = async (req: Request, res: Response): Promise<void> => {
 }
 
 export { list, create, update, toFuelTypeResponse }
-

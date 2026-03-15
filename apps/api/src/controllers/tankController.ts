@@ -7,11 +7,11 @@ import {
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
 
-type TankRow = Awaited<
-  ReturnType<typeof prisma.tank.findMany>
->[number]
+type TankRow = Awaited<ReturnType<typeof prisma.tank.findMany>>[number]
 
-const toTankResponse = (row: TankRow & { fuelType?: { name: string } | null }): TankResponse => ({
+const toTankResponse = (
+  row: TankRow & { fuelType?: { name: string } | null }
+): TankResponse => ({
   id: row.id,
   fuelTypeId: row.fuelTypeId,
   name: row.name,
@@ -43,7 +43,7 @@ const list = async (req: Request, res: Response): Promise<void> => {
         "Invalid fuelTypeId",
         400,
         ErrorCode.VALIDATION_ERROR,
-        undefined,
+        undefined
       )
     }
     where.fuelTypeId = fid
@@ -68,7 +68,9 @@ const create = async (req: Request, res: Response): Promise<void> => {
 
   const { fuelTypeId, name, capacity, active } = parsed.data
 
-  const fuelType = await prisma.fuelType.findUnique({ where: { id: fuelTypeId } })
+  const fuelType = await prisma.fuelType.findUnique({
+    where: { id: fuelTypeId },
+  })
   if (!fuelType) {
     throw new AppError("Fuel type not found", 400, ErrorCode.VALIDATION_ERROR)
   }
@@ -139,4 +141,3 @@ const update = async (req: Request, res: Response): Promise<void> => {
 }
 
 export { list, create, update, toTankResponse }
-

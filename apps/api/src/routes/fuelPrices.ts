@@ -22,4 +22,3 @@ fuelPricesRouter.post("/", requireAdmin, asyncHandler(create))
 fuelPricesRouter.patch("/:id", requireAdmin, asyncHandler(update))
 
 export { fuelPricesRouter }
-

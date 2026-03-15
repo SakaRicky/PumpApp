@@ -303,12 +303,14 @@
       "pumpUpdated": "Pump updated.",
       "fuelTypeSaved": "Fuel type saved.",
       "tankSaved": "Tank saved.",
-      "fuelPriceSaved": "Fuel price saved."
+      "fuelPriceSaved": "Fuel price saved.",
+      "deliveryRecorded": "Delivery recorded."
     },
     "tabs": {
       "pumps": "Pumps",
       "fuelTypes": "Fuel types",
-      "tanks": "Tanks"
+      "tanks": "Tanks",
+      "deliveries": "Deliveries"
     },
     "section": {
       "pumps": "Pumps",
@@ -348,6 +350,33 @@
         "capacity": "Capacity",
         "required": "Name and fuel type are required.",
         "invalidCapacity": "Capacity must be a non-negative number."
+      }
+    },
+    "deliveries": {
+      "record": "Record delivery",
+      "noTanks": "Add tanks in the Tanks tab first. Go to",
+      "tank": "Tank",
+      "tankPlaceholder": "Select tank",
+      "tankRequired": "Please select a tank.",
+      "quantity": "Quantity",
+      "quantityUnit": "L",
+      "invalidQuantity": "Quantity must be a non-negative number.",
+      "deliveredAt": "Delivered at",
+      "deliveredAtPlaceholder": "Leave empty for now",
+      "notes": "Notes",
+      "notesPlaceholder": "e.g. delivery note, driver",
+      "recordButton": "Record delivery",
+      "refresh": "Refresh",
+      "levels": "Tank levels",
+      "history": "Delivery history",
+      "empty": "No deliveries recorded yet.",
+      "errorLoad": "Failed to load deliveries.",
+      "errorCreate": "Failed to record delivery.",
+      "table": {
+        "deliveredAt": "Date / time",
+        "tank": "Tank",
+        "quantity": "Quantity",
+        "notes": "Notes"
       }
     }
   },

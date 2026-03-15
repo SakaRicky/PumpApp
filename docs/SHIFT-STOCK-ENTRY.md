@@ -104,4 +104,3 @@
   - Loss/shrinkage can be shown per row:
     - `loss = (openingQty − closingQty) − expectedSoldQty`.
 - The core UX remains the same; this screen becomes a **verification and discrepancy review** instead of purely manual entry.
-

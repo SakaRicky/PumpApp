@@ -242,6 +242,26 @@ export interface TankResponse {
   fuelTypeName?: string
 }
 
+// --- Fuel deliveries ---
+
+export interface FuelDeliveryCreateBody {
+  quantity: number
+  deliveredAt?: string
+  notes?: string
+}
+
+export interface FuelDeliveryResponse {
+  id: number
+  tankId: number
+  quantity: number
+  deliveredAt: string
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  tankName?: string
+  fuelTypeName?: string
+}
+
 // --- Shifts ---
 
 export interface ShiftCreateBody {

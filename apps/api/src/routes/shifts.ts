@@ -66,4 +66,3 @@ shiftsRouter.post(
 )
 
 export { shiftsRouter }
-

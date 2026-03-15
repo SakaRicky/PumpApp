@@ -68,4 +68,3 @@ describe("getVolumeAndRevenueForShift", () => {
     expect(result.perPump).toHaveLength(2)
   })
 })
-

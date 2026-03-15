@@ -296,7 +296,43 @@
     "cancel": "Annuler",
     "errorLoad": "Impossible de charger les pompes.",
     "errorCreate": "Impossible de créer la pompe.",
-    "errorUpdate": "Impossible de modifier la pompe."
+    "errorUpdate": "Impossible de modifier la pompe.",
+    "messages": {
+      "deliveryRecorded": "Livraison enregistrée."
+    },
+    "tabs": {
+      "pumps": "Pompes",
+      "fuelTypes": "Types de carburant",
+      "tanks": "Cuves",
+      "deliveries": "Livraisons"
+    },
+    "deliveries": {
+      "record": "Enregistrer une livraison",
+      "noTanks": "Ajoutez des cuves dans l'onglet Cuves d'abord. Aller à",
+      "tank": "Cuve",
+      "tankPlaceholder": "Choisir une cuve",
+      "tankRequired": "Veuillez choisir une cuve.",
+      "quantity": "Quantité",
+      "quantityUnit": "L",
+      "invalidQuantity": "La quantité doit être un nombre positif ou nul.",
+      "deliveredAt": "Date de livraison",
+      "deliveredAtPlaceholder": "Laisser vide pour maintenant",
+      "notes": "Notes",
+      "notesPlaceholder": "ex. bon de livraison, chauffeur",
+      "recordButton": "Enregistrer la livraison",
+      "refresh": "Actualiser",
+      "levels": "Niveaux des cuves",
+      "history": "Historique des livraisons",
+      "empty": "Aucune livraison enregistrée.",
+      "errorLoad": "Impossible de charger les livraisons.",
+      "errorCreate": "Impossible d'enregistrer la livraison.",
+      "table": {
+        "deliveredAt": "Date / heure",
+        "tank": "Cuve",
+        "quantity": "Quantité",
+        "notes": "Notes"
+      }
+    }
   },
   "reports": {
     "title": "Rapports",

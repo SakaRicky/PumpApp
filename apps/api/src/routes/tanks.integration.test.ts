@@ -67,7 +67,13 @@ describe("Tanks API (integration)", () => {
         active: true,
         createdAt: now,
         updatedAt: now,
-        fuelType: { id: 1, name: "Diesel", active: true, createdAt: now, updatedAt: now },
+        fuelType: {
+          id: 1,
+          name: "Diesel",
+          active: true,
+          createdAt: now,
+          updatedAt: now,
+        },
       },
     ])
 
@@ -117,7 +123,13 @@ describe("Tanks API (integration)", () => {
       active: true,
       createdAt: now,
       updatedAt: now,
-      fuelType: { id: 1, name: "Diesel", active: true, createdAt: now, updatedAt: now },
+      fuelType: {
+        id: 1,
+        name: "Diesel",
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
     }
     mockTankCreate.mockResolvedValue(created)
 
@@ -148,7 +160,13 @@ describe("Tanks API (integration)", () => {
       active: true,
       createdAt: now,
       updatedAt: now,
-      fuelType: { id: 1, name: "Diesel", active: true, createdAt: now, updatedAt: now },
+      fuelType: {
+        id: 1,
+        name: "Diesel",
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      },
     }
     const updated = {
       ...existing,
@@ -178,4 +196,3 @@ describe("Tanks API (integration)", () => {
     })
   })
 })
-

@@ -12,4 +12,3 @@ export const fuelTypeUpdateSchema = z.object({
 
 export type FuelTypeCreateInput = z.infer<typeof fuelTypeCreateSchema>
 export type FuelTypeUpdateInput = z.infer<typeof fuelTypeUpdateSchema>
-

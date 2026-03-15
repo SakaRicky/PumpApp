@@ -51,6 +51,11 @@ export {
 } from "./tanks.js"
 
 export {
+  fuelDeliveryCreateSchema,
+  type FuelDeliveryCreateInput,
+} from "./deliveries.js"
+
+export {
   shiftCreateSchema,
   shiftUpdateSchema,
   shiftWorkerAssignSchema,

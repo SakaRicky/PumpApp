@@ -18,4 +18,3 @@ pumpsRouter.post("/", requireAdmin, asyncHandler(create))
 pumpsRouter.patch("/:id", requireAdmin, asyncHandler(update))
 
 export { pumpsRouter }
-

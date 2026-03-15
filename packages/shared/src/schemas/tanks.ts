@@ -17,4 +17,3 @@ export const tankUpdateSchema = z.object({
 
 export type TankCreateInput = z.infer<typeof tankCreateSchema>
 export type TankUpdateInput = z.infer<typeof tankUpdateSchema>
-
