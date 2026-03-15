@@ -35,6 +35,7 @@ describe("getVolumeAndRevenueForShift", () => {
         closingReading: 150,
         recordedById: 1,
         recordedAt: new Date("2025-01-15T10:00:00.000Z"),
+        pump: { tank: { fuelTypeId: 1 } },
       },
       {
         id: 2,
@@ -44,18 +45,19 @@ describe("getVolumeAndRevenueForShift", () => {
         closingReading: 260,
         recordedById: 1,
         recordedAt: new Date("2025-01-15T10:05:00.000Z"),
+        pump: { tank: { fuelTypeId: 2 } },
       },
     ])
     mockGetPriceForShift.mockResolvedValueOnce({
       id: 1,
-      pumpId: 1,
+      fuelTypeId: 1,
       pricePerUnit: 1.5,
       effectiveFrom: "2025-01-01T00:00:00.000Z",
       effectiveTo: null,
     })
     mockGetPriceForShift.mockResolvedValueOnce({
       id: 2,
-      pumpId: 2,
+      fuelTypeId: 2,
       pricePerUnit: 2,
       effectiveFrom: "2025-01-01T00:00:00.000Z",
       effectiveTo: null,

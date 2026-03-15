@@ -66,6 +66,25 @@ PumpPro distinguishes two tank quantities:
 
 **Why it matters:** The difference (theoretical − actual) can indicate theft, leakage, wrong pump readings, wrong delivery entry, or measurement error. The system provides the data for the owner to investigate; it does not automatically accuse or penalize workers.
 
+## When theoretical is updated
+
+The system updates each tank’s **theoretical quantity** in two situations:
+
+1. **Delivery recorded** — When a fuel delivery is created for a tank, the delivery `quantity` is **added** to that tank’s `theoreticalQuantity`.
+2. **Pump reading created or updated** — When a pump reading is saved for a shift, the volume sold (`closingReading − openingReading`) for that pump is **subtracted** from the pump’s tank (if the pump is linked to a tank). When a reading is **updated**, the previous volume is added back and the new volume is subtracted so the tank theoretical stays consistent.
+
+Null `theoreticalQuantity` is treated as 0 for these calculations.
+
+## Dip history (TankLevelReading)
+
+Dips (physical measurements) are stored as append-only rows in **TankLevelReading**. Each row has:
+
+- `measuredAt` — when the dip was taken
+- `quantity` — the actual volume measured
+- `theoreticalQuantityAtTime` — optional snapshot of the tank’s theoretical quantity at that moment, so the difference (theoretical − actual) at the time of the dip can be analysed even if theoretical is later corrected
+
+When a new level reading is created via the API, the tank’s `actualQuantity` and `actualQuantityRecordedAt` are also set to that reading, so the tank always reflects the latest dip. This supports both “current actual” display and historical comparison over time.
+
 ## Relationship to shift reconciliation
 
 Fuel tracking integrates with shift reconciliation:

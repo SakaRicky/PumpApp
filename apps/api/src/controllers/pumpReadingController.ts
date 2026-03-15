@@ -92,15 +92,35 @@ const createForShift = async (req: Request, res: Response): Promise<void> => {
     )
   }
 
-  const reading = await prisma.pumpReading.create({
-    data: {
-      shiftId,
-      pumpId: parsed.data.pumpId,
-      openingReading: parsed.data.openingReading,
-      closingReading: parsed.data.closingReading,
-      recordedById: req.user?.id ?? 0,
-      workerId: assignment.workerId,
-    },
+  const volume = parsed.data.closingReading - parsed.data.openingReading
+
+  const reading = await prisma.$transaction(async (tx) => {
+    const created = await tx.pumpReading.create({
+      data: {
+        shiftId,
+        pumpId: parsed.data.pumpId,
+        openingReading: parsed.data.openingReading,
+        closingReading: parsed.data.closingReading,
+        recordedById: req.user?.id ?? 0,
+        workerId: assignment.workerId,
+      },
+    })
+    if (pump.tankId != null) {
+      const tank = await tx.tank.findUnique({
+        where: { id: pump.tankId },
+      })
+      if (tank) {
+        const current =
+          tank.theoreticalQuantity != null
+            ? Number(tank.theoreticalQuantity)
+            : 0
+        await tx.tank.update({
+          where: { id: pump.tankId },
+          data: { theoreticalQuantity: current - volume },
+        })
+      }
+    }
+    return created
   })
 
   res.status(201).json(toPumpReadingResponse(reading))
@@ -145,12 +165,37 @@ const updateReading = async (req: Request, res: Response): Promise<void> => {
     )
   }
 
-  const reading = await prisma.pumpReading.update({
-    where: { id },
-    data: {
-      openingReading: opening,
-      closingReading: closing,
-    },
+  const pump = await prisma.pump.findUnique({
+    where: { id: existing.pumpId },
+  })
+  const oldVolume =
+    Number(existing.closingReading) - Number(existing.openingReading)
+  const newVolume = Number(closing) - Number(opening)
+  const theoreticalDelta = oldVolume - newVolume
+
+  const reading = await prisma.$transaction(async (tx) => {
+    if (pump?.tankId != null && theoreticalDelta !== 0) {
+      const tank = await tx.tank.findUnique({
+        where: { id: pump.tankId },
+      })
+      if (tank) {
+        const current =
+          tank.theoreticalQuantity != null
+            ? Number(tank.theoreticalQuantity)
+            : 0
+        await tx.tank.update({
+          where: { id: pump.tankId },
+          data: { theoreticalQuantity: current + theoreticalDelta },
+        })
+      }
+    }
+    return tx.pumpReading.update({
+      where: { id },
+      data: {
+        openingReading: opening,
+        closingReading: closing,
+      },
+    })
   })
 
   res.status(200).json(toPumpReadingResponse(reading))

@@ -262,6 +262,22 @@ export interface FuelDeliveryResponse {
   fuelTypeName?: string
 }
 
+// --- Tank level readings (dip history) ---
+
+export interface TankLevelReadingCreateBody {
+  quantity: number
+  measuredAt?: string
+}
+
+export interface TankLevelReadingResponse {
+  id: number
+  tankId: number
+  measuredAt: string
+  quantity: number
+  theoreticalQuantityAtTime: number | null
+  createdAt: string
+}
+
 // --- Shifts ---
 
 export interface ShiftCreateBody {

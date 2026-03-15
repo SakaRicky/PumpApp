@@ -7,17 +7,20 @@ const ADMIN_TOKEN = "admin-token"
 const mockFindMany = vi.fn()
 const mockCreate = vi.fn()
 const mockUpdate = vi.fn()
-const mockPumpFindUnique = vi.fn()
+const mockFindFirst = vi.fn()
+const mockFuelTypeFindUnique = vi.fn()
 
 vi.mock("../db.js", () => ({
   prisma: {
     fuelPriceHistory: {
       findMany: (...args: unknown[]) => mockFindMany(...args),
+      findFirst: (...args: unknown[]) => mockFindFirst(...args),
+      findUnique: (...args: unknown[]) => mockFindMany(...args),
       create: (...args: unknown[]) => mockCreate(...args),
       update: (...args: unknown[]) => mockUpdate(...args),
     },
-    pump: {
-      findUnique: (...args: unknown[]) => mockPumpFindUnique(...args),
+    fuelType: {
+      findUnique: (...args: unknown[]) => mockFuelTypeFindUnique(...args),
     },
   },
 }))
@@ -54,8 +57,9 @@ describe("Fuel prices API (integration)", () => {
     mockFindMany.mockResolvedValue([
       {
         id: 1,
-        pumpId: 1,
+        fuelTypeId: 1,
         pricePerUnit: 1.5,
+        purchasePricePerUnit: null,
         effectiveFrom: new Date("2025-01-01T00:00:00.000Z"),
         effectiveTo: null,
       },
@@ -68,7 +72,7 @@ describe("Fuel prices API (integration)", () => {
 
     expect(res.body[0]).toMatchObject({
       id: 1,
-      pumpId: 1,
+      fuelTypeId: 1,
       pricePerUnit: 1.5,
     })
   })
@@ -77,7 +81,7 @@ describe("Fuel prices API (integration)", () => {
     const res = await request(app)
       .post("/api/fuel-prices")
       .set("Authorization", "Bearer not-admin")
-      .send({ pumpId: 1, pricePerUnit: 1.5, effectiveFrom: "2025-01-01" })
+      .send({ fuelTypeId: 1, pricePerUnit: 1.5, effectiveFrom: "2025-01-01" })
       .expect(403)
 
     expect(res.body.error).toBe("Forbidden")
@@ -85,16 +89,18 @@ describe("Fuel prices API (integration)", () => {
   })
 
   it("POST /api/fuel-prices creates record with admin token", async () => {
-    mockPumpFindUnique.mockResolvedValue({
+    mockFuelTypeFindUnique.mockResolvedValue({
       id: 1,
-      name: "Pump 1",
+      name: "Diesel",
       active: true,
     })
     mockFindMany.mockResolvedValue([])
+    mockFindFirst.mockResolvedValue(null)
     mockCreate.mockResolvedValue({
       id: 1,
-      pumpId: 1,
+      fuelTypeId: 1,
       pricePerUnit: 1.5,
+      purchasePricePerUnit: null,
       effectiveFrom: new Date("2025-01-01T00:00:00.000Z"),
       effectiveTo: null,
     })
@@ -102,12 +108,12 @@ describe("Fuel prices API (integration)", () => {
     const res = await request(app)
       .post("/api/fuel-prices")
       .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
-      .send({ pumpId: 1, pricePerUnit: 1.5, effectiveFrom: "2025-01-01" })
+      .send({ fuelTypeId: 1, pricePerUnit: 1.5, effectiveFrom: "2025-01-01" })
       .expect(201)
 
     expect(res.body).toMatchObject({
       id: 1,
-      pumpId: 1,
+      fuelTypeId: 1,
       pricePerUnit: 1.5,
     })
   })

@@ -3,6 +3,10 @@ import { Router } from "express"
 import { requireAuth, requireAdmin } from "../middleware/auth.js"
 import { list, create, update } from "../controllers/tankController.js"
 import { create as createDelivery } from "../controllers/fuelDeliveryController.js"
+import {
+  listByTank as listLevelReadings,
+  create as createLevelReading,
+} from "../controllers/tankLevelReadingController.js"
 
 const tanksRouter = Router()
 
@@ -16,6 +20,12 @@ tanksRouter.use(requireAuth)
 
 tanksRouter.get("/", asyncHandler(list))
 tanksRouter.post("/", requireAdmin, asyncHandler(create))
+tanksRouter.get("/:tankId/level-readings", asyncHandler(listLevelReadings))
+tanksRouter.post(
+  "/:tankId/level-readings",
+  requireAdmin,
+  asyncHandler(createLevelReading)
+)
 tanksRouter.patch("/:id", requireAdmin, asyncHandler(update))
 tanksRouter.post(
   "/:tankId/deliveries",

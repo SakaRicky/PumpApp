@@ -86,12 +86,25 @@ Represents kinds of fuel; distinct from shop Product.
 - `name` (e.g. Tank 1)
 - `capacity` (decimal, optional)
 - `theoreticalQuantity` (decimal, optional) — system-calculated from previous quantity, fuel sold (from pump readings), and deliveries
-- `actualQuantity` (decimal, optional) — physically measured (dip/sensor)
+- `actualQuantity` (decimal, optional) — physically measured (dip/sensor); reflects the **latest** dip when using level-readings API
 - `actualQuantityRecordedAt` (timestamp, optional)
 - `active` (boolean)
 - timestamps
+- relation: `levelReadings` → TankLevelReading[]
 
 One fuel type per tank; multiple pumps may share a tank.
+
+#### TankLevelReading
+
+- `id` (PK)
+- `tankId` → Tank
+- `measuredAt` (timestamp)
+- `quantity` (decimal) — actual level at time of dip
+- `theoreticalQuantityAtTime` (decimal, optional) — snapshot of tank theoretical when dip was recorded
+- `createdAt` (timestamp)
+- index on `(tankId, measuredAt)`
+
+Append-only dip history. Each row is one physical measurement (dip). The tank’s `actualQuantity` and `actualQuantityRecordedAt` are updated to the latest reading when a level reading is created.
 
 #### FuelDelivery
 
