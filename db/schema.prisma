@@ -184,6 +184,7 @@ model FuelPriceHistory {
   id            Int      @id @default(autoincrement())
   fuelTypeId    Int
   pricePerUnit  Decimal  @db.Decimal(10, 2)
+  purchasePricePerUnit Decimal? @db.Decimal(10, 2)
   effectiveFrom DateTime
   effectiveTo   DateTime?
 

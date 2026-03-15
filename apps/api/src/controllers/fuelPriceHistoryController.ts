@@ -15,6 +15,10 @@ const toFuelPriceResponse = (row: FuelPriceRow): FuelPriceResponse => ({
   id: row.id,
   fuelTypeId: row.fuelTypeId,
   pricePerUnit: Number(row.pricePerUnit),
+  purchasePricePerUnit:
+    row.purchasePricePerUnit !== null
+      ? Number(row.purchasePricePerUnit)
+      : null,
   effectiveFrom: row.effectiveFrom.toISOString(),
   effectiveTo: row.effectiveTo ? row.effectiveTo.toISOString() : null,
 })
@@ -98,7 +102,13 @@ const create = async (req: Request, res: Response): Promise<void> => {
     })
   }
 
-  const { fuelTypeId, pricePerUnit, effectiveFrom, effectiveTo } = parsed.data
+  const {
+    fuelTypeId,
+    pricePerUnit,
+    purchasePricePerUnit,
+    effectiveFrom,
+    effectiveTo,
+  } = parsed.data
 
   const fuelType = await prisma.fuelType.findUnique({ where: { id: fuelTypeId } })
   if (!fuelType) {
@@ -114,6 +124,8 @@ const create = async (req: Request, res: Response): Promise<void> => {
     data: {
       fuelTypeId,
       pricePerUnit,
+      purchasePricePerUnit:
+        purchasePricePerUnit !== undefined ? purchasePricePerUnit : null,
       effectiveFrom: fromDate,
       effectiveTo: toDate,
     },
@@ -158,6 +170,9 @@ const update = async (req: Request, res: Response): Promise<void> => {
     data: {
       ...(parsed.data.pricePerUnit !== undefined && {
         pricePerUnit: parsed.data.pricePerUnit,
+      }),
+      ...(parsed.data.purchasePricePerUnit !== undefined && {
+        purchasePricePerUnit: parsed.data.purchasePricePerUnit,
       }),
       effectiveFrom: fromDate,
       effectiveTo: toDate,

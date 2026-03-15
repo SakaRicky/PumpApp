@@ -147,12 +147,14 @@ export interface PurchasePriceCreateResponse extends PurchasePriceResponse {
 export interface FuelPriceCreateBody {
   fuelTypeId: number
   pricePerUnit: number
+  purchasePricePerUnit?: number
   effectiveFrom: string
   effectiveTo?: string
 }
 
 export interface FuelPriceUpdateBody {
   pricePerUnit?: number
+  purchasePricePerUnit?: number
   effectiveFrom?: string
   effectiveTo?: string
 }
@@ -161,6 +163,7 @@ export interface FuelPriceResponse {
   id: number
   fuelTypeId: number
   pricePerUnit: number
+  purchasePricePerUnit: number | null
   effectiveFrom: string
   effectiveTo: string | null
 }

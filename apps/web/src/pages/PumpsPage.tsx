@@ -98,6 +98,7 @@ export const PumpsPage = () => {
   const [priceForm, setPriceForm] = useState<FuelPriceCreateBody>({
     fuelTypeId: 0,
     pricePerUnit: 0,
+    purchasePricePerUnit: 0,
     effectiveFrom: "",
   })
 
@@ -260,6 +261,7 @@ export const PumpsPage = () => {
       setPriceForm({
         fuelTypeId: fuelType.id,
         pricePerUnit: 0,
+        purchasePricePerUnit: 0,
         effectiveFrom: "",
       })
     } catch (e) {
@@ -288,12 +290,20 @@ export const PumpsPage = () => {
       setPriceError(t("products.priceHistory.invalidPrice"))
       return
     }
+    if (
+      priceForm.purchasePricePerUnit !== undefined &&
+      priceForm.purchasePricePerUnit < 0
+    ) {
+      setPriceError(t("products.priceHistory.invalidPrice"))
+      return
+    }
     setPricesLoading(true)
     setPriceError(null)
     try {
       await api.createFuelPrice({
         fuelTypeId: priceDialogFuelType.id,
         pricePerUnit: priceForm.pricePerUnit,
+        purchasePricePerUnit: priceForm.purchasePricePerUnit,
         effectiveFrom: priceForm.effectiveFrom,
       })
       const res = await api.getFuelPrices()
@@ -303,6 +313,7 @@ export const PumpsPage = () => {
       setPriceForm((prev) => ({
         ...prev,
         pricePerUnit: 0,
+        purchasePricePerUnit: 0,
         effectiveFrom: "",
       }))
       showAlert(t("pumps.messages.fuelPriceSaved"), "success")
@@ -627,9 +638,8 @@ export const PumpsPage = () => {
                     <TableRow>
                       <TableHead>{t("pumps.table.id")}</TableHead>
                       <TableHead>{t("pumps.table.name")}</TableHead>
-                      <TableHead>
-                        {t("products.priceHistory.purchasePrice")}
-                      </TableHead>
+                      <TableHead>{t("products.table.sellingPrice")}</TableHead>
+                      <TableHead>{t("products.table.purchasePrice")}</TableHead>
                       <TableHead>{t("pumps.table.active")}</TableHead>
                       <TableHead className="w-[260px]">
                         {t("products.actions")}
@@ -646,6 +656,11 @@ export const PumpsPage = () => {
                           <TableCell>
                             {latestPrice
                               ? latestPrice.pricePerUnit.toFixed(2)
+                              : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {latestPrice?.purchasePricePerUnit != null
+                              ? latestPrice.purchasePricePerUnit.toFixed(2)
                               : "—"}
                           </TableCell>
                           <TableCell>
@@ -940,7 +955,7 @@ export const PumpsPage = () => {
                 <h4 className="text-sm font-medium">
                   {t("products.priceHistory.addPrice")}
                 </h4>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="pump-price">
                       {t("products.priceHistory.purchasePrice")}
@@ -955,6 +970,24 @@ export const PumpsPage = () => {
                         setPriceForm((prev) => ({
                           ...prev,
                           pricePerUnit: Number(e.target.value),
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pump-purchase-price">
+                      {t("products.table.purchasePrice")}
+                    </Label>
+                    <Input
+                      id="pump-purchase-price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={priceForm.purchasePricePerUnit ?? 0}
+                      onChange={(e) =>
+                        setPriceForm((prev) => ({
+                          ...prev,
+                          purchasePricePerUnit: Number(e.target.value),
                         }))
                       }
                     />
@@ -1005,7 +1038,10 @@ export const PumpsPage = () => {
                           {t("products.priceHistory.effectiveAt")}
                         </TableHead>
                         <TableHead>
-                          {t("products.priceHistory.purchasePrice")}
+                          {t("products.table.sellingPrice")}
+                        </TableHead>
+                        <TableHead>
+                          {t("products.table.purchasePrice")}
                         </TableHead>
                         <TableHead>effectiveTo</TableHead>
                       </TableRow>
@@ -1017,6 +1053,11 @@ export const PumpsPage = () => {
                             {new Date(row.effectiveFrom).toLocaleDateString()}
                           </TableCell>
                           <TableCell>{row.pricePerUnit.toFixed(2)}</TableCell>
+                          <TableCell>
+                            {row.purchasePricePerUnit !== null
+                              ? row.purchasePricePerUnit.toFixed(2)
+                              : "—"}
+                          </TableCell>
                           <TableCell>
                             {row.effectiveTo
                               ? new Date(row.effectiveTo).toLocaleDateString()

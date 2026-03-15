@@ -3,6 +3,7 @@ import { z } from "zod"
 export const fuelPriceCreateSchema = z.object({
   fuelTypeId: z.number().int().positive(),
   pricePerUnit: z.number().nonnegative(),
+  purchasePricePerUnit: z.number().nonnegative().optional(),
   effectiveFrom: z
     .string()
     .datetime()
@@ -17,6 +18,7 @@ export const fuelPriceCreateSchema = z.object({
 
 export const fuelPriceUpdateSchema = z.object({
   pricePerUnit: z.number().nonnegative().optional(),
+  purchasePricePerUnit: z.number().nonnegative().optional(),
   effectiveFrom: z
     .string()
     .datetime()
