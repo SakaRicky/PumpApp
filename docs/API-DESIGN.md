@@ -139,31 +139,40 @@ Backend computes `volume = closingReading - openingReading` and, together with f
 ### Cash hand-ins
 
 - `GET /api/shifts/:id/cash-handins` — list cash hand-ins for a shift.
-- `POST /api/shifts/:id/cash-handins` (ADMIN) — record cash hand-in.
+- `POST /api/shifts/:id/cash-handins` (**ADMIN**) — record cash hand-in.
 
 Body (conceptually):
 
 ```json
 {
-  "workerId": "optional worker reference",
+  "workerId": 1,
   "amount": 1000.0
 }
 ```
 
+- **`workerId` is required** — which worker handed in this amount (audit). See [DOMAIN-DECISIONS.md](DOMAIN-DECISIONS.md) and [OPERATIONS.md](OPERATIONS.md).
+
 ### Shift reconciliation summary
 
-- `GET /api/shifts/:id/reconciliation` — get shift reconciliation summary.
-- `POST /api/shifts/:id/reconciliation` (ADMIN) — create summary for a shift.
-- `PATCH /api/shifts/:id/reconciliation` (ADMIN) — update summary fields.
+- `GET /api/shifts/:id/reconciliation` — get shift reconciliation summary (404 if none).
+- `POST /api/shifts/:id/reconciliation` (**ADMIN**) — create summary for a shift.
+- `PATCH /api/shifts/:id/reconciliation` (**ADMIN**) — update summary fields.
 
-Fields include:
+** Preconditions** (product rules):
 
-- `shopSalesSource` (SHIFT_SUMMARY_ENTRY | TRANSACTIONAL_SYSTEM_TOTAL | MANUAL),
+- Shift must be **`CLOSED`** to create or update a reconciliation summary.
+- On successful **create** or **update**, the API sets the shift status to **`RECONCILED`**.
+
+**Fields** (conceptual; exact JSON names follow shared DTOs):
+
+- `shopSalesSource` (`SHIFT_SUMMARY_ENTRY` | `TRANSACTIONAL_SYSTEM_TOTAL` | `MANUAL`),
 - shop totals (`systemShopSalesTotal`, `manualShopSalesTotal`, `effectiveShopSalesTotal`, `manualShopSalesReason`),
-- `fuelSalesTotal` (computed from volume + price, or overridden),
-- `cashHandedTotal` (sum of `CashHandIn` or overridden),
-- `discrepancyAmount` (derived),
-- `reviewedBy` and `notes`.
+- `fuelSalesTotal` — default from computed volume × price; **admin may override** with reason (see DOMAIN-DECISIONS),
+- `cashHandedTotal` — default **sum of `CashHandIn`** for the shift; **admin may override** with audit note,
+- `discrepancyAmount` — **read-only / server-computed** on write: `(effectiveShopSalesTotal + fuelSalesTotal) - cashHandedTotal` (clients must not be the source of truth for this value),
+- `reviewedBy` and `notes` (also used for override explanations when dedicated columns are not present).
+
+**UI**: treat **positive** discrepancy as **short** (less cash than expected) and **negative** as **over** (more cash than expected); see [OPERATIONS.md](OPERATIONS.md).
 
 ### Fixed costs
 

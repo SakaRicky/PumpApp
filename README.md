@@ -124,6 +124,7 @@ For full workflow parity (including the same Node/Postgres environment), you can
 - `docs/DATABASE.md`: entities, relationships, indexes
 - `docs/IMPLEMENTATION-ORDER.md`: step-by-step build order
 - `docs/DOMAIN-DECISIONS.md`: resolved domain decisions
+- `docs/OPERATIONS.md`: real-world cadence (daily reconciliation, weekly shop counts, cash accountability)
 - `docs/FUEL-TRACKING.md`: fuel tracking (tanks, deliveries, theoretical vs actual)
 
 ### Status

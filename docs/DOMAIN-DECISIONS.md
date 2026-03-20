@@ -8,7 +8,7 @@ These decisions are **finalized** for PumpApp / PumpPro. Agents and developers m
 - One shift can have **many workers** via a junction table `ShiftWorker` (`shiftId`, `workerId`).
 - There is exactly **one** `ShiftReconciliationSummary` per shift (1:1 with `Shift`).
 - **Daily reports** are aggregations of shift data for a calendar day – there is no separate per-day summary table.
-- `CashHandIn` and `PumpReading` records **belong to a shift**; `CashHandIn` may optionally reference a specific `Worker`.
+- `CashHandIn` and `PumpReading` records **belong to a shift**; each `CashHandIn` **must** reference the `Worker` who handed in that amount (audit and accountability). See [OPERATIONS.md](OPERATIONS.md) for daily cash vs weekly shop counts.
 
 ### Fuel sales money
 
@@ -36,9 +36,10 @@ These decisions are **finalized** for PumpApp / PumpPro. Agents and developers m
 Shop sales totals used for reconciliation can come from multiple sources, but the summary must always know **which** source was used.
 
 - `shopSalesSource` is an enum with values:
-  - `SHIFT_SUMMARY_ENTRY` — admin-entered shift-end shop total.
+  - `SHIFT_SUMMARY_ENTRY` — shop total **derived from** the shift’s `ShiftProductStock` snapshot (`soldQty × sellingPrice` per line, summed), when that snapshot is the source of truth for the reconciliation line.
   - `TRANSACTIONAL_SYSTEM_TOTAL` — sum of recorded `ShopSale` / `ShopSaleItem` transactions.
-  - `MANUAL` — exceptional/manual fallback total when neither of the above applies.
+  - `MANUAL` — owner-entered total when the snapshot is not used or does not reflect reality for that shift (e.g. weekly physical count not aligned to this shift); **should** include `manualShopSalesReason`.
+- Phase 1 **supports both** `SHIFT_SUMMARY_ENTRY` and `MANUAL` so daily reconciliation can proceed even when physical shop counts follow a **weekly** cadence off-system; see [OPERATIONS.md](OPERATIONS.md).
 - The reconciliation summary stores:
   - `shopSalesSource`,
   - `systemShopSalesTotal` (when `TRANSACTIONAL_SYSTEM_TOTAL`),
@@ -56,10 +57,10 @@ PumpApp is **reconciliation-first**, not POS-first. It supports a phased adoptio
 - Shop sales **are not recorded per transaction** during the shift.
 - At the **end of each shift**, the owner/admin uses the system as a **digital replacement for the existing paper/Excel sheet** by entering per-product stock counts (opening and closing) for that shift.
 - Reconciliation for a shift is based on:
-  - shift-end shop total (source: `SHIFT_SUMMARY_ENTRY`),
-  - fuel volume from pump readings and fuel price from `FuelPriceHistory`,
-  - cash handed in (`CashHandIn` records),
-  - computed discrepancy.
+  - shop total from **`SHIFT_SUMMARY_ENTRY`** (derived from `ShiftProductStock` when used) or **`MANUAL`** (owner-entered with reason when needed),
+  - fuel revenue from pump readings and fuel price from `FuelPriceHistory` (overridable by admin with reason),
+  - cash total defaulting to **sum of `CashHandIn`** (overridable by admin with audit note),
+  - **server-computed** discrepancy.
 - This reflects the real-world constraint that the owner **does not fully trust counter staff** yet and prefers to control data entry at shift end.
 
 #### Phase 2 — Transactional sales (future enhancement)
@@ -80,6 +81,20 @@ PumpApp is **reconciliation-first**, not POS-first. It supports a phased adoptio
 - Phase 1 uses `SHIFT_SUMMARY_ENTRY` (and `MANUAL` when needed), with no requirement to create `ShopSale` rows.
 - Phase 2 adds transactional capture and inventory coupling **without breaking** existing data.
 
+### Cash hand-in and shift reconciliation (Phase 1)
+
+- **Who records cash hand-ins**: **`ADMIN` only** (API and UI).
+- **Worker on each hand-in**: **`workerId` is required** on every `CashHandIn` (which worker handed in how much).
+- **When reconciliation exists**: Create or update `ShiftReconciliationSummary` only when the shift status is **`CLOSED`** (not `OPEN` / `PLANNED`).
+- **Shift status after reconciliation**: When a reconciliation summary is **successfully created or updated**, the shift **automatically** transitions to **`RECONCILED`**.
+- **Cash total on the summary**: Default **`cashHandedTotal`** = **sum** of all `CashHandIn.amount` for that shift. Admins may **override** the stored total (e.g. known physical count vs recorded hand-ins); overrides **must** carry an audit trail—at minimum **`notes`** or a dedicated reason/source field so reports can distinguish **sum-of-hand-ins** vs **override**.
+- **Fuel total on the summary**: Default from **computed** fuel revenue (pump readings × applicable `FuelPriceHistory`). Admins may **override** `fuelSalesTotal` with a **note / reason**, consistent with [Fuel sales money](#fuel-sales-money).
+- **Discrepancy**: Always **server-derived**, never client-supplied:
+  - `discrepancyAmount = (effectiveShopSalesTotal + fuelSalesTotal) - cashHandedTotal`
+  - **Positive** discrepancy ⇒ cash handed in **less** than expected (**short**).
+  - **Negative** discrepancy ⇒ cash handed in **more** than expected (**over**).
+- **One summary per shift**: At most one `ShiftReconciliationSummary` row per `shiftId` (1:1).
+
 ### Summary
 
 - Reconciliation is **per shift**, not per abstract day.
@@ -87,3 +102,4 @@ PumpApp is **reconciliation-first**, not POS-first. It supports a phased adoptio
 - Fuel is a **separate domain** from shop products (FuelType, Tank, deliveries, theoretical vs actual quantity); see [FUEL-TRACKING.md](FUEL-TRACKING.md).
 - Shop totals always have an explicit **source** and optional explanation.
 - The system starts as an **owner-driven, shift-end reconciliation tool** and later grows into a richer transactional system, without schema churn.
+- **Operational cadence** (daily cash collection vs weekly shop counts) is described in [OPERATIONS.md](OPERATIONS.md).

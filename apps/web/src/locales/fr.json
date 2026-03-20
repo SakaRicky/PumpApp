@@ -143,6 +143,7 @@
     "editShift": "Modifier le poste",
     "createShift": "Créer un poste",
     "edit": "Modifier",
+    "reconcile": "Réconcilier",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "noShifts": "Aucun poste pour l'instant.",
@@ -211,7 +212,55 @@
   },
   "reconciliation": {
     "title": "Réconciliation",
-    "intro": "Réconciliation des postes et remise de caisse."
+    "intro": "Fermez d'abord le poste, enregistrez les remises de caisse par employé, puis enregistrez la réconciliation. Le total boutique peut suivre le stock ou un total manuel (ex. hebdomadaire).",
+    "adminOnly": "Seuls les administrateurs peuvent enregistrer les remises de caisse et la réconciliation.",
+    "selectShift": "Poste",
+    "shiftPlaceholder": "Choisir un poste fermé",
+    "short": "Manque (moins d'argent qu'attendu)",
+    "over": "Surplus (plus d'argent qu'attendu)",
+    "balanced": "Équilibré",
+    "previewDiscrepancy": "Écart prévu",
+    "hints": {
+      "title": "Indicateurs calculés",
+      "shopFromStock": "Boutique depuis le stock du poste",
+      "fuelComputed": "Carburant depuis les relevés pompes",
+      "sumCashHandIns": "Somme des remises de caisse"
+    },
+    "handIns": {
+      "title": "Remises de caisse",
+      "worker": "Employé",
+      "amount": "Montant",
+      "recordedAt": "Enregistré",
+      "empty": "Aucune remise pour l'instant.",
+      "add": "Ajouter une remise"
+    },
+    "form": {
+      "title": "Synthèse de réconciliation",
+      "existingSummary": "Une synthèse existe déjà ; l'enregistrement la mettra à jour.",
+      "shopSource": "Source du total boutique",
+      "sourceStock": "Depuis le stock du poste (SHIFT_SUMMARY_ENTRY)",
+      "sourceManual": "Total manuel (MANUAL)",
+      "manualTotal": "Total boutique manuel",
+      "manualReason": "Motif",
+      "overrideFuel": "Remplacer le total carburant (motif obligatoire)",
+      "overrideCash": "Remplacer le total caisse (motif obligatoire)",
+      "amount": "Montant",
+      "reason": "Motif",
+      "notes": "Notes",
+      "saveCreate": "Enregistrer la réconciliation",
+      "saveUpdate": "Mettre à jour la réconciliation"
+    },
+    "errors": {
+      "saveFailed": "Échec de l'enregistrement de la réconciliation.",
+      "workerRequired": "Sélectionnez un employé.",
+      "amountInvalid": "Saisissez un montant valide.",
+      "handInFailed": "Échec de l'enregistrement de la remise.",
+      "manualShopInvalid": "Saisissez un total boutique manuel valide.",
+      "manualReasonRequired": "Un motif est obligatoire pour un total manuel.",
+      "fuelOverrideInvalid": "Saisissez un montant de remplacement carburant valide.",
+      "cashOverrideInvalid": "Saisissez un montant de remplacement caisse valide.",
+      "overrideReasonRequired": "Un motif est obligatoire pour remplacer le carburant ou la caisse."
+    }
   },
   "products": {
     "title": "Produits",

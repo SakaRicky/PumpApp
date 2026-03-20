@@ -11,6 +11,7 @@ This document mirrors the high-level plan and turns it into a checklist.
 - [ ] Add `docs/API-DESIGN.md`.
 - [ ] Add `docs/DATABASE.md`.
 - [ ] Add `docs/DOMAIN-DECISIONS.md` (this file is already created).
+- [ ] Add `docs/OPERATIONS.md` (real-world cadence: daily reconciliation, weekly shop counts).
 - [ ] Add `docs/IMPLEMENTATION-ORDER.md` (this file).
 - [ ] Create/update `docs/FUEL-TRACKING.md` and align DOMAIN-DECISIONS and DATABASE with the fuel-tracking model (FuelType, Tank, deliveries, theoretical vs actual).
 

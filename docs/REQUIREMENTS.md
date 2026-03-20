@@ -126,7 +126,7 @@ The system must allow the admin to:
 
 ### 8. Data & domain concepts
 
-See `docs/DATABASE.md` and `docs/GLOSSARY.md` for the data model. Major entities:
+See `docs/DATABASE.md`, `docs/GLOSSARY.md`, and `docs/OPERATIONS.md` (field operations cadence). Major entities:
 
 - `User`, `Worker`, `Product`, `Category`, `PurchasePriceHistory`.
 - `FuelType`, `Tank`, `FuelDelivery`; `Pump` (optional `tankId`), `PumpReading`, `Shift`, `ShiftWorker`.
@@ -139,7 +139,7 @@ See `docs/DATABASE.md` and `docs/GLOSSARY.md` for the data model. Major entities
 - **Shop sale (Phase 1)**: shift runs → owner/admin enters per-product opening/closing stock for the shift → system derives quantity sold and shift-end shop total → reconciliation uses that.
 - **Shop sale (Phase 2)**: per-transaction sales → totals derived automatically.
 - **Pump reading**: select pump & shift → enter opening and closing readings → system computes volume and revenue.
-- **Cash hand-in & reconciliation**: worker hands in cash → admin records hand-in → system aggregates expected totals (shop + fuel) vs cash → discrepancy shown.
+- **Cash hand-in & reconciliation**: worker hands in cash → **admin** records each hand-in **with worker + amount** → system aggregates expected totals (shop + fuel) vs cash → **derived** discrepancy (short vs over). Reconciliation is typically **daily per closed shift**; **physical shop counts** may follow a **weekly** cadence while cash is collected daily—see `docs/OPERATIONS.md` and `docs/DOMAIN-DECISIONS.md`.
 - **Monthly reporting**: select period → system aggregates sales, cash, discrepancies, fixed costs → compute profit.
 
 ### 10. Auditability

@@ -10,6 +10,7 @@ It is based on the implementation plans in `docs/IMPLEMENTATION-ORDER.md` and `p
 1. **Open the key docs** (read-only reference):
    - Product: `/Users/rickysaka/Documents/PumpApp/docs/REQUIREMENTS.md`.
    - Domain decisions: `/Users/rickysaka/Documents/PumpApp/docs/DOMAIN-DECISIONS.md`.
+   - Operations cadence: `/Users/rickysaka/Documents/PumpApp/docs/OPERATIONS.md`.
    - Database: `/Users/rickysaka/Documents/PumpApp/docs/DATABASE.md`.
    - API: `/Users/rickysaka/Documents/PumpApp/docs/API-DESIGN.md`.
    - Implementation checklist: `/Users/rickysaka/Documents/PumpApp/docs/IMPLEMENTATION-ORDER.md`.

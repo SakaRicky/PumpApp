@@ -61,6 +61,7 @@ See `docs/DATABASE.md` for details. At a high level:
   - cash handed in (`CashHandIn`),
   - reconciliation summary (`ShiftReconciliationSummary`).
 - Daily, weekly, and monthly reports are **queries/aggregations** over shifts, not separate stored summaries.
+- **Operational cadence** (e.g. daily cash collection vs weekly physical shop counts) is documented in `docs/OPERATIONS.md`.
 
 ### Fuel revenue computation
 
@@ -85,4 +86,4 @@ See `docs/DATABASE.md` for details. At a high level:
 
 - Historical data is **append-only** where important (e.g. `PurchasePriceHistory`, `FuelPriceHistory`).
 - Reconciliation summaries and pump readings are never hard-deleted.
-- Admin overrides (e.g. fuel revenue override) must carry reasons and are clearly marked in the data model.
+- Admin overrides (e.g. fuel revenue, cash total on reconciliation summary) must carry reasons and are clearly marked in the data model or `notes` (see `docs/DOMAIN-DECISIONS.md`).

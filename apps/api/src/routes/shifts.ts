@@ -17,6 +17,15 @@ import {
   listByShift as listPumpReadings,
   createForShift as createPumpReadingForShift,
 } from "../controllers/pumpReadingController.js"
+import {
+  listByShift as listCashHandIns,
+  createForShift as createCashHandInForShift,
+} from "../controllers/cashHandInController.js"
+import {
+  getByShift as getReconciliation,
+  createForShift as createReconciliationForShift,
+  updateForShift as updateReconciliationForShift,
+} from "../controllers/reconciliationController.js"
 
 const shiftsRouter = Router()
 
@@ -63,6 +72,33 @@ shiftsRouter.post(
   "/:id/pump-readings",
   requireAdmin,
   asyncHandler(createPumpReadingForShift)
+)
+
+shiftsRouter.get(
+  "/:id/cash-handins",
+  requireAdmin,
+  asyncHandler(listCashHandIns)
+)
+shiftsRouter.post(
+  "/:id/cash-handins",
+  requireAdmin,
+  asyncHandler(createCashHandInForShift)
+)
+
+shiftsRouter.get(
+  "/:id/reconciliation",
+  requireAdmin,
+  asyncHandler(getReconciliation)
+)
+shiftsRouter.post(
+  "/:id/reconciliation",
+  requireAdmin,
+  asyncHandler(createReconciliationForShift)
+)
+shiftsRouter.patch(
+  "/:id/reconciliation",
+  requireAdmin,
+  asyncHandler(updateReconciliationForShift)
 )
 
 export { shiftsRouter }

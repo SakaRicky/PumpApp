@@ -171,12 +171,12 @@ Volume is derived as `closingReading - openingReading`.
 
 - `id` (PK)
 - `shiftId` → `Shift`
-- `workerId` → `Worker` (nullable)
+- `workerId` → `Worker` (**required** for audit: which worker handed in this amount)
 - `amount` (decimal)
 - `recordedById` → `User`
 - `recordedAt` (timestamp)
 
-Represents cash physically handed in for a shift.
+Represents cash physically handed in for a shift. Recording is **ADMIN-only** per [DOMAIN-DECISIONS.md](DOMAIN-DECISIONS.md).
 
 #### ShiftReconciliationSummary
 
@@ -187,9 +187,11 @@ Represents cash physically handed in for a shift.
 - `manualShopSalesTotal` (decimal, nullable)
 - `effectiveShopSalesTotal` (decimal)
 - `manualShopSalesReason` (text, nullable)
-- `fuelSalesTotal` (decimal) — computed from pump readings + fuel prices, or overridden
-- `cashHandedTotal` (decimal)
-- `discrepancyAmount` (decimal) — derived as `(effectiveShopSalesTotal + fuelSalesTotal) - cashHandedTotal`
+- `fuelSalesTotal` (decimal) — default from computed pump revenue; may reflect an **admin override**
+- `fuelSalesOverrideReason` (text, optional) — when set, documents why `fuelSalesTotal` differs from the computed value
+- `cashHandedTotal` (decimal) — default **sum of `CashHandIn`** for the shift; may reflect an **admin override**
+- `cashHandedTotalOverrideReason` (text, optional) — when set, documents why `cashHandedTotal` differs from the sum of hand-ins
+- `discrepancyAmount` (decimal) — **always derived** on the server: `(effectiveShopSalesTotal + fuelSalesTotal) - cashHandedTotal` (positive ⇒ short, negative ⇒ over)
 - `reviewedById` → `User` (nullable)
 - `notes` (text, nullable)
 - timestamps

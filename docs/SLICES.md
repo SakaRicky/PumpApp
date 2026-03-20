@@ -1,6 +1,6 @@
 ## PumpApp Feature Slices (S1–S8)
 
-This document summarizes the vertical feature slices for PumpApp, based on the agent workflow plan (`pumpapp_agent_workflow_plan_58c88a44.plan.md`).
+This document summarizes the vertical feature slices for PumpApp, based on the agent workflow plan (`pumpapp_agent_workflow_plan_58c88a44.plan.md`). For how reconciliation and shop counts fit **daily vs weekly** operations in the field, see [OPERATIONS.md](OPERATIONS.md).
 
 Each slice is intended to be implemented as a **vertical slice**: schema (if needed) → migrations → shared types/Zod → API → tests → UI.
 
@@ -97,16 +97,23 @@ Each slice is intended to be implemented as a **vertical slice**: schema (if nee
 
 - **Scope**:
   - `CashHandIn` and `ShiftReconciliationSummary`.
-  - Phase 1 reconciliation using **shift-end shop total**, fuel totals, cash totals, and discrepancy.
+  - Phase 1 reconciliation: **shop line** + **fuel line** + **cash line** + **derived discrepancy**, aligned with [DOMAIN-DECISIONS.md](DOMAIN-DECISIONS.md) and [OPERATIONS.md](OPERATIONS.md).
+- **Product rules** (see DOMAIN-DECISIONS / OPERATIONS):
+  - Reconciliation **create/update** only when shift status is **`CLOSED`**; successful save sets shift to **`RECONCILED`**.
+  - **Shop total**: support **`SHIFT_SUMMARY_ENTRY`** (from `ShiftProductStock` × selling prices) **and** **`MANUAL`** (with reason) for weekly-count realities.
+  - **Fuel total**: use S4 computation; **admin override** with reason.
+  - **Cash total**: default **sum of `CashHandIn`**; **admin override** with audit note (and ideally a machine-readable “source” if schema adds it).
+  - **`CashHandIn`**: **`workerId` required**; recording **ADMIN-only**.
+  - **`discrepancyAmount`**: always **server-derived**; UI labels **short** vs **over** (sign: positive = short, negative = over).
 - **Layers**:
-  - **Schema**: `CashHandIn`, `ShiftReconciliationSummary` with shop sales source fields.
+  - **Schema**: `CashHandIn`, `ShiftReconciliationSummary` (optional extra fields later for cash/fuel override audit, if not using `notes` only).
   - **Shared**: DTOs and Zod schemas for cash hand-in and reconciliation.
   - **API**: cash hand-in endpoints; reconciliation endpoints; discrepancy computation using:
-    - shop total (SHIFT_SUMMARY_ENTRY or MANUAL),
-    - fuelTotals from S4,
-    - cash handed in.
-  - **Tests**: discrepancy formula; `shopSalesSource` logic; override paths.
-  - **UI**: per-shift reconciliation page (enter shop total, view fuel & cash totals, see discrepancy).
+    - shop total (`SHIFT_SUMMARY_ENTRY` or `MANUAL`),
+    - fuel totals from S4,
+    - cash (sum of hand-ins or overridden total).
+  - **Tests**: discrepancy formula and sign; `shopSalesSource` logic; override paths; CLOSED-only guard; transition to `RECONCILED`.
+  - **UI**: per-shift reconciliation (shop, fuel, cash, discrepancy with short/over presentation); list/add cash hand-ins with worker.
 
 ---
 

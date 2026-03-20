@@ -378,44 +378,46 @@ export interface PumpReadingResponse {
 // --- Cash hand-in ---
 
 export interface CashHandInCreateBody {
-  workerId?: number
+  workerId: number
   amount: number
 }
 
 export interface CashHandInResponse {
   id: number
   shiftId: number
-  workerId: number | null
+  workerId: number
   amount: number
   recordedById: number
   recordedAt: string
 }
 
-// --- Shift reconciliation summary ---
+// --- Shift reconciliation summary (server computes discrepancy & effective totals) ---
 
-export interface ReconciliationSummaryCreateBody {
-  shopSalesSource: ShopSalesSource
-  systemShopSalesTotal?: number
+export type Phase1ShopSalesSource =
+  | typeof ShopSalesSource.SHIFT_SUMMARY_ENTRY
+  | typeof ShopSalesSource.MANUAL
+
+export interface ReconciliationSummaryWriteCreateBody {
+  shopSalesSource: Phase1ShopSalesSource
   manualShopSalesTotal?: number
-  effectiveShopSalesTotal: number
-  manualShopSalesReason?: string
-  fuelSalesTotal: number
-  cashHandedTotal: number
-  discrepancyAmount: number
-  notes?: string
+  manualShopSalesReason?: string | null
+  fuelSalesTotal?: number
+  fuelSalesOverrideReason?: string | null
+  cashHandedTotal?: number
+  cashHandedTotalOverrideReason?: string | null
+  notes?: string | null
 }
 
-export interface ReconciliationSummaryUpdateBody {
-  shopSalesSource?: ShopSalesSource
-  systemShopSalesTotal?: number
+export interface ReconciliationSummaryWriteUpdateBody {
+  shopSalesSource?: Phase1ShopSalesSource
   manualShopSalesTotal?: number
-  effectiveShopSalesTotal?: number
-  manualShopSalesReason?: string
+  manualShopSalesReason?: string | null
   fuelSalesTotal?: number
+  fuelSalesOverrideReason?: string | null
   cashHandedTotal?: number
-  discrepancyAmount?: number
+  cashHandedTotalOverrideReason?: string | null
   reviewedById?: number | null
-  notes?: string
+  notes?: string | null
 }
 
 export interface ReconciliationSummaryResponse {
@@ -427,12 +429,31 @@ export interface ReconciliationSummaryResponse {
   effectiveShopSalesTotal: number
   manualShopSalesReason: string | null
   fuelSalesTotal: number
+  fuelSalesOverrideReason: string | null
   cashHandedTotal: number
+  cashHandedTotalOverrideReason: string | null
   discrepancyAmount: number
   reviewedById: number | null
   notes: string | null
   createdAt: string
   updatedAt: string
+  /** From ShiftProductStock × selling price (hint for UI). */
+  computedShopSalesTotal: number
+  /** From pump readings × fuel price; null if computation failed. */
+  computedFuelSalesTotal: number | null
+  /** Sum of CashHandIn amounts for this shift. */
+  sumCashHandIns: number
+  /** Present when computedFuelSalesTotal is null. */
+  fuelComputationError?: string | null
+}
+
+/** GET /shifts/:id/reconciliation — current snapshot + hints (summary null if not created yet). */
+export interface ReconciliationGetResponse {
+  summary: ReconciliationSummaryResponse | null
+  computedShopSalesTotal: number
+  computedFuelSalesTotal: number | null
+  sumCashHandIns: number
+  fuelComputationError: string | null
 }
 
 // --- Fixed costs ---

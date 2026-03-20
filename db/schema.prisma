@@ -294,13 +294,13 @@ model ShiftPumpAssignment {
 model CashHandIn {
   id           Int      @id @default(autoincrement())
   shiftId      Int
-  workerId     Int?
+  workerId     Int
   amount       Decimal  @db.Decimal(10, 2)
   recordedById Int
   recordedAt   DateTime @default(now())
 
   shift      Shift  @relation(fields: [shiftId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  worker     Worker? @relation(fields: [workerId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  worker     Worker @relation(fields: [workerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   recordedBy User   @relation("CashHandInRecordedBy", fields: [recordedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([shiftId, workerId])
@@ -316,7 +316,9 @@ model ShiftReconciliationSummary {
   effectiveShopSalesTotal Decimal        @db.Decimal(10, 2)
   manualShopSalesReason  String?
   fuelSalesTotal         Decimal         @db.Decimal(10, 2)
+  fuelSalesOverrideReason String?
   cashHandedTotal        Decimal         @db.Decimal(10, 2)
+  cashHandedTotalOverrideReason String?
   discrepancyAmount      Decimal         @db.Decimal(10, 2)
   reviewedById           Int?
   notes                  String?

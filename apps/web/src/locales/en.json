@@ -143,6 +143,7 @@
     "editShift": "Edit shift",
     "createShift": "Create shift",
     "edit": "Edit",
+    "reconcile": "Reconcile",
     "save": "Save",
     "cancel": "Cancel",
     "noShifts": "No shifts yet.",
@@ -211,7 +212,55 @@
   },
   "reconciliation": {
     "title": "Reconciliation",
-    "intro": "Shift reconciliation and cash hand-in."
+    "intro": "Close the shift first, record cash hand-ins by worker, then save the reconciliation. Shop total can follow stock counts or a manual weekly-style total.",
+    "adminOnly": "Only administrators can record cash hand-ins and reconciliation.",
+    "selectShift": "Shift",
+    "shiftPlaceholder": "Choose a closed shift",
+    "short": "Short (less cash than expected)",
+    "over": "Over (more cash than expected)",
+    "balanced": "Balanced",
+    "previewDiscrepancy": "Preview discrepancy",
+    "hints": {
+      "title": "Computed hints",
+      "shopFromStock": "Shop from stock snapshot",
+      "fuelComputed": "Fuel from pump readings",
+      "sumCashHandIns": "Sum of cash hand-ins"
+    },
+    "handIns": {
+      "title": "Cash hand-ins",
+      "worker": "Worker",
+      "amount": "Amount",
+      "recordedAt": "Recorded",
+      "empty": "No hand-ins yet.",
+      "add": "Add hand-in"
+    },
+    "form": {
+      "title": "Reconciliation summary",
+      "existingSummary": "A summary already exists; saving will update it.",
+      "shopSource": "Shop sales source",
+      "sourceStock": "From shift stock (SHIFT_SUMMARY_ENTRY)",
+      "sourceManual": "Manual total (MANUAL)",
+      "manualTotal": "Manual shop total",
+      "manualReason": "Reason",
+      "overrideFuel": "Override fuel total (requires reason)",
+      "overrideCash": "Override cash total (requires reason)",
+      "amount": "Amount",
+      "reason": "Reason",
+      "notes": "Notes",
+      "saveCreate": "Save reconciliation",
+      "saveUpdate": "Update reconciliation"
+    },
+    "errors": {
+      "saveFailed": "Failed to save reconciliation.",
+      "workerRequired": "Select a worker.",
+      "amountInvalid": "Enter a valid amount.",
+      "handInFailed": "Failed to record cash hand-in.",
+      "manualShopInvalid": "Enter a valid manual shop total.",
+      "manualReasonRequired": "A reason is required for a manual shop total.",
+      "fuelOverrideInvalid": "Enter a valid fuel override amount.",
+      "cashOverrideInvalid": "Enter a valid cash override amount.",
+      "overrideReasonRequired": "A reason is required when overriding fuel or cash."
+    }
   },
   "products": {
     "title": "Products",

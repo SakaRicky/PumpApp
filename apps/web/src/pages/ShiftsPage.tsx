@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import type {
   ShiftResponse,
@@ -30,6 +31,7 @@ import { Label } from "@/components/ui/label"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { api } from "@/lib/api"
+import { useAuth } from "@/contexts/authContext"
 
 type ShiftWithWorkers = ShiftResponse & {
   workers?: WorkerResponse[]
@@ -46,6 +48,9 @@ const formatIsoTime = (iso: string): string =>
 
 export const ShiftsPage = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.role === "ADMIN"
   const [shifts, setShifts] = useState<ShiftWithWorkers[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -627,6 +632,21 @@ export const ShiftsPage = () => {
                       >
                         {t("shifts.assignPumps")}
                       </Button>
+                      {isAdmin &&
+                        (shift.status === ShiftStatus.CLOSED ||
+                          shift.status === ShiftStatus.RECONCILED) && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() =>
+                              navigate(
+                                `/reconciliation?shiftId=${String(shift.id)}`
+                              )
+                            }
+                          >
+                            {t("shifts.reconcile")}
+                          </Button>
+                        )}
                     </TableCell>
                   </TableRow>
                 ))}

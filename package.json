@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "postinstall": "pnpm db:generate",
-    "dev:api": "pnpm --filter api dev",
+    "dev:api": "pnpm --filter @pumpapp/shared build && pnpm --filter api dev",
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",

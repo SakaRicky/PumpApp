@@ -40,6 +40,12 @@ import type {
   FuelDeliveryCreateBody,
   FuelDeliveryResponse,
   ShiftPumpAssignmentBody,
+  CashHandInCreateBody,
+  CashHandInResponse,
+  ReconciliationGetResponse,
+  ReconciliationSummaryResponse,
+  ReconciliationSummaryWriteCreateBody,
+  ReconciliationSummaryWriteUpdateBody,
 } from "@pumpapp/shared"
 
 // In dev: use relative /api so Vite proxy forwards to the API. In prod: same (empty = same origin).
@@ -309,6 +315,38 @@ export const api = {
       method: "POST",
       body,
     }),
+
+  getShiftCashHandIns: (shiftId: number): Promise<CashHandInResponse[]> =>
+    request<CashHandInResponse[]>(`/shifts/${shiftId}/cash-handins`),
+  createShiftCashHandIn: (
+    shiftId: number,
+    body: CashHandInCreateBody
+  ): Promise<CashHandInResponse> =>
+    request<CashHandInResponse>(`/shifts/${shiftId}/cash-handins`, {
+      method: "POST",
+      body,
+    }),
+
+  getShiftReconciliation: (
+    shiftId: number
+  ): Promise<ReconciliationGetResponse> =>
+    request<ReconciliationGetResponse>(`/shifts/${shiftId}/reconciliation`),
+  createShiftReconciliation: (
+    shiftId: number,
+    body: ReconciliationSummaryWriteCreateBody
+  ): Promise<ReconciliationSummaryResponse> =>
+    request<ReconciliationSummaryResponse>(
+      `/shifts/${shiftId}/reconciliation`,
+      { method: "POST", body }
+    ),
+  updateShiftReconciliation: (
+    shiftId: number,
+    body: ReconciliationSummaryWriteUpdateBody
+  ): Promise<ReconciliationSummaryResponse> =>
+    request<ReconciliationSummaryResponse>(
+      `/shifts/${shiftId}/reconciliation`,
+      { method: "PATCH", body }
+    ),
 }
 
 export type { LoginResponseUser }

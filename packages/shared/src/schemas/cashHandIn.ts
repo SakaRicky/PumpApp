@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const cashHandInCreateSchema = z.object({
-  workerId: z.number().int().positive().optional().nullable(),
+  workerId: z.number().int().positive(),
   amount: z.number().nonnegative(),
 })
 

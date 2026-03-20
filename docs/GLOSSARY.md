@@ -30,11 +30,11 @@ Short definitions of key domain and technical terms used in PumpApp / PumpPro.
 - **Inventory / stock**: Current quantity of a product on hand. In Phase 2, stock will update from transactional shop sales.
 - **Shop sale**: A sale of shop products. In Phase 1, captured only as a **shift-end total**; in Phase 2, captured per transaction (`ShopSale` + `ShopSaleItem`).
 - **ShopSalesSource**: Enum describing where the shop sales total used in reconciliation came from:
-  - `SHIFT_SUMMARY_ENTRY` — admin-entered shift-end total.
+  - `SHIFT_SUMMARY_ENTRY` — total **derived from** the shift’s `ShiftProductStock` lines (`soldQty × sellingPrice`, summed).
   - `TRANSACTIONAL_SYSTEM_TOTAL` — derived from per-transaction sales data.
-  - `MANUAL` — exceptional manual total with a note.
-- **Cash hand-in (CashHandIn)**: The act of a worker or user handing in cash to the owner/admin for a shift. Stored as `amount` linked to `shiftId` and optionally `workerId`.
-- **Discrepancy**: The difference between **expected money** (shop + fuel totals) and **actual cash handed in** for a shift.
+  - `MANUAL` — owner-entered total with a **reason** when the snapshot is not the source of truth for that shift.
+- **Cash hand-in (CashHandIn)**: Cash handed in to the owner/admin for a shift. Stored as `amount` with **`shiftId`**, **`workerId` (required)** — which worker handed in how much — and `recordedById`. Recording is **ADMIN-only**. See [OPERATIONS.md](OPERATIONS.md).
+- **Discrepancy**: For a shift, `(effectiveShopSalesTotal + fuelSalesTotal) - cashHandedTotal` (always **system-computed**). **Positive** ⇒ **short** (less cash than expected); **negative** ⇒ **over** (more cash than expected). See [OPERATIONS.md](OPERATIONS.md).
 - **Fixed cost**: A recurring monthly business expense (rent, utilities, salaries, etc.) tracked for profit analysis.
 - **Profit analysis**: Calculations of gross and net profit over a period, incorporating sales, cost of goods, and fixed costs.
 
