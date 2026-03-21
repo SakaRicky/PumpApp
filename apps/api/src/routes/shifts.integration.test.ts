@@ -87,8 +87,106 @@ describe("Shifts API (integration, basic rules)", () => {
     expect(mockShiftProductStockCount).not.toHaveBeenCalled()
   })
 
-  it("PATCH /api/shifts/:id prevents closing when SALE worker exists but no stock snapshot", async () => {
+  const saleShiftWorker = {
+    shiftId: 2,
+    workerId: 10,
+    worker: {
+      id: 10,
+      name: "Shop Worker",
+      designation: "Sale",
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: {
+        id: 100,
+        workerId: 10,
+        name: "Shop User",
+        email: "shop@test.com",
+        passwordHash: "x",
+        role: "SALE",
+        userType: "SYSTEM_USER",
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    },
+  }
+
+  const pumpShiftWorker = {
+    shiftId: 2,
+    workerId: 20,
+    worker: {
+      id: 20,
+      name: "Pump Worker",
+      designation: "Pump",
+      active: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      user: {
+        id: 200,
+        workerId: 20,
+        name: "Pump User",
+        email: "pump@test.com",
+        passwordHash: "x",
+        role: "PUMPIST",
+        userType: "SYSTEM_USER",
+        active: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    },
+  }
+
+  it("PATCH /api/shifts/:id prevents closing when only SALE worker (no PUMPIST)", async () => {
     const shiftId = 2
+    mockShiftFindUnique.mockResolvedValue({
+      id: shiftId,
+      date: new Date(),
+      startTime: new Date(),
+      endTime: new Date(),
+      status: "OPEN",
+      notes: null,
+    })
+    mockShiftWorkerFindMany.mockResolvedValue([saleShiftWorker])
+
+    const res = await request(app)
+      .patch(`/api/shifts/${shiftId}`)
+      .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
+      .send({ status: "CLOSED" })
+      .expect(400)
+
+    expect(res.body.error).toBe(
+      "Shift must include at least one assigned worker who covers fuel/pumps (e.g. designation “Pumpist”, or linked login with role PUMPIST) before closing"
+    )
+    expect(mockShiftProductStockCount).not.toHaveBeenCalled()
+  })
+
+  it("PATCH /api/shifts/:id prevents closing when only PUMPIST worker (no SALE)", async () => {
+    const shiftId = 3
+    mockShiftFindUnique.mockResolvedValue({
+      id: shiftId,
+      date: new Date(),
+      startTime: new Date(),
+      endTime: new Date(),
+      status: "OPEN",
+      notes: null,
+    })
+    mockShiftWorkerFindMany.mockResolvedValue([{ ...pumpShiftWorker, shiftId }])
+
+    const res = await request(app)
+      .patch(`/api/shifts/${shiftId}`)
+      .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
+      .send({ status: "CLOSED" })
+      .expect(400)
+
+    expect(res.body.error).toBe(
+      "Shift must include at least one assigned worker who covers the shop (e.g. designation “Shop”, or linked login with role SALE) before closing"
+    )
+    expect(mockShiftProductStockCount).not.toHaveBeenCalled()
+  })
+
+  it("PATCH /api/shifts/:id prevents closing when workers ok but no pump readings (stock snapshot not required)", async () => {
+    const shiftId = 4
     mockShiftFindUnique.mockResolvedValue({
       id: shiftId,
       date: new Date(),
@@ -98,32 +196,10 @@ describe("Shifts API (integration, basic rules)", () => {
       notes: null,
     })
     mockShiftWorkerFindMany.mockResolvedValue([
-      {
-        shiftId,
-        workerId: 10,
-        worker: {
-          id: 10,
-          name: "Shop Worker",
-          designation: "Sale",
-          active: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          user: {
-            id: 100,
-            workerId: 10,
-            name: "Shop User",
-            email: "shop@test.com",
-            passwordHash: "x",
-            role: "SALE",
-            userType: "SYSTEM_USER",
-            active: true,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        },
-      },
+      { ...saleShiftWorker, shiftId },
+      { ...pumpShiftWorker, shiftId },
     ])
-    mockShiftProductStockCount.mockResolvedValue(0)
+    mockPumpReadingCount.mockResolvedValue(0)
 
     const res = await request(app)
       .patch(`/api/shifts/${shiftId}`)
@@ -131,9 +207,8 @@ describe("Shifts API (integration, basic rules)", () => {
       .send({ status: "CLOSED" })
       .expect(400)
 
-    expect(res.body.error).toBe(
-      "Cannot close shift without shop stock snapshot"
-    )
-    expect(mockPumpReadingCount).not.toHaveBeenCalled()
+    expect(res.body.error).toBe("Cannot close shift without pump readings")
+    expect(mockShiftProductStockCount).not.toHaveBeenCalled()
+    expect(mockPumpReadingCount).toHaveBeenCalled()
   })
 })

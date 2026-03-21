@@ -139,7 +139,7 @@ See `docs/DATABASE.md`, `docs/GLOSSARY.md`, and `docs/OPERATIONS.md` (field oper
 - **Shop sale (Phase 1)**: shift runs → owner/admin enters per-product opening/closing stock for the shift → system derives quantity sold and shift-end shop total → reconciliation uses that.
 - **Shop sale (Phase 2)**: per-transaction sales → totals derived automatically.
 - **Pump reading**: select pump & shift → enter opening and closing readings → system computes volume and revenue.
-- **Cash hand-in & reconciliation**: worker hands in cash → **admin** records each hand-in **with worker + amount** → system aggregates expected totals (shop + fuel) vs cash → **derived** discrepancy (short vs over). Reconciliation is typically **daily per closed shift**; **physical shop counts** may follow a **weekly** cadence while cash is collected daily—see `docs/OPERATIONS.md` and `docs/DOMAIN-DECISIONS.md`.
+- **Cash hand-in & reconciliation**: worker hands in cash → **admin** records each hand-in **with worker + amount** → system aggregates expected totals (shop + fuel) vs cash → **derived** discrepancy (short vs over). Reconciliation is typically **daily per closed shift**. In the field, the shop uses **one physical book / one page per shift**; the admin may record **daily missing cash** when numbers do not tie, while **weekly physical counts with the seller** produce the **enforced** variance used toward **monthly salary deductions** (or rare positive payouts)—see `docs/OPERATIONS.md` and `docs/DOMAIN-DECISIONS.md` (operational vs app reconciliation).
 - **Monthly reporting**: select period → system aggregates sales, cash, discrepancies, fixed costs → compute profit.
 
 ### 10. Auditability

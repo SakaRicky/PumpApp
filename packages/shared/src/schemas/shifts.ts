@@ -23,6 +23,7 @@ export const shiftCreateSchema = z.object({
     .or(z.string().regex(/^\d{4}-\d{2}-\d{2}T/)),
   status: z.enum(shiftStatusValues),
   notes: z.string().optional(),
+  shopAccountableWorkerId: z.number().int().positive().optional(),
 })
 
 export const shiftUpdateSchema = z.object({
@@ -43,6 +44,7 @@ export const shiftUpdateSchema = z.object({
     .optional(),
   status: z.enum(shiftStatusValues).optional(),
   notes: z.string().optional().nullable(),
+  shopAccountableWorkerId: z.number().int().positive().nullable().optional(),
 })
 
 export const shiftWorkerAssignSchema = z
@@ -62,6 +64,8 @@ export const shiftWorkerAssignSchema = z
 export const shiftStockItemSchema = z.object({
   productId: z.number().int().positive(),
   openingQty: z.number().nonnegative().optional(),
+  /** Purchases/deliveries received during the shift (physical book). */
+  receivedQty: z.number().nonnegative().optional(),
   closingQty: z.number().nonnegative(),
 })
 

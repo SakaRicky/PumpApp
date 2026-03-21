@@ -19,7 +19,8 @@
       "reports": "Reports",
       "users": "Users",
       "workers": "Workers",
-      "pumps": "Fuel setup"
+      "pumps": "Fuel setup",
+      "weeklyInventory": "Weekly inventory"
     }
   },
   "categories": {
@@ -122,6 +123,7 @@
     "hasAccountNo": "No",
     "activeYes": "Yes",
     "activeNo": "No",
+    "noDesignation": "—",
     "save": "Save",
     "cancel": "Cancel",
     "errorLoad": "Failed to load workers.",
@@ -154,13 +156,26 @@
       "status": "Status",
       "actions": "Actions"
     },
+    "filters": {
+      "status": "Filter by status",
+      "statusAll": "All statuses",
+      "date": "Filter by shift date",
+      "dateAll": "All dates",
+      "clearDate": "Clear date",
+      "clearAll": "Clear filters",
+      "noMatches": "No shifts match the current filters."
+    },
     "form": {
       "date": "Shift date",
       "startTime": "Start time",
       "endTime": "End time",
       "notes": "Notes",
       "status": "Status",
-      "pickDate": "Pick a date"
+      "pickDate": "Pick a date",
+      "shopAccountable": "Shop accountable seller",
+      "shopAccountablePlaceholder": "Optional — defaults for cash / weekly close",
+      "shopAccountableNone": "None",
+      "shopAccountableHint": "Used to attribute daily missing cash and weekly close to the designated shop worker."
     },
     "status": {
       "PLANNED": "Planned",
@@ -172,12 +187,21 @@
     "manageWorkersTitle": "Workers on this shift",
     "manageWorkersForShift": "Assign workers for shift #{{id}} ({{date}}).",
     "assignWorkerCheckbox": "Assign {{name}} to this shift",
+    "workerPickerLoginRole": "Login role",
+    "workerPickerLoginRoleHint": "App permission (ADMIN, USER, …). Closing a shift also checks job designations (e.g. Pumpist, Shop).",
     "close": "Close",
     "pumpReadings": "Pump readings",
+    "pumpReadingsLinkedHint": "Each reading is tied to the worker assigned to that pump for this shift (use “Assign pumps” first). That link is stored for accountability.",
+    "pumpReadingsAssignedWorker": "Assigned pumpist",
+    "pumpReadingsOpening": "Opening reading",
+    "pumpReadingsClosing": "Closing reading",
+    "pumpReadingsUnassigned": "— assign in Assign pumps",
+    "pumpReadingsAssignFirstTitle": "Assign a worker to this pump for this shift before entering readings.",
     "assignPumps": "Assign pumps",
     "pump": "Pump",
     "worker": "Worker",
     "assignPumpsSelectWorker": "Select worker",
+    "assignPumpsNoShiftWorkers": "No workers on this shift yet. Use “Manage workers” to add people first, then assign them to pumps here.",
     "stock": {
       "title": "Shop stock for this shift",
       "openButton": "Shop stock",
@@ -185,6 +209,7 @@
         "product": "Product",
         "category": "Category",
         "opening": "Opening",
+        "received": "Received",
         "closing": "Closing",
         "sold": "Sold",
         "revenue": "Revenue"
@@ -207,12 +232,15 @@
       "loadWorkersFailed": "Failed to load workers for this shift.",
       "updateWorkersFailed": "Failed to update workers on this shift.",
       "loadStockFailed": "Failed to load shop stock for this shift.",
-      "saveStockFailed": "Failed to save shop stock for this shift."
+      "saveStockFailed": "Failed to save shop stock for this shift.",
+      "pumpReadingsNeedAssignment": "Assign a worker to each pump (Assign pumps) before saving readings for pumps that do not have a saved reading yet.",
+      "pumpReadingsClosingBeforeOpening": "For {{pump}}, the closing reading must be greater than or equal to the opening reading.",
+      "pumpReadingsInvalidNumber": "For {{pump}}, enter valid numbers for the opening and closing readings."
     }
   },
   "reconciliation": {
     "title": "Reconciliation",
-    "intro": "Close the shift first, record cash hand-ins by worker, then save the reconciliation. Shop total can follow stock counts or a manual weekly-style total.",
+    "intro": "Close the shift first. For each remittance, record the amount handed in and optional variance in one step (variance is stored on that hand-in row). Then save the reconciliation summary. Shop total can follow stock counts or a manual weekly-style total.",
     "adminOnly": "Only administrators can record cash hand-ins and reconciliation.",
     "selectShift": "Shift",
     "shiftPlaceholder": "Choose a closed shift",
@@ -227,12 +255,23 @@
       "sumCashHandIns": "Sum of cash hand-ins"
     },
     "handIns": {
-      "title": "Cash hand-ins",
+      "title": "Cash hand-ins & variance",
+      "intro": "Record each physical remittance once: amount handed in plus optional variance for that same event (positive = missing / short, negative = surplus). Variance is separate from the system preview discrepancy. Edit later by clearing variance on a row if needed.",
       "worker": "Worker",
-      "amount": "Amount",
+      "workerLabel": "{{name}} ({{designation}})",
+      "amount": "Amount handed in",
+      "variance": "Variance",
+      "varianceOptional": "Variance (+ missing, − surplus)",
+      "varianceNote": "Variance note",
+      "varianceNoteOptional": "Variance note (optional)",
       "recordedAt": "Recorded",
+      "actions": "Actions",
       "empty": "No hand-ins yet.",
-      "add": "Add hand-in"
+      "record": "Record hand-in",
+      "clearVariance": "Clear variance",
+      "clearVarianceError": "Failed to clear variance on this hand-in.",
+      "onlyShiftWorkersHint": "Only workers assigned to this shift can receive a hand-in (same list as in Shifts → Manage workers).",
+      "noShiftWorkers": "No workers on this shift yet. Use Shifts → Manage workers to assign people before recording hand-ins."
     },
     "form": {
       "title": "Reconciliation summary",
@@ -255,6 +294,8 @@
       "workerRequired": "Select a worker.",
       "amountInvalid": "Enter a valid amount.",
       "handInFailed": "Failed to record cash hand-in.",
+      "varianceInvalid": "Enter a valid variance amount (use negative for surplus), or leave blank.",
+      "handInWorkerNotOnShift": "Choose a worker who is assigned to this shift.",
       "manualShopInvalid": "Enter a valid manual shop total.",
       "manualReasonRequired": "A reason is required for a manual shop total.",
       "fuelOverrideInvalid": "Enter a valid fuel override amount.",
@@ -454,9 +495,49 @@
       }
     }
   },
+  "weeklyInventory": {
+    "title": "Weekly inventory close",
+    "intro": "Record the authoritative weekly physical close and optional count lines. Compare enforced shortfall to the sum of per-worker cash variances recorded on shifts in that week for the selected worker (reconciliation → per-worker missing / surplus).",
+    "adminOnly": "Only administrators can manage weekly closes.",
+    "loadError": "Failed to load weekly closes.",
+    "saveError": "Failed to save weekly close.",
+    "exportError": "Export failed.",
+    "export": {
+      "title": "Export CSV (payroll)",
+      "month": "Month",
+      "download": "Download CSV"
+    },
+    "form": {
+      "title": "New weekly close",
+      "weekStart": "Week start",
+      "weekEnd": "Week end",
+      "worker": "Accountable worker",
+      "workerPlaceholder": "Select worker",
+      "enforcedShortfall": "Enforced shortfall (+ = shortage)",
+      "notes": "Notes",
+      "lines": "Optional physical counts by product",
+      "addLine": "Add line",
+      "productPlaceholder": "Product",
+      "qty": "Qty",
+      "save": "Save weekly close"
+    },
+    "list": {
+      "title": "Recent closes",
+      "week": "Week",
+      "worker": "Worker",
+      "enforced": "Enforced",
+      "dailySum": "Sum shift variances",
+      "notes": "Notes"
+    },
+    "errors": {
+      "weekRequired": "Week start and end are required.",
+      "workerRequired": "Select a worker.",
+      "shortfallRequired": "Enter a valid enforced shortfall."
+    }
+  },
   "reports": {
     "title": "Reports",
-    "intro": "Reports and profit analysis."
+    "intro": "Reports and profit analysis. Use Weekly inventory (admin) for payroll-style CSV export by month."
   },
   "languageSwitcher": {
     "label": "Language",

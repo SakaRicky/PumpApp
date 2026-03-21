@@ -93,7 +93,9 @@ export {
 
 export {
   cashHandInCreateSchema,
+  cashHandInVariancePatchSchema,
   type CashHandInCreateInput,
+  type CashHandInVariancePatchInput,
 } from "./cashHandIn.js"
 
 export {
@@ -114,3 +116,9 @@ export {
   purchasePriceCreateSchema,
   type PurchasePriceCreateInput,
 } from "./purchasePriceHistory.js"
+
+export {
+  weeklyInventoryCloseCreateSchema,
+  weeklyInventoryCountLineSchema,
+  type WeeklyInventoryCloseCreateInput,
+} from "./weeklyInventoryClose.js"

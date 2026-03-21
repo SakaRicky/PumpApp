@@ -64,8 +64,10 @@ describe("Pump readings API (integration)", () => {
         shiftId: 1,
         openingReading: 100,
         closingReading: 120,
+        workerId: 2,
         recordedById: 1,
         recordedAt: new Date("2025-01-01T00:00:00.000Z"),
+        worker: { id: 2, name: "Alice" },
       },
     ])
 
@@ -80,6 +82,8 @@ describe("Pump readings API (integration)", () => {
       shiftId: 1,
       openingReading: 100,
       closingReading: 120,
+      workerId: 2,
+      workerName: "Alice",
       volume: 20,
     })
   })

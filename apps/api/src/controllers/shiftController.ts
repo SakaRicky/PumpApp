@@ -1,17 +1,47 @@
 import type { Request, Response } from "express"
+import type { Prisma } from "../../node_modules/.prisma/client/index.js"
 import {
   shiftCreateSchema,
   shiftUpdateSchema,
   shiftWorkerAssignSchema,
   shiftStockBulkUpdateSchema,
-  Role,
   type ShiftResponse,
   type ShiftStockItemResponse,
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
+import {
+  coversFuelSide,
+  coversShopSide,
+} from "../services/shiftWorkerCoverage.js"
 
 type ShiftRow = Awaited<ReturnType<typeof prisma.shift.findMany>>[number]
+
+const buildShiftOptionalUpdateData = async (parsed: {
+  shopAccountableWorkerId?: number | null
+}): Promise<Prisma.ShiftUncheckedUpdateInput> => {
+  const data: Prisma.ShiftUncheckedUpdateInput = {}
+
+  if (parsed.shopAccountableWorkerId !== undefined) {
+    if (parsed.shopAccountableWorkerId === null) {
+      data.shopAccountableWorkerId = null
+    } else {
+      const w = await prisma.worker.findUnique({
+        where: { id: parsed.shopAccountableWorkerId },
+      })
+      if (!w || !w.active) {
+        throw new AppError(
+          "Shop accountable worker not found or inactive",
+          400,
+          ErrorCode.VALIDATION_ERROR
+        )
+      }
+      data.shopAccountableWorkerId = parsed.shopAccountableWorkerId
+    }
+  }
+
+  return data
+}
 
 const toShiftResponse = (row: ShiftRow): ShiftResponse => ({
   id: row.id,
@@ -20,6 +50,7 @@ const toShiftResponse = (row: ShiftRow): ShiftResponse => ({
   endTime: row.endTime.toISOString(),
   status: row.status,
   notes: row.notes ?? null,
+  shopAccountableWorkerId: row.shopAccountableWorkerId ?? null,
 })
 
 const list = async (_req: Request, res: Response): Promise<void> => {
@@ -27,6 +58,20 @@ const list = async (_req: Request, res: Response): Promise<void> => {
     orderBy: [{ date: "desc" }, { startTime: "desc" }],
   })
   res.status(200).json(shifts.map(toShiftResponse))
+}
+
+const getById = async (req: Request, res: Response): Promise<void> => {
+  const id = Number.parseInt(req.params.id, 10)
+  if (Number.isNaN(id)) {
+    throw new AppError("Invalid shift id", 400, ErrorCode.VALIDATION_ERROR)
+  }
+
+  const shift = await prisma.shift.findUnique({ where: { id } })
+  if (!shift) {
+    throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
+  }
+
+  res.status(200).json(toShiftResponse(shift))
 }
 
 const create = async (req: Request, res: Response): Promise<void> => {
@@ -37,7 +82,22 @@ const create = async (req: Request, res: Response): Promise<void> => {
     })
   }
 
-  const { date, startTime, endTime, status, notes } = parsed.data
+  const { date, startTime, endTime, status, notes, shopAccountableWorkerId } =
+    parsed.data
+
+  if (shopAccountableWorkerId !== undefined) {
+    const w = await prisma.worker.findUnique({
+      where: { id: shopAccountableWorkerId },
+    })
+    if (!w || !w.active) {
+      throw new AppError(
+        "Shop accountable worker not found or inactive",
+        400,
+        ErrorCode.VALIDATION_ERROR
+      )
+    }
+  }
+
   const shift = await prisma.shift.create({
     data: {
       date: new Date(date),
@@ -45,6 +105,9 @@ const create = async (req: Request, res: Response): Promise<void> => {
       endTime: new Date(endTime),
       status,
       notes,
+      ...(shopAccountableWorkerId !== undefined && {
+        shopAccountableWorkerId,
+      }),
     },
   })
   res.status(201).json(toShiftResponse(shift))
@@ -86,37 +149,37 @@ const ensureCanCloseShift = async (shiftId: number): Promise<void> => {
     )
   }
 
-  const hasSaleWorker = shiftWorkers.some(
-    (sw) => sw.worker.user?.role === Role.SALE
-  )
-  const hasPumpWorker = shiftWorkers.some(
-    (sw) => sw.worker.user?.role === Role.PUMPIST
-  )
+  const hasFuelCoverage = shiftWorkers.some((sw) => coversFuelSide(sw.worker))
+  const hasShopCoverage = shiftWorkers.some((sw) => coversShopSide(sw.worker))
 
-  if (hasSaleWorker) {
-    const stockCount = await prisma.shiftProductStock.count({
-      where: { shiftId },
-    })
-    if (stockCount === 0) {
-      throw new AppError(
-        "Cannot close shift without shop stock snapshot",
-        400,
-        ErrorCode.VALIDATION_ERROR
-      )
-    }
+  if (!hasFuelCoverage) {
+    throw new AppError(
+      "Shift must include at least one assigned worker who covers fuel/pumps (e.g. designation “Pumpist”, or linked login with role PUMPIST) before closing",
+      400,
+      ErrorCode.VALIDATION_ERROR
+    )
   }
 
-  if (hasPumpWorker) {
-    const pumpReadingCount = await prisma.pumpReading.count({
-      where: { shiftId },
-    })
-    if (pumpReadingCount === 0) {
-      throw new AppError(
-        "Cannot close shift without pump readings",
-        400,
-        ErrorCode.VALIDATION_ERROR
-      )
-    }
+  if (!hasShopCoverage) {
+    throw new AppError(
+      "Shift must include at least one assigned worker who covers the shop (e.g. designation “Shop”, or linked login with role SALE) before closing",
+      400,
+      ErrorCode.VALIDATION_ERROR
+    )
+  }
+
+  // Shop stock snapshot is not required to close a shift for now (inventory
+  // decrement on close still applies only to existing ShiftProductStock rows).
+
+  const pumpReadingCount = await prisma.pumpReading.count({
+    where: { shiftId },
+  })
+  if (pumpReadingCount === 0) {
+    throw new AppError(
+      "Cannot close shift without pump readings",
+      400,
+      ErrorCode.VALIDATION_ERROR
+    )
   }
 }
 
@@ -159,14 +222,18 @@ const update = async (req: Request, res: Response): Promise<void> => {
   if (shouldCloseAndUpdateInventory) {
     await ensureCanCloseShift(id)
 
+    const optionalFields = await buildShiftOptionalUpdateData(parsed.data)
+
     const updated = await prisma.$transaction(async (tx) => {
       const stocks = await tx.shiftProductStock.findMany({
         where: { shiftId: id },
       })
 
       for (const stock of stocks) {
-        // soldQty = opening - closing; negative values will effectively increase stock
-        const soldQty = stock.openingQty.sub(stock.closingQty)
+        // soldQty = opening + received - closing; negative values increase stock
+        const soldQty = stock.openingQty
+          .add(stock.receivedQty)
+          .sub(stock.closingQty)
         if (soldQty.isZero()) continue
 
         await tx.product.update({
@@ -191,6 +258,7 @@ const update = async (req: Request, res: Response): Promise<void> => {
           }),
           status: "CLOSED",
           ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
+          ...optionalFields,
         },
       })
 
@@ -200,6 +268,8 @@ const update = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json(toShiftResponse(updated))
     return
   }
+
+  const optionalFields = await buildShiftOptionalUpdateData(parsed.data)
 
   const updated = await prisma.shift.update({
     where: { id },
@@ -211,6 +281,7 @@ const update = async (req: Request, res: Response): Promise<void> => {
       ...(parsed.data.endTime && { endTime: new Date(parsed.data.endTime) }),
       ...(parsed.data.status && { status: parsed.data.status }),
       ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
+      ...optionalFields,
     },
   })
 
@@ -337,18 +408,24 @@ const listStock = async (req: Request, res: Response): Promise<void> => {
     },
   })
 
-  const response: ShiftStockItemResponse[] = rows.map((row) => ({
-    productId: row.productId,
-    openingQty: Number(row.openingQty),
-    closingQty: Number(row.closingQty),
-    soldQty: Number(row.openingQty) - Number(row.closingQty),
-    product: {
-      id: row.product.id,
-      name: row.product.name,
-      categoryId: row.product.categoryId,
-      categoryName: row.product.category?.name,
-    },
-  }))
+  const response: ShiftStockItemResponse[] = rows.map((row) => {
+    const opening = Number(row.openingQty)
+    const received = Number(row.receivedQty)
+    const closing = Number(row.closingQty)
+    return {
+      productId: row.productId,
+      openingQty: opening,
+      receivedQty: received,
+      closingQty: closing,
+      soldQty: opening + received - closing,
+      product: {
+        id: row.product.id,
+        name: row.product.name,
+        categoryId: row.product.categoryId,
+        categoryName: row.product.category?.name,
+      },
+    }
+  })
 
   res.status(200).json(response)
 }
@@ -392,8 +469,15 @@ const upsertStock = async (req: Request, res: Response): Promise<void> => {
 
   await prisma.$transaction(
     items.map(
-      (item: { productId: number; openingQty?: number; closingQty: number }) =>
-        prisma.shiftProductStock.upsert({
+      (item: {
+        productId: number
+        openingQty?: number
+        receivedQty?: number
+        closingQty: number
+      }) => {
+        const received =
+          item.receivedQty !== undefined ? item.receivedQty : undefined
+        return prisma.shiftProductStock.upsert({
           where: {
             shiftId_productId: { shiftId, productId: item.productId },
           },
@@ -401,15 +485,18 @@ const upsertStock = async (req: Request, res: Response): Promise<void> => {
             shiftId,
             productId: item.productId,
             openingQty: item.openingQty !== undefined ? item.openingQty : 0,
+            receivedQty: received ?? 0,
             closingQty: item.closingQty,
           },
           update: {
             ...(item.openingQty !== undefined && {
               openingQty: item.openingQty,
             }),
+            ...(received !== undefined && { receivedQty: received }),
             closingQty: item.closingQty,
           },
         })
+      }
     )
   )
 
@@ -531,6 +618,7 @@ const assignPump = async (req: Request, res: Response): Promise<void> => {
 
 export {
   list,
+  getById,
   create,
   update,
   listWorkers,

@@ -291,6 +291,7 @@ export interface ShiftCreateBody {
   endTime: string
   status: ShiftStatus
   notes?: string
+  shopAccountableWorkerId?: number
 }
 
 export interface ShiftUpdateBody {
@@ -299,6 +300,7 @@ export interface ShiftUpdateBody {
   endTime?: string
   status?: ShiftStatus
   notes?: string
+  shopAccountableWorkerId?: number | null
 }
 
 export interface ShiftResponse {
@@ -308,6 +310,7 @@ export interface ShiftResponse {
   endTime: string
   status: ShiftStatus
   notes: string | null
+  shopAccountableWorkerId: number | null
 }
 
 // --- Shift workers ---
@@ -333,6 +336,8 @@ export interface ShiftStockItemBody {
    * from the previous shift's closing quantity (or current stock for the first shift).
    */
   openingQty?: number
+  /** Purchases/deliveries during the shift (defaults to 0). */
+  receivedQty?: number
   closingQty: number
 }
 
@@ -370,6 +375,9 @@ export interface PumpReadingResponse {
   shiftId: number
   openingReading: number
   closingReading: number
+  /** Worker responsible for this pump on the shift (from assignment when recorded). */
+  workerId: number | null
+  workerName: string | null
   recordedById: number
   recordedAt: string
   volume?: number
@@ -380,6 +388,14 @@ export interface PumpReadingResponse {
 export interface CashHandInCreateBody {
   workerId: number
   amount: number
+  /** Positive = missing / short; negative = surplus. Omit if none. */
+  varianceAmount?: number
+  varianceNote?: string | null
+}
+
+export interface CashHandInVariancePatchBody {
+  varianceAmount?: number | null
+  varianceNote?: string | null
 }
 
 export interface CashHandInResponse {
@@ -387,6 +403,8 @@ export interface CashHandInResponse {
   shiftId: number
   workerId: number
   amount: number
+  varianceAmount: number | null
+  varianceNote: string | null
   recordedById: number
   recordedAt: string
 }
@@ -454,6 +472,46 @@ export interface ReconciliationGetResponse {
   computedFuelSalesTotal: number | null
   sumCashHandIns: number
   fuelComputationError: string | null
+}
+
+// --- Weekly inventory close ---
+
+export interface WeeklyInventoryCountLineBody {
+  productId: number
+  physicalQty: number
+}
+
+export interface WeeklyInventoryCloseCreateBody {
+  weekStart: string
+  weekEnd: string
+  workerId: number
+  enforcedShortfall: number
+  notes?: string
+  physicalCountAt?: string | null
+  lines?: WeeklyInventoryCountLineBody[]
+}
+
+export interface WeeklyInventoryCountLineResponse {
+  id: number
+  productId: number
+  physicalQty: number
+}
+
+export interface WeeklyInventoryCloseResponse {
+  id: number
+  weekStart: string
+  weekEnd: string
+  workerId: number
+  workerName: string
+  enforcedShortfall: number
+  notes: string | null
+  physicalCountAt: string | null
+  recordedById: number
+  createdAt: string
+  updatedAt: string
+  /** Sum of per-worker admin-recorded cash variances on shifts in this week for this worker. */
+  sumDailyCashShortfalls: number
+  lines: WeeklyInventoryCountLineResponse[]
 }
 
 // --- Fixed costs ---

@@ -19,7 +19,8 @@
       "reports": "Rapports",
       "users": "Utilisateurs",
       "workers": "Employés",
-      "pumps": "Carburants"
+      "pumps": "Carburants",
+      "weeklyInventory": "Inventaire hebdo"
     }
   },
   "categories": {
@@ -122,6 +123,7 @@
     "hasAccountNo": "Non",
     "activeYes": "Oui",
     "activeNo": "Non",
+    "noDesignation": "—",
     "save": "Enregistrer",
     "cancel": "Annuler",
     "errorLoad": "Impossible de charger les employés.",
@@ -154,6 +156,15 @@
       "status": "Statut",
       "actions": "Actions"
     },
+    "filters": {
+      "status": "Filtrer par statut",
+      "statusAll": "Tous les statuts",
+      "date": "Filtrer par date du poste",
+      "dateAll": "Toutes les dates",
+      "clearDate": "Effacer la date",
+      "clearAll": "Effacer les filtres",
+      "noMatches": "Aucun poste ne correspond aux filtres."
+    },
     "form": {
       "date": "Date du poste",
       "startTime": "Heure de début",
@@ -172,12 +183,21 @@
     "manageWorkersTitle": "Employés sur ce poste",
     "manageWorkersForShift": "Affecter les employés au poste n°{{id}} ({{date}}).",
     "assignWorkerCheckbox": "Affecter {{name}} à ce poste",
+    "workerPickerLoginRole": "Rôle de connexion",
+    "workerPickerLoginRoleHint": "Droits dans l’application (ADMIN, USER, …). La clôture du poste tient aussi compte des fonctions (ex. Pumpist, Shop).",
     "close": "Fermer",
     "pumpReadings": "Relevés pompes",
+    "pumpReadingsLinkedHint": "Chaque relevé est lié à l’employé affecté à cette pompe pour ce poste (utilisez d’abord « Affecter les pompes »). Ce lien est conservé pour la traçabilité.",
+    "pumpReadingsAssignedWorker": "Pumpist affecté",
+    "pumpReadingsOpening": "Relevé d’ouverture",
+    "pumpReadingsClosing": "Relevé de fermeture",
+    "pumpReadingsUnassigned": "— affecter dans Affecter les pompes",
+    "pumpReadingsAssignFirstTitle": "Affectez d’abord un employé à cette pompe pour ce poste avant de saisir les relevés.",
     "assignPumps": "Affecter les pompes",
     "pump": "Pompe",
     "worker": "Employé",
     "assignPumpsSelectWorker": "Sélectionner un employé",
+    "assignPumpsNoShiftWorkers": "Aucun employé sur ce poste pour l’instant. Utilisez « Gérer les employés » pour en ajouter, puis affectez-les aux pompes ici.",
     "stock": {
       "title": "Stock boutique pour ce poste",
       "openButton": "Stock boutique",
@@ -185,6 +205,7 @@
         "product": "Produit",
         "category": "Catégorie",
         "opening": "Ouverture",
+        "received": "Reçu",
         "closing": "Fermeture",
         "sold": "Vendu",
         "revenue": "Revenu"
@@ -207,12 +228,15 @@
       "loadWorkersFailed": "Impossible de charger les employés pour ce poste.",
       "updateWorkersFailed": "Impossible de mettre à jour les employés sur ce poste.",
       "loadStockFailed": "Impossible de charger le stock boutique pour ce poste.",
-      "saveStockFailed": "Impossible d'enregistrer le stock boutique pour ce poste."
+      "saveStockFailed": "Impossible d'enregistrer le stock boutique pour ce poste.",
+      "pumpReadingsNeedAssignment": "Affectez un employé à chaque pompe (Affecter les pompes) avant d’enregistrer les relevés pour les pompes sans relevé enregistré.",
+      "pumpReadingsClosingBeforeOpening": "Pour {{pump}}, le relevé de fermeture doit être supérieur ou égal au relevé d’ouverture.",
+      "pumpReadingsInvalidNumber": "Pour {{pump}}, saisissez des nombres valides pour les relevés d’ouverture et de fermeture."
     }
   },
   "reconciliation": {
     "title": "Réconciliation",
-    "intro": "Fermez d'abord le poste, enregistrez les remises de caisse par employé, puis enregistrez la réconciliation. Le total boutique peut suivre le stock ou un total manuel (ex. hebdomadaire).",
+    "intro": "Fermez d'abord le poste. Pour chaque remise, enregistrez le montant remis et l'écart éventuel en une fois (l'écart est lié à cette remise). Puis enregistrez la synthèse de réconciliation. Le total boutique peut suivre le stock ou un total manuel (ex. hebdomadaire).",
     "adminOnly": "Seuls les administrateurs peuvent enregistrer les remises de caisse et la réconciliation.",
     "selectShift": "Poste",
     "shiftPlaceholder": "Choisir un poste fermé",
@@ -227,12 +251,23 @@
       "sumCashHandIns": "Somme des remises de caisse"
     },
     "handIns": {
-      "title": "Remises de caisse",
+      "title": "Remises de caisse et écarts",
+      "intro": "Enregistrez chaque remise physique en une fois : montant remis et écart éventuel pour le même événement (positif = manque, négatif = surplus). L'écart est distinct de l'écart prévu par le système. Vous pouvez effacer l'écart sur une ligne si besoin.",
       "worker": "Employé",
-      "amount": "Montant",
+      "workerLabel": "{{name}} ({{designation}})",
+      "amount": "Montant remis",
+      "variance": "Écart",
+      "varianceOptional": "Écart (+ manque, − surplus)",
+      "varianceNote": "Note (écart)",
+      "varianceNoteOptional": "Note sur l'écart (optionnel)",
       "recordedAt": "Enregistré",
+      "actions": "Actions",
       "empty": "Aucune remise pour l'instant.",
-      "add": "Ajouter une remise"
+      "record": "Enregistrer la remise",
+      "clearVariance": "Effacer l'écart",
+      "clearVarianceError": "Impossible d'effacer l'écart sur cette remise.",
+      "onlyShiftWorkersHint": "Seuls les employés affectés à ce poste peuvent avoir une remise (même liste que Postes → Gérer les employés).",
+      "noShiftWorkers": "Aucun employé sur ce poste. Utilisez Postes → Gérer les employés pour en ajouter avant d’enregistrer des remises."
     },
     "form": {
       "title": "Synthèse de réconciliation",
@@ -255,6 +290,8 @@
       "workerRequired": "Sélectionnez un employé.",
       "amountInvalid": "Saisissez un montant valide.",
       "handInFailed": "Échec de l'enregistrement de la remise.",
+      "varianceInvalid": "Saisissez un écart valide (négatif pour un surplus), ou laissez vide.",
+      "handInWorkerNotOnShift": "Choisissez un employé affecté à ce poste.",
       "manualShopInvalid": "Saisissez un total boutique manuel valide.",
       "manualReasonRequired": "Un motif est obligatoire pour un total manuel.",
       "fuelOverrideInvalid": "Saisissez un montant de remplacement carburant valide.",
@@ -448,9 +485,49 @@
       }
     }
   },
+  "weeklyInventory": {
+    "title": "Clôture inventaire hebdomadaire",
+    "intro": "Enregistrez la clôture physique hebdomadaire faisant foi et des lignes de comptage optionnelles. Comparez le manque imposé à la somme des écarts caisse par employé enregistrés sur les postes de cette semaine pour l’employé choisi (réconciliation → manque / surplus par employé).",
+    "adminOnly": "Réservé aux administrateurs.",
+    "loadError": "Impossible de charger les clôtures.",
+    "saveError": "Impossible d’enregistrer la clôture.",
+    "exportError": "Échec de l’export.",
+    "export": {
+      "title": "Export CSV (paie)",
+      "month": "Mois",
+      "download": "Télécharger CSV"
+    },
+    "form": {
+      "title": "Nouvelle clôture",
+      "weekStart": "Début de semaine",
+      "weekEnd": "Fin de semaine",
+      "worker": "Employé responsable",
+      "workerPlaceholder": "Choisir un employé",
+      "enforcedShortfall": "Manque imposé (+ = manque)",
+      "notes": "Notes",
+      "lines": "Comptages physiques par produit (optionnel)",
+      "addLine": "Ajouter une ligne",
+      "productPlaceholder": "Produit",
+      "qty": "Qté",
+      "save": "Enregistrer la clôture"
+    },
+    "list": {
+      "title": "Clôtures récentes",
+      "week": "Semaine",
+      "worker": "Employé",
+      "enforced": "Imposé",
+      "dailySum": "Somme écarts postes",
+      "notes": "Notes"
+    },
+    "errors": {
+      "weekRequired": "Les dates de début et fin de semaine sont obligatoires.",
+      "workerRequired": "Sélectionnez un employé.",
+      "shortfallRequired": "Saisissez un manque imposé valide."
+    }
+  },
   "reports": {
     "title": "Rapports",
-    "intro": "Rapports et analyse des bénéfices."
+    "intro": "Rapports et analyse des bénéfices. Utilisez Inventaire hebdo (admin) pour l’export CSV par mois."
   },
   "languageSwitcher": {
     "label": "Langue",

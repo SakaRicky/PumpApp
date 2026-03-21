@@ -1,7 +1,8 @@
 import { prisma } from "../db.js"
 
 /**
- * Shop sales total from shift stock snapshot: sum of (openingQty - closingQty) * sellingPrice.
+ * Shop sales total from shift stock snapshot:
+ * sum of (openingQty + receivedQty - closingQty) * sellingPrice.
  */
 export const getShopSalesTotalFromShiftStock = async (
   shiftId: number
@@ -14,8 +15,9 @@ export const getShopSalesTotalFromShiftStock = async (
   let total = 0
   for (const row of rows) {
     const opening = Number(row.openingQty)
+    const received = Number(row.receivedQty)
     const closing = Number(row.closingQty)
-    const soldQty = opening - closing
+    const soldQty = opening + received - closing
     const price = Number(row.product.sellingPrice)
     total += soldQty * price
   }

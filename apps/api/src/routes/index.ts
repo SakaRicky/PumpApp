@@ -11,6 +11,8 @@ import { fuelPricesRouter } from "./fuelPrices.js"
 import { fuelTypesRouter } from "./fuelTypes.js"
 import { tanksRouter } from "./tanks.js"
 import { fuelDeliveriesRouter } from "./fuelDeliveries.js"
+import { pumpReadingsRouter } from "./pumpReadings.js"
+import { weeklyInventoryClosesRouter } from "./weeklyInventoryCloses.js"
 
 const apiRouter = Router()
 
@@ -29,5 +31,7 @@ apiRouter.use("/workers", workersRouter)
 apiRouter.use("/shifts", shiftsRouter)
 apiRouter.use("/pumps", pumpsRouter)
 apiRouter.use("/fuel-prices", fuelPricesRouter)
+apiRouter.use("/pump-readings", pumpReadingsRouter)
+apiRouter.use("/weekly-inventory-closes", weeklyInventoryClosesRouter)
 
 export { apiRouter }

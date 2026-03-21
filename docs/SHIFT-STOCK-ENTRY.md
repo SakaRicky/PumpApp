@@ -5,6 +5,7 @@
 - Replace the manual Excel sheet used at shift change.
 - Make it fast and reliable to enter closing counts for many products.
 - Prepare for Phase 2, where transactional sales pre-fill expectations and expose loss/shrinkage.
+- Align with the **physical shop book** model: **one book for the shop, one page per shift** (see [OPERATIONS.md](OPERATIONS.md)). The UI is a **digital shift page**; **purchases** recorded in the paper book (even when a product had no sales) are **not** yet modeled as separate rows in Phase 1—see [DOMAIN-DECISIONS.md](DOMAIN-DECISIONS.md#operational-vs-app-reconciliation-payroll).
 
 ### Location in the app
 
@@ -25,7 +26,7 @@
   - Closing quantity:
     - Editable numeric field.
   - Sold quantity:
-    - Derived live as `openingQty − closingQty`.
+    - Derived live as `openingQty + receivedQty − closingQty` (`receivedQty` = purchases/deliveries during the shift).
   - Line revenue:
     - Derived live as `soldQty × sellingPrice`.
 
@@ -73,12 +74,9 @@
   - Table is editable.
   - Admin can add/update `ShiftProductStock` rows for that shift.
 - When attempting to transition a shift to `CLOSED`:
-  - If any `SALE` worker is assigned:
-    - Backend must enforce:
-      - At least one `ShiftProductStock` row exists for that shift.
-      - All rows being tracked for that shift have valid `closingQty`.
-  - If the shift has both `SALE` and `PUMPIST` workers:
-    - Pump-reading preconditions from S4 apply in addition.
+  - Backend requires **shop-side** and **fuel-side** coverage among assigned workers: login roles **SALE** / **PUMPIST**, and/or **designations** such as Shop / Pumpist (see API closure rules).
+  - At least one `PumpReading` must exist for that shift (see S4).
+  - **For now**, a `ShiftProductStock` snapshot is **not** required to close; when rows exist, `closingQty` should still be valid. Reconciliation may still require stock or a manual shop total.
 - When `Shift.status = CLOSED`:
   - Table becomes read-only except for admin corrections.
 - When `Shift.status = RECONCILED`:

@@ -30,8 +30,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { api } from "@/lib/api"
 import { useAuth } from "@/contexts/authContext"
+import { cn } from "@/lib/utils"
 
 type ShiftWithWorkers = ShiftResponse & {
   workers?: WorkerResponse[]
@@ -46,6 +54,44 @@ const formatIsoTime = (iso: string): string =>
     minute: "2-digit",
   })
 
+/** `datetime-local` value is YYYY-MM-DDTHH:mm — replace date, keep clock time. */
+const withDatePreservingTime = (
+  datetimeLocal: string,
+  dateYmd: string,
+  fallback: { h: number; m: number }
+): string => {
+  if (!dateYmd) return datetimeLocal
+  const pad = (n: number) => String(n).padStart(2, "0")
+  const m = datetimeLocal.match(/T(\d{2}):(\d{2})/)
+  const hh = m?.[1] ?? pad(fallback.h)
+  const mm = m?.[2] ?? pad(fallback.m)
+  return `${dateYmd}T${hh}:${mm}`
+}
+
+const SHIFT_STATUS_FILTER_ALL = "ALL" as const
+
+const SHIFT_STATUS_ORDER: ShiftStatus[] = [
+  ShiftStatus.PLANNED,
+  ShiftStatus.OPEN,
+  ShiftStatus.CLOSED,
+  ShiftStatus.RECONCILED,
+]
+
+const shiftStatusBadgeClassName = (status: ShiftStatus): string =>
+  cn(
+    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold tracking-tight",
+    {
+      "border-slate-300 bg-slate-100 text-slate-800 dark:border-slate-600 dark:bg-slate-800/60 dark:text-slate-100":
+        status === ShiftStatus.PLANNED,
+      "border-emerald-400/80 bg-emerald-100 text-emerald-950 dark:border-emerald-700 dark:bg-emerald-950/45 dark:text-emerald-50":
+        status === ShiftStatus.OPEN,
+      "border-amber-400/80 bg-amber-100 text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-50":
+        status === ShiftStatus.CLOSED,
+      "border-violet-400/80 bg-violet-100 text-violet-950 dark:border-violet-700 dark:bg-violet-950/40 dark:text-violet-50":
+        status === ShiftStatus.RECONCILED,
+    }
+  )
+
 export const ShiftsPage = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
@@ -54,6 +100,10 @@ export const ShiftsPage = () => {
   const [shifts, setShifts] = useState<ShiftWithWorkers[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string>(
+    SHIFT_STATUS_FILTER_ALL
+  )
+  const [dateFilter, setDateFilter] = useState("")
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editShift, setEditShift] = useState<ShiftResponse | null>(null)
@@ -67,6 +117,10 @@ export const ShiftsPage = () => {
   const [editEndTime, setEditEndTime] = useState("")
   const [editStatus, setEditStatus] = useState<ShiftStatus>(ShiftStatus.PLANNED)
   const [editNotes, setEditNotes] = useState("")
+  const [editShopAccountableWorkerId, setEditShopAccountableWorkerId] =
+    useState("")
+  const [createShopAccountableWorkerId, setCreateShopAccountableWorkerId] =
+    useState("")
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -92,6 +146,7 @@ export const ShiftsPage = () => {
     productName: string
     categoryName: string
     openingQty: string
+    receivedQty: string
     closingQty: string
     sellingPrice: number
   }
@@ -109,6 +164,9 @@ export const ShiftsPage = () => {
   type PumpReadingRow = {
     pumpId: number
     pumpName: string
+    readingId?: number
+    /** Worker linked to the saved reading, or current assignee from Assign pumps. */
+    workerName: string | null
     openingReading: string
     closingReading: string
   }
@@ -147,12 +205,21 @@ export const ShiftsPage = () => {
     void load()
   }, [load])
 
+  useEffect(() => {
+    if (!isAdmin) return
+    void api
+      .getWorkers()
+      .then((w) => setAllWorkers(w))
+      .catch(() => {})
+  }, [isAdmin])
+
   const openCreate = () => {
     const today = new Date()
     const isoDate = today.toISOString().slice(0, 10)
     setCreateDate(isoDate)
     setCreateStartTime(`${isoDate}T08:00`)
     setCreateEndTime(`${isoDate}T17:00`)
+    setCreateShopAccountableWorkerId("")
     setSubmitError(null)
     setCreateOpen(true)
   }
@@ -171,6 +238,12 @@ export const ShiftsPage = () => {
         startTime: createStartTime,
         endTime: createEndTime,
         status: ShiftStatus.PLANNED,
+        ...(createShopAccountableWorkerId !== "" && {
+          shopAccountableWorkerId: Number.parseInt(
+            createShopAccountableWorkerId,
+            10
+          ),
+        }),
       })
       setCreateOpen(false)
       await load()
@@ -190,6 +263,11 @@ export const ShiftsPage = () => {
     setEditEndTime(shift.endTime.slice(0, 16))
     setEditStatus(shift.status)
     setEditNotes(shift.notes ?? "")
+    setEditShopAccountableWorkerId(
+      shift.shopAccountableWorkerId != null
+        ? String(shift.shopAccountableWorkerId)
+        : ""
+    )
     setSubmitError(null)
   }
 
@@ -214,6 +292,10 @@ export const ShiftsPage = () => {
         endTime: editEndTime,
         status: editStatus,
         notes: editNotes || undefined,
+        shopAccountableWorkerId:
+          editShopAccountableWorkerId === ""
+            ? null
+            : Number.parseInt(editShopAccountableWorkerId, 10),
       })
       closeEdit()
       await load()
@@ -240,6 +322,25 @@ export const ShiftsPage = () => {
     ],
     []
   )
+
+  const filteredShifts = useMemo(() => {
+    return shifts.filter((s) => {
+      if (
+        statusFilter !== SHIFT_STATUS_FILTER_ALL &&
+        s.status !== statusFilter
+      ) {
+        return false
+      }
+      if (dateFilter) {
+        const ymd = s.date.slice(0, 10)
+        if (ymd !== dateFilter) return false
+      }
+      return true
+    })
+  }, [shifts, statusFilter, dateFilter])
+
+  const hasActiveFilters =
+    statusFilter !== SHIFT_STATUS_FILTER_ALL || Boolean(dateFilter)
 
   const openManageWorkers = async (shift: ShiftResponse) => {
     setSelectedShiftForWorkers(shift)
@@ -324,11 +425,13 @@ export const ShiftsPage = () => {
             s?.closingQty != null
               ? Number(s.closingQty)
               : Number(p.currentStock)
+          const received = s?.receivedQty != null ? Number(s.receivedQty) : 0
           return {
             productId: p.id,
             productName: p.name,
             categoryName: p.category?.name ?? `#${p.categoryId.toString()}`,
             openingQty: opening.toString(),
+            receivedQty: received.toString(),
             closingQty: closing.toString(),
             sellingPrice: Number(p.sellingPrice),
           }
@@ -355,7 +458,7 @@ export const ShiftsPage = () => {
 
   const updateStockRow = (
     productId: number,
-    field: "openingQty" | "closingQty",
+    field: "openingQty" | "receivedQty" | "closingQty",
     value: string
   ) => {
     setStockRows((prev) =>
@@ -367,11 +470,12 @@ export const ShiftsPage = () => {
 
   const parsedRows = stockRows.map((row) => {
     const opening = Number(row.openingQty)
+    const received = Number(row.receivedQty)
     const closing = Number(row.closingQty)
-    const sold = opening - closing
+    const sold = opening + received - closing
     const revenue = sold * row.sellingPrice
-    const warning = closing > opening || sold < 0
-    return { ...row, opening, closing, sold, revenue, warning }
+    const warning = closing > opening + received || sold < 0
+    return { ...row, opening, received, closing, sold, revenue, warning }
   })
 
   const filteredRows = parsedRows.filter((row) => {
@@ -381,7 +485,7 @@ export const ShiftsPage = () => {
     ) {
       return false
     }
-    if (stockOnlyChanged && row.opening === row.closing) {
+    if (stockOnlyChanged && row.opening === row.closing && row.received === 0) {
       return false
     }
     return true
@@ -389,7 +493,7 @@ export const ShiftsPage = () => {
 
   const stockSummary = parsedRows.reduce(
     (acc, row) => {
-      if (row.opening !== row.closing) acc.edited += 1
+      if (row.opening !== row.closing || row.received !== 0) acc.edited += 1
       if (row.warning) acc.warnings += 1
       acc.totalRevenue += row.revenue
       return acc
@@ -411,6 +515,7 @@ export const ShiftsPage = () => {
       const body = parsedRows.map((row) => ({
         productId: row.productId,
         openingQty: row.opening,
+        receivedQty: row.received,
         closingQty: row.closing,
       }))
       await api.upsertShiftStock(selectedShiftForStock.id, body)
@@ -428,16 +533,23 @@ export const ShiftsPage = () => {
     setPumpReadingsLoading(true)
     setPumpReadingsError(null)
     try {
-      const [pumps, readings] = await Promise.all([
+      const [pumps, readings, assignments] = await Promise.all([
         api.getPumps(),
         api.getShiftPumpReadings(shift.id),
+        api.getShiftPumpAssignments(shift.id),
       ])
       const byPumpId = new Map(readings.map((r) => [r.pumpId, r]))
+      const assignByPumpId = new Map(assignments.map((a) => [a.pumpId, a]))
       const rows: PumpReadingRow[] = pumps.map((pump) => {
         const r = byPumpId.get(pump.id)
+        const a = assignByPumpId.get(pump.id)
+        const workerName =
+          r != null ? (r.workerName ?? null) : (a?.workerName ?? null)
         return {
           pumpId: pump.id,
           pumpName: pump.name,
+          readingId: r?.id,
+          workerName,
           openingReading:
             r?.openingReading != null ? String(r.openingReading) : "",
           closingReading:
@@ -482,22 +594,66 @@ export const ShiftsPage = () => {
     if (!pumpDialogShift) return
     setPumpReadingsLoading(true)
     setPumpReadingsError(null)
+    const rowsNeedingAssignment = pumpReadingRows.filter(
+      (row) =>
+        row.openingReading.trim() !== "" &&
+        row.closingReading.trim() !== "" &&
+        row.readingId == null &&
+        !row.workerName
+    )
+    if (rowsNeedingAssignment.length > 0) {
+      setPumpReadingsError(t("shifts.errors.pumpReadingsNeedAssignment"))
+      setPumpReadingsLoading(false)
+      return
+    }
+    for (const row of pumpReadingRows) {
+      if (!row.openingReading.trim() || !row.closingReading.trim()) continue
+      const opening = Number(row.openingReading)
+      const closing = Number(row.closingReading)
+      if (Number.isNaN(opening) || Number.isNaN(closing)) {
+        setPumpReadingsError(
+          t("shifts.errors.pumpReadingsInvalidNumber", {
+            pump: row.pumpName,
+          })
+        )
+        setPumpReadingsLoading(false)
+        return
+      }
+      if (closing < opening) {
+        setPumpReadingsError(
+          t("shifts.errors.pumpReadingsClosingBeforeOpening", {
+            pump: row.pumpName,
+          })
+        )
+        setPumpReadingsLoading(false)
+        return
+      }
+    }
     try {
       for (const row of pumpReadingRows) {
         if (!row.openingReading || !row.closingReading) continue
         const opening = Number(row.openingReading)
         const closing = Number(row.closingReading)
         if (Number.isNaN(opening) || Number.isNaN(closing)) continue
-        await api.createShiftPumpReading(pumpDialogShift.id, {
-          pumpId: row.pumpId,
-          openingReading: opening,
-          closingReading: closing,
-        })
+        if (row.readingId != null) {
+          await api.updatePumpReading(row.readingId, {
+            openingReading: opening,
+            closingReading: closing,
+          })
+        } else {
+          if (!row.workerName) continue
+          await api.createShiftPumpReading(pumpDialogShift.id, {
+            pumpId: row.pumpId,
+            openingReading: opening,
+            closingReading: closing,
+          })
+        }
       }
+      setPumpReadingsLoading(false)
       closePumpReadings()
-    } catch (e) {
+    } catch (err) {
       setPumpReadingsError(
-        e instanceof Error ? e.message : t("shifts.errors.updateFailed")
+        err instanceof Error ? err.message : t("shifts.errors.updateFailed")
       )
       setPumpReadingsLoading(false)
     }
@@ -509,7 +665,13 @@ export const ShiftsPage = () => {
     setPumpAssignmentsLoading(true)
     setPumpAssignmentsError(null)
     try {
-      const assignments = await api.getShiftPumpAssignments(shift.id)
+      const [assignments, workersRes, shiftWorkersRes] = await Promise.all([
+        api.getShiftPumpAssignments(shift.id),
+        api.getWorkers(),
+        api.getShiftWorkers(shift.id),
+      ])
+      setAllWorkers(workersRes)
+      setAssignedWorkerIds(shiftWorkersRes.map((w) => w.id))
       const rows: PumpAssignmentRow[] = assignments.map((a) => ({
         pumpId: a.pumpId,
         pumpName: a.pumpName,
@@ -569,10 +731,77 @@ export const ShiftsPage = () => {
           </Alert>
         )}
 
+        {!loading && shifts.length > 0 && (
+          <div className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="space-y-2">
+              <Label htmlFor="shift-filter-status">
+                {t("shifts.filters.status")}
+              </Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger id="shift-filter-status" className="w-[220px]">
+                  <SelectValue placeholder={t("shifts.filters.statusAll")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={SHIFT_STATUS_FILTER_ALL}>
+                    {t("shifts.filters.statusAll")}
+                  </SelectItem>
+                  {SHIFT_STATUS_ORDER.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {statusLabel(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shift-filter-date">
+                {t("shifts.filters.date")}
+              </Label>
+              <div className="flex flex-wrap items-center gap-2">
+                <DatePicker
+                  id="shift-filter-date"
+                  value={dateFilter}
+                  onChange={setDateFilter}
+                  placeholder={t("shifts.filters.dateAll")}
+                  className="w-[min(100%,240px)]"
+                />
+                {dateFilter ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDateFilter("")}
+                  >
+                    {t("shifts.filters.clearDate")}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            {hasActiveFilters ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="sm:mb-0.5"
+                onClick={() => {
+                  setStatusFilter(SHIFT_STATUS_FILTER_ALL)
+                  setDateFilter("")
+                }}
+              >
+                {t("shifts.filters.clearAll")}
+              </Button>
+            ) : null}
+          </div>
+        )}
+
         {loading ? (
           <p className="text-muted-foreground">{t("auth.loading")}</p>
         ) : shifts.length === 0 ? (
           <p className="text-muted-foreground">{t("shifts.noShifts")}</p>
+        ) : filteredShifts.length === 0 ? (
+          <p className="text-muted-foreground">
+            {t("shifts.filters.noMatches")}
+          </p>
         ) : (
           <div className="rounded-md border">
             <Table>
@@ -589,13 +818,17 @@ export const ShiftsPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shifts.map((shift) => (
+                {filteredShifts.map((shift) => (
                   <TableRow key={shift.id}>
                     <TableCell>{shift.id}</TableCell>
                     <TableCell>{formatIsoDate(shift.date)}</TableCell>
                     <TableCell>{formatIsoTime(shift.startTime)}</TableCell>
                     <TableCell>{formatIsoTime(shift.endTime)}</TableCell>
-                    <TableCell>{statusLabel(shift.status)}</TableCell>
+                    <TableCell>
+                      <span className={shiftStatusBadgeClassName(shift.status)}>
+                        {statusLabel(shift.status)}
+                      </span>
+                    </TableCell>
                     <TableCell className="flex gap-2">
                       <Button
                         size="sm"
@@ -673,7 +906,15 @@ export const ShiftsPage = () => {
               <DatePicker
                 id="create-date"
                 value={createDate}
-                onChange={setCreateDate}
+                onChange={(nextDate) => {
+                  setCreateDate(nextDate)
+                  setCreateStartTime((prev) =>
+                    withDatePreservingTime(prev, nextDate, { h: 8, m: 0 })
+                  )
+                  setCreateEndTime((prev) =>
+                    withDatePreservingTime(prev, nextDate, { h: 17, m: 0 })
+                  )
+                }}
                 placeholder={t("shifts.form.pickDate")}
               />
             </div>
@@ -696,6 +937,36 @@ export const ShiftsPage = () => {
                 value={createEndTime}
                 onChange={(e) => setCreateEndTime(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("shifts.form.shopAccountable")}</Label>
+              <Select
+                value={createShopAccountableWorkerId || "__none__"}
+                onValueChange={(v) =>
+                  setCreateShopAccountableWorkerId(v === "__none__" ? "" : v)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={t("shifts.form.shopAccountablePlaceholder")}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">
+                    {t("shifts.form.shopAccountableNone")}
+                  </SelectItem>
+                  {allWorkers
+                    .filter((w) => w.active)
+                    .map((w) => (
+                      <SelectItem key={w.id} value={String(w.id)}>
+                        {w.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {t("shifts.form.shopAccountableHint")}
+              </p>
             </div>
             <DialogFooter>
               <Button
@@ -731,7 +1002,15 @@ export const ShiftsPage = () => {
                 <DatePicker
                   id="edit-date"
                   value={editDate}
-                  onChange={setEditDate}
+                  onChange={(nextDate) => {
+                    setEditDate(nextDate)
+                    setEditStartTime((prev) =>
+                      withDatePreservingTime(prev, nextDate, { h: 8, m: 0 })
+                    )
+                    setEditEndTime((prev) =>
+                      withDatePreservingTime(prev, nextDate, { h: 17, m: 0 })
+                    )
+                  }}
                   placeholder={t("shifts.form.pickDate")}
                 />
               </div>
@@ -777,6 +1056,36 @@ export const ShiftsPage = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("shifts.form.shopAccountable")}</Label>
+                <Select
+                  value={editShopAccountableWorkerId || "__none__"}
+                  onValueChange={(v) =>
+                    setEditShopAccountableWorkerId(v === "__none__" ? "" : v)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={t("shifts.form.shopAccountablePlaceholder")}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">
+                      {t("shifts.form.shopAccountableNone")}
+                    </SelectItem>
+                    {allWorkers
+                      .filter((w) => w.active)
+                      .map((w) => (
+                        <SelectItem key={w.id} value={String(w.id)}>
+                          {w.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {t("shifts.form.shopAccountableHint")}
+                </p>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={closeEdit}>
@@ -829,7 +1138,11 @@ export const ShiftsPage = () => {
                         <TableHead />
                         <TableHead>{t("workers.table.name")}</TableHead>
                         <TableHead>{t("workers.table.designation")}</TableHead>
-                        <TableHead>{t("users.table.role")}</TableHead>
+                        <TableHead
+                          title={t("shifts.workerPickerLoginRoleHint")}
+                        >
+                          {t("shifts.workerPickerLoginRole")}
+                        </TableHead>
                         <TableHead>{t("workers.table.active")}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -953,6 +1266,9 @@ export const ShiftsPage = () => {
                             {t("shifts.stock.table.opening")}
                           </TableHead>
                           <TableHead className="w-[90px]">
+                            {t("shifts.stock.table.received")}
+                          </TableHead>
+                          <TableHead className="w-[90px]">
                             {t("shifts.stock.table.closing")}
                           </TableHead>
                           <TableHead className="w-[90px]">
@@ -982,6 +1298,22 @@ export const ShiftsPage = () => {
                                   updateStockRow(
                                     row.productId,
                                     "openingQty",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                step="0.001"
+                                min="0"
+                                value={row.receivedQty}
+                                disabled={!canEditStock}
+                                onChange={(e) =>
+                                  updateStockRow(
+                                    row.productId,
+                                    "receivedQty",
                                     e.target.value
                                   )
                                 }
@@ -1032,7 +1364,7 @@ export const ShiftsPage = () => {
         open={!!pumpDialogShift}
         onOpenChange={(open) => !open && closePumpReadings()}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{t("shifts.pumpReadings")}</DialogTitle>
           </DialogHeader>
@@ -1043,6 +1375,9 @@ export const ShiftsPage = () => {
                 {formatIsoTime(pumpDialogShift.startTime)} –{" "}
                 {formatIsoTime(pumpDialogShift.endTime)} •{" "}
                 {statusLabel(pumpDialogShift.status)}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("shifts.pumpReadingsLinkedHint")}
               </p>
               {pumpReadingsError && (
                 <Alert variant="destructive">
@@ -1058,49 +1393,85 @@ export const ShiftsPage = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Pump</TableHead>
-                        <TableHead>Opening reading</TableHead>
-                        <TableHead>Closing reading</TableHead>
+                        <TableHead>{t("shifts.pump")}</TableHead>
+                        <TableHead>
+                          {t("shifts.pumpReadingsAssignedWorker")}
+                        </TableHead>
+                        <TableHead>{t("shifts.pumpReadingsOpening")}</TableHead>
+                        <TableHead>{t("shifts.pumpReadingsClosing")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pumpReadingRows.map((row) => (
-                        <TableRow key={row.pumpId}>
-                          <TableCell>{row.pumpName}</TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.001"
-                              value={row.openingReading}
-                              disabled={!canEditPumpReadings}
-                              onChange={(e) =>
-                                updatePumpReadingRow(
-                                  row.pumpId,
-                                  "openingReading",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.001"
-                              value={row.closingReading}
-                              disabled={!canEditPumpReadings}
-                              onChange={(e) =>
-                                updatePumpReadingRow(
-                                  row.pumpId,
-                                  "closingReading",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {pumpReadingRows.map((row) => {
+                        const rowNeedsAssignBeforeCreate =
+                          canEditPumpReadings &&
+                          row.readingId == null &&
+                          !row.workerName
+                        return (
+                          <TableRow key={row.pumpId}>
+                            <TableCell>{row.pumpName}</TableCell>
+                            <TableCell>
+                              {row.workerName ? (
+                                <span className="font-medium">
+                                  {row.workerName}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">
+                                  {t("shifts.pumpReadingsUnassigned")}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.001"
+                                value={row.openingReading}
+                                disabled={
+                                  !canEditPumpReadings ||
+                                  rowNeedsAssignBeforeCreate
+                                }
+                                title={
+                                  rowNeedsAssignBeforeCreate
+                                    ? t("shifts.pumpReadingsAssignFirstTitle")
+                                    : undefined
+                                }
+                                onChange={(e) =>
+                                  updatePumpReadingRow(
+                                    row.pumpId,
+                                    "openingReading",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.001"
+                                value={row.closingReading}
+                                disabled={
+                                  !canEditPumpReadings ||
+                                  rowNeedsAssignBeforeCreate
+                                }
+                                title={
+                                  rowNeedsAssignBeforeCreate
+                                    ? t("shifts.pumpReadingsAssignFirstTitle")
+                                    : undefined
+                                }
+                                onChange={(e) =>
+                                  updatePumpReadingRow(
+                                    row.pumpId,
+                                    "closingReading",
+                                    e.target.value
+                                  )
+                                }
+                              />
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -1155,45 +1526,58 @@ export const ShiftsPage = () => {
                   {t("pumps.noPumps")}
                 </p>
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("shifts.pump")}</TableHead>
-                        <TableHead>{t("shifts.worker")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pumpAssignmentRows.map((row) => (
-                        <TableRow key={row.pumpId}>
-                          <TableCell>{row.pumpName}</TableCell>
-                          <TableCell>
-                            <select
-                              className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                              value={row.workerId ?? ""}
-                              onChange={(e) =>
-                                handleAssignPumpWorker(
-                                  row.pumpId,
-                                  e.target.value ? Number(e.target.value) : null
-                                )
-                              }
-                            >
-                              <option value="">
-                                {t("shifts.assignPumpsSelectWorker")}
-                              </option>
-                              {allWorkers
-                                .filter((w) => assignedWorkerIds.includes(w.id))
-                                .map((worker) => (
-                                  <option key={worker.id} value={worker.id}>
-                                    {worker.name}
-                                  </option>
-                                ))}
-                            </select>
-                          </TableCell>
+                <div className="space-y-3">
+                  {assignedWorkerIds.length === 0 && (
+                    <Alert>
+                      <AlertDescription>
+                        {t("shifts.assignPumpsNoShiftWorkers")}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("shifts.pump")}</TableHead>
+                          <TableHead>{t("shifts.worker")}</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {pumpAssignmentRows.map((row) => (
+                          <TableRow key={row.pumpId}>
+                            <TableCell>{row.pumpName}</TableCell>
+                            <TableCell>
+                              <select
+                                className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                value={row.workerId ?? ""}
+                                onChange={(e) =>
+                                  handleAssignPumpWorker(
+                                    row.pumpId,
+                                    e.target.value
+                                      ? Number(e.target.value)
+                                      : null
+                                  )
+                                }
+                              >
+                                <option value="">
+                                  {t("shifts.assignPumpsSelectWorker")}
+                                </option>
+                                {allWorkers
+                                  .filter((w) =>
+                                    assignedWorkerIds.includes(w.id)
+                                  )
+                                  .map((worker) => (
+                                    <option key={worker.id} value={worker.id}>
+                                      {worker.name}
+                                    </option>
+                                  ))}
+                              </select>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               )}
               <DialogFooter>

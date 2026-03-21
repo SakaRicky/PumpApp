@@ -1,6 +1,6 @@
 ## PumpApp Feature Slices (S1–S8)
 
-This document summarizes the vertical feature slices for PumpApp, based on the agent workflow plan (`pumpapp_agent_workflow_plan_58c88a44.plan.md`). For how reconciliation and shop counts fit **daily vs weekly** operations in the field, see [OPERATIONS.md](OPERATIONS.md).
+This document summarizes the vertical feature slices for PumpApp, based on the agent workflow plan (`pumpapp_agent_workflow_plan_58c88a44.plan.md`). For how reconciliation and shop counts fit **daily vs weekly** operations, **daily missing cash**, **weekly physical enforcement**, and **monthly payroll** in the field, see [OPERATIONS.md](OPERATIONS.md) and [DOMAIN-DECISIONS.md](DOMAIN-DECISIONS.md#operational-vs-app-reconciliation-payroll).
 
 Each slice is intended to be implemented as a **vertical slice**: schema (if needed) → migrations → shared types/Zod → API → tests → UI.
 
@@ -55,9 +55,7 @@ Each slice is intended to be implemented as a **vertical slice**: schema (if nee
   - **Tests**:
     - Shift open/close flow and allowed status transitions.
     - Worker assignment invariants (no duplicates, only active workers, at least one worker before close).
-    - Closure preconditions based on assigned worker roles:
-      - PUMPIST present → pump readings required.
-      - SALE present → shop stock snapshot required.
+    - Closure preconditions: fuel/pump coverage and shop coverage on assigned workers (**login role** PUMPIST/SALE and/or **designation** e.g. Pumpist/Shop); pump readings required. (Shop stock snapshot is **not** required to close for now; reconciliation may still require stock or `MANUAL` shop source.)
   - **UI**:
     - Shift list with filters.
     - Create/edit shift.

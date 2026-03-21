@@ -95,6 +95,21 @@ PumpApp is **reconciliation-first**, not POS-first. It supports a phased adoptio
   - **Negative** discrepancy ⇒ cash handed in **more** than expected (**over**).
 - **One summary per shift**: At most one `ShiftReconciliationSummary` row per `shiftId` (1:1).
 
+### Operational vs app reconciliation (payroll)
+
+The business distinguishes several layers; the Phase 1 app implements **per-shift reconciliation** (expected vs cash) but does **not** yet model every offline artifact as first-class data.
+
+| Concept                   | Meaning in the field                                                                                         | Phase 1 in PumpApp                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **Physical shop book**    | One book for the shop, **one page per shift**; per-product opening, purchases, sold, remaining, shift totals | Approximated by **`ShiftProductStock`** (and notes elsewhere); purchases-in-the-book are **not** a separate line type yet |
+| **Daily missing cash**    | Admin records a **shortfall for that day** when written numbers and cash do **not** add up                   | Not a dedicated entity; may be reflected informally in **notes** or inferred from **discrepancy** per shift               |
+| **Weekly physical close** | Physical shelf count **with the seller**; **enforced** missing/variance for payroll                          | **Not** a first-class “week close” record; weekly story is **operational** until reporting/schema add it                  |
+| **Monthly payroll**       | Deduct **weekly-enforced** missings from salary; rare **positive** balance → cash to seller                  | **Out of scope** for core schema; future **HR/payroll** or export                                                         |
+
+**Authoritative rule for enforcement:** when **daily** signals and **weekly physical** results **disagree**, the business treats the **weekly physical close** as authoritative for consequences (see [OPERATIONS.md](OPERATIONS.md)).
+
+**Terminology:** “**Correction**” in conversation often means **admin verifies arithmetic and records a gap** (“missing cash for the day”), not necessarily **immutable audit versioning** of every edited cell in software. Phase 1 does **not** store full version history of each `ShiftProductStock` change; overrides on reconciliation carry **reasons** where specified in schema/docs.
+
 ### Summary
 
 - Reconciliation is **per shift**, not per abstract day.
@@ -102,4 +117,4 @@ PumpApp is **reconciliation-first**, not POS-first. It supports a phased adoptio
 - Fuel is a **separate domain** from shop products (FuelType, Tank, deliveries, theoretical vs actual quantity); see [FUEL-TRACKING.md](FUEL-TRACKING.md).
 - Shop totals always have an explicit **source** and optional explanation.
 - The system starts as an **owner-driven, shift-end reconciliation tool** and later grows into a richer transactional system, without schema churn.
-- **Operational cadence** (daily cash collection vs weekly shop counts) is described in [OPERATIONS.md](OPERATIONS.md).
+- **Operational cadence** (shop book, daily missing cash, weekly physical enforcement, monthly payroll) is described in [OPERATIONS.md](OPERATIONS.md); mapping to app concepts is in [Operational vs app reconciliation (payroll)](#operational-vs-app-reconciliation-payroll).

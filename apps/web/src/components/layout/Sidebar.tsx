@@ -9,6 +9,7 @@ import {
   Package,
   FolderOpen,
   BarChart3,
+  ClipboardList,
   Users,
   LogOut,
 } from "@/components/icons"
@@ -33,6 +34,11 @@ const baseNavGroups: NavGroup[] = [
     links: [
       { to: "/shifts", labelKey: "shifts", icon: CalendarClock },
       { to: "/reconciliation", labelKey: "reconciliation", icon: Scale },
+      {
+        to: "/weekly-inventory",
+        labelKey: "weeklyInventory",
+        icon: ClipboardList,
+      },
     ],
   },
   {
@@ -55,6 +61,11 @@ const adminNavGroup: NavGroup = {
     { to: "/users", labelKey: "users", icon: Users },
     { to: "/workers", labelKey: "workers", icon: Users },
     { to: "/pumps", labelKey: "pumps", icon: Package },
+    {
+      to: "/weekly-inventory",
+      labelKey: "weeklyInventory",
+      icon: ClipboardList,
+    },
   ],
 }
 

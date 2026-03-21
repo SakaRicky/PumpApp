@@ -45,6 +45,7 @@ export type {
   PumpReadingUpdateBody,
   PumpReadingResponse,
   CashHandInCreateBody,
+  CashHandInVariancePatchBody,
   CashHandInResponse,
   ReconciliationSummaryWriteCreateBody,
   ReconciliationSummaryWriteUpdateBody,
@@ -56,6 +57,9 @@ export type {
   ShiftStockItemBody,
   ShiftStockBulkUpdateBody,
   ShiftStockItemResponse,
+  WeeklyInventoryCloseCreateBody,
+  WeeklyInventoryCloseResponse,
+  WeeklyInventoryCountLineResponse,
 } from "./dto/index.js"
 
 export {
@@ -86,12 +90,14 @@ export {
   pumpReadingCreateSchema,
   pumpReadingUpdateSchema,
   cashHandInCreateSchema,
+  cashHandInVariancePatchSchema,
   reconciliationSummaryWriteCreateSchema,
   reconciliationSummaryWriteUpdateSchema,
   fixedCostCreateSchema,
   fixedCostUpdateSchema,
   purchasePriceCreateSchema,
   tankLevelReadingUpdateSchema,
+  weeklyInventoryCloseCreateSchema,
 } from "./schemas/index.js"
 export type {
   LoginInput,
@@ -113,6 +119,7 @@ export type {
   PumpReadingCreateInput,
   PumpReadingUpdateInput,
   CashHandInCreateInput,
+  CashHandInVariancePatchInput,
   ReconciliationSummaryWriteCreateInput,
   ReconciliationSummaryWriteUpdateInput,
   FixedCostCreateInput,
@@ -127,4 +134,5 @@ export type {
   TankLevelReadingUpdateInput,
   ShiftStockItemInput,
   ShiftStockBulkUpdateInput,
+  WeeklyInventoryCloseCreateInput,
 } from "./schemas/index.js"

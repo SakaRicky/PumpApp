@@ -134,6 +134,7 @@ Draws from one tank; multiple pumps may share a tank.
 - `endTime` (time)
 - `status` (enum `ShiftStatus`, e.g. OPEN, CLOSED, RECONCILED)
 - optional notes
+- optional `shopAccountableWorkerId` → `Worker` (defaults for weekly close UI)
 
 #### ShiftWorker
 
@@ -146,10 +147,11 @@ Draws from one tank; multiple pumps may share a tank.
 - `shiftId` → `Shift`
 - `productId` → `Product`
 - `openingQty` (decimal)
+- `receivedQty` (decimal)
 - `closingQty` (decimal)
 - (composite primary key on `shiftId`, `productId`)
 
-Represents the per-shift stock snapshot for a given product. `soldQty` is derived as `openingQty − closingQty`. Used to compute:
+Represents the per-shift stock snapshot for a given product. `receivedQty` captures purchases/deliveries during the shift; `soldQty` is derived as `openingQty + receivedQty − closingQty`. Used to compute:
 
 - shift-end shop revenue (via `soldQty × sellingPrice`),
 - inventory changes (decrement `Product.currentStock`),
@@ -172,11 +174,13 @@ Volume is derived as `closingReading - openingReading`.
 - `id` (PK)
 - `shiftId` → `Shift`
 - `workerId` → `Worker` (**required** for audit: which worker handed in this amount)
-- `amount` (decimal)
+- `amount` (decimal) — cash physically handed in on this event
+- `varianceAmount` (decimal, nullable, **signed**) — optional variance recorded **at the same time** as this hand-in (positive = missing / short; negative = surplus)
+- `varianceNote` (text, nullable)
 - `recordedById` → `User`
 - `recordedAt` (timestamp)
 
-Represents cash physically handed in for a shift. Recording is **ADMIN-only** per [DOMAIN-DECISIONS.md](DOMAIN-DECISIONS.md).
+Multiple hand-ins per worker per shift are allowed; each row can carry its own variance. Recording is **ADMIN-only** per [DOMAIN-DECISIONS.md](DOMAIN-DECISIONS.md). Weekly close comparisons sum non-null `varianceAmount` per worker across shifts in the week.
 
 #### ShiftReconciliationSummary
 

@@ -3,6 +3,7 @@ import { Router } from "express"
 import { requireAuth, requireAdmin } from "../middleware/auth.js"
 import {
   list,
+  getById,
   create,
   update,
   listWorkers,
@@ -20,6 +21,7 @@ import {
 import {
   listByShift as listCashHandIns,
   createForShift as createCashHandInForShift,
+  patchVarianceForShift as patchCashHandInVarianceForShift,
 } from "../controllers/cashHandInController.js"
 import {
   getByShift as getReconciliation,
@@ -38,6 +40,7 @@ const asyncHandler = (fn: (req: Request, res: Response) => Promise<void>) => {
 shiftsRouter.use(requireAuth)
 
 shiftsRouter.get("/", asyncHandler(list))
+shiftsRouter.get("/:id", requireAdmin, asyncHandler(getById))
 shiftsRouter.post("/", requireAdmin, asyncHandler(create))
 shiftsRouter.patch("/:id", requireAdmin, asyncHandler(update))
 
@@ -83,6 +86,11 @@ shiftsRouter.post(
   "/:id/cash-handins",
   requireAdmin,
   asyncHandler(createCashHandInForShift)
+)
+shiftsRouter.patch(
+  "/:id/cash-handins/:handInId",
+  requireAdmin,
+  asyncHandler(patchCashHandInVarianceForShift)
 )
 
 shiftsRouter.get(

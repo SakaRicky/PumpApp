@@ -9,7 +9,9 @@ import { AppError, ErrorCode } from "../types/errors.js"
 
 type PumpReadingRow = Awaited<
   ReturnType<typeof prisma.pumpReading.findMany>
->[number]
+>[number] & {
+  worker?: { id: number; name: string } | null
+}
 
 const toPumpReadingResponse = (row: PumpReadingRow): PumpReadingResponse => ({
   id: row.id,
@@ -17,6 +19,8 @@ const toPumpReadingResponse = (row: PumpReadingRow): PumpReadingResponse => ({
   shiftId: row.shiftId,
   openingReading: Number(row.openingReading),
   closingReading: Number(row.closingReading),
+  workerId: row.workerId ?? null,
+  workerName: row.worker?.name ?? null,
   recordedById: row.recordedById,
   recordedAt: row.recordedAt.toISOString(),
   volume: Number(row.closingReading) - Number(row.openingReading),
@@ -31,6 +35,9 @@ const listByShift = async (req: Request, res: Response): Promise<void> => {
   const rows = await prisma.pumpReading.findMany({
     where: { shiftId },
     orderBy: { pumpId: "asc" },
+    include: {
+      worker: { select: { id: true, name: true } },
+    },
   })
 
   res.status(200).json(rows.map(toPumpReadingResponse))
@@ -44,7 +51,8 @@ const createForShift = async (req: Request, res: Response): Promise<void> => {
 
   const parsed = pumpReadingCreateSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new AppError("Validation failed", 400, ErrorCode.VALIDATION_ERROR, {
+    const message = parsed.error.issues[0]?.message ?? "Validation failed"
+    throw new AppError(message, 400, ErrorCode.VALIDATION_ERROR, {
       errors: parsed.error.flatten().fieldErrors,
     })
   }
@@ -104,6 +112,9 @@ const createForShift = async (req: Request, res: Response): Promise<void> => {
         recordedById: req.user?.id ?? 0,
         workerId: assignment.workerId,
       },
+      include: {
+        worker: { select: { id: true, name: true } },
+      },
     })
     if (pump.tankId != null) {
       const tank = await tx.tank.findUnique({
@@ -138,7 +149,8 @@ const updateReading = async (req: Request, res: Response): Promise<void> => {
 
   const parsed = pumpReadingUpdateSchema.safeParse(req.body)
   if (!parsed.success) {
-    throw new AppError("Validation failed", 400, ErrorCode.VALIDATION_ERROR, {
+    const message = parsed.error.issues[0]?.message ?? "Validation failed"
+    throw new AppError(message, 400, ErrorCode.VALIDATION_ERROR, {
       errors: parsed.error.flatten().fieldErrors,
     })
   }
@@ -159,7 +171,7 @@ const updateReading = async (req: Request, res: Response): Promise<void> => {
 
   if (closing < opening) {
     throw new AppError(
-      "Closing reading must be >= opening reading",
+      "Closing reading must be greater than or equal to the opening reading",
       400,
       ErrorCode.VALIDATION_ERROR
     )
@@ -194,6 +206,9 @@ const updateReading = async (req: Request, res: Response): Promise<void> => {
       data: {
         openingReading: opening,
         closingReading: closing,
+      },
+      include: {
+        worker: { select: { id: true, name: true } },
       },
     })
   })

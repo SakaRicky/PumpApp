@@ -20,11 +20,13 @@ describe("getShopSalesTotalFromShiftStock", () => {
     mockFindMany.mockResolvedValue([
       {
         openingQty: 10,
+        receivedQty: 0,
         closingQty: 7,
         product: { sellingPrice: 2.5 },
       },
       {
         openingQty: 5,
+        receivedQty: 0,
         closingQty: 5,
         product: { sellingPrice: 1 },
       },

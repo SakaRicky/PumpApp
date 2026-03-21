@@ -14,6 +14,7 @@ import {
   UsersPage,
   WorkersPage,
   PumpsPage,
+  WeeklyInventoryPage,
 } from "@/pages"
 import { useAlert } from "@/contexts/AlertProvider"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/users" element={<UsersPage />} />
             <Route path="/workers" element={<WorkersPage />} />
             <Route path="/pumps" element={<PumpsPage />} />
+            <Route path="/weekly-inventory" element={<WeeklyInventoryPage />} />
           </Route>
         </Route>
       </Route>

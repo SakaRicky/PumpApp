@@ -56,7 +56,11 @@ export const DatePicker = ({
   includeTime = false,
 }: DatePickerProps) => {
   const [open, setOpen] = React.useState(false)
-  const selected = parseValue(value, includeTime)
+  /** Memoize so `selected` is referentially stable when `value` is unchanged (avoids effect loops). */
+  const selected = React.useMemo(
+    () => parseValue(value, includeTime),
+    [value, includeTime]
+  )
 
   const [pendingDate, setPendingDate] = React.useState<Date | undefined>(
     () => selected

@@ -40,12 +40,17 @@ import type {
   FuelDeliveryCreateBody,
   FuelDeliveryResponse,
   ShiftPumpAssignmentBody,
+  PumpReadingResponse,
+  PumpReadingUpdateBody,
   CashHandInCreateBody,
+  CashHandInVariancePatchBody,
   CashHandInResponse,
   ReconciliationGetResponse,
   ReconciliationSummaryResponse,
   ReconciliationSummaryWriteCreateBody,
   ReconciliationSummaryWriteUpdateBody,
+  WeeklyInventoryCloseCreateBody,
+  WeeklyInventoryCloseResponse,
 } from "@pumpapp/shared"
 
 // In dev: use relative /api so Vite proxy forwards to the API. In prod: same (empty = same origin).
@@ -100,9 +105,67 @@ const request = async <T>(
   }
   if (!res.ok) {
     const err = data as ApiError
-    throw new Error(err?.error ?? `Request failed: ${res.status}`)
+    let msg = err?.error ?? `Request failed: ${res.status}`
+    if (
+      msg === "Validation failed" &&
+      err.details &&
+      typeof err.details === "object" &&
+      "errors" in err.details &&
+      err.details.errors &&
+      typeof err.details.errors === "object"
+    ) {
+      const fieldErrors = err.details.errors as Record<
+        string,
+        string[] | undefined
+      >
+      const first = Object.values(fieldErrors)
+        .flat()
+        .find((m) => typeof m === "string" && m.length > 0)
+      if (first) msg = first
+    }
+    throw new Error(msg)
   }
   return data as T
+}
+
+const requestText = async (
+  path: string,
+  options: RequestOptions = {}
+): Promise<string> => {
+  const { method = "GET", body } = options
+  const pathStr = path.startsWith("/") ? path : `/${path}`
+  const base = API_BASE || API_PREFIX
+  const url = `${base}${pathStr}`
+  const token = getToken()
+  const headers: Record<string, string> = {
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...(body !== undefined && { "Content-Type": "application/json" }),
+  }
+  const res = await fetch(url, {
+    method,
+    headers,
+    ...(body !== undefined && { body: JSON.stringify(body) }),
+  })
+  const text = await res.text()
+  if (res.status === 401) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem("pumpapp_user")
+      window.location.href = "/login"
+    }
+    throw new Error("Session expired")
+  }
+  if (!res.ok) {
+    let msg = `Request failed: ${res.status}`
+    try {
+      const err = JSON.parse(text) as ApiError
+      if (err?.error) msg = err.error
+    } catch {
+      if (text) msg = text
+    }
+    throw new Error(msg)
+  }
+  return text
 }
 
 export const api = {
@@ -243,6 +306,8 @@ export const api = {
   // Shifts & workers on shifts
   getShifts: (): Promise<ShiftResponse[]> =>
     request<ShiftResponse[]>("/shifts"),
+  getShift: (id: number): Promise<ShiftResponse> =>
+    request<ShiftResponse>(`/shifts/${id}`),
   createShift: (body: ShiftCreateBody): Promise<ShiftResponse> =>
     request<ShiftResponse>("/shifts", { method: "POST", body }),
   updateShift: (id: number, body: ShiftUpdateBody): Promise<ShiftResponse> =>
@@ -290,19 +355,8 @@ export const api = {
       body: items,
     }),
 
-  getShiftPumpReadings: (shiftId: number) =>
-    request<
-      {
-        id: number
-        pumpId: number
-        shiftId: number
-        openingReading: number
-        closingReading: number
-        recordedById: number
-        recordedAt: string
-        volume?: number
-      }[]
-    >(`/shifts/${shiftId}/pump-readings`),
+  getShiftPumpReadings: (shiftId: number): Promise<PumpReadingResponse[]> =>
+    request<PumpReadingResponse[]>(`/shifts/${shiftId}/pump-readings`),
   createShiftPumpReading: (
     shiftId: number,
     body: {
@@ -310,9 +364,17 @@ export const api = {
       openingReading: number
       closingReading: number
     }
-  ): Promise<void> =>
-    request<void>(`/shifts/${shiftId}/pump-readings`, {
+  ): Promise<PumpReadingResponse> =>
+    request<PumpReadingResponse>(`/shifts/${shiftId}/pump-readings`, {
       method: "POST",
+      body,
+    }),
+  updatePumpReading: (
+    id: number,
+    body: PumpReadingUpdateBody
+  ): Promise<PumpReadingResponse> =>
+    request<PumpReadingResponse>(`/pump-readings/${id}`, {
+      method: "PATCH",
       body,
     }),
 
@@ -324,6 +386,15 @@ export const api = {
   ): Promise<CashHandInResponse> =>
     request<CashHandInResponse>(`/shifts/${shiftId}/cash-handins`, {
       method: "POST",
+      body,
+    }),
+  patchShiftCashHandInVariance: (
+    shiftId: number,
+    handInId: number,
+    body: CashHandInVariancePatchBody
+  ): Promise<CashHandInResponse> =>
+    request<CashHandInResponse>(`/shifts/${shiftId}/cash-handins/${handInId}`, {
+      method: "PATCH",
       body,
     }),
 
@@ -346,6 +417,38 @@ export const api = {
     request<ReconciliationSummaryResponse>(
       `/shifts/${shiftId}/reconciliation`,
       { method: "PATCH", body }
+    ),
+
+  listWeeklyInventoryCloses: (params?: {
+    from?: string
+    to?: string
+    workerId?: number
+  }): Promise<WeeklyInventoryCloseResponse[]> => {
+    const sp = new URLSearchParams()
+    if (params?.from) sp.set("from", params.from)
+    if (params?.to) sp.set("to", params.to)
+    if (params?.workerId !== undefined) {
+      sp.set("workerId", String(params.workerId))
+    }
+    const qs = sp.toString()
+    return request<WeeklyInventoryCloseResponse[]>(
+      `/weekly-inventory-closes${qs ? `?${qs}` : ""}`
+    )
+  },
+  createWeeklyInventoryClose: (
+    body: WeeklyInventoryCloseCreateBody
+  ): Promise<WeeklyInventoryCloseResponse> =>
+    request<WeeklyInventoryCloseResponse>("/weekly-inventory-closes", {
+      method: "POST",
+      body,
+    }),
+  getWeeklyInventoryClose: (
+    id: number
+  ): Promise<WeeklyInventoryCloseResponse> =>
+    request<WeeklyInventoryCloseResponse>(`/weekly-inventory-closes/${id}`),
+  downloadWeeklyInventoryCsv: (month: string): Promise<string> =>
+    requestText(
+      `/weekly-inventory-closes/export.csv?month=${encodeURIComponent(month)}`
     ),
 }
 

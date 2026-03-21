@@ -7,7 +7,8 @@ export const pumpReadingCreateSchema = z
     closingReading: z.number().nonnegative(),
   })
   .refine((data) => data.closingReading >= data.openingReading, {
-    message: "Closing reading must be >= opening reading",
+    message:
+      "Closing reading must be greater than or equal to the opening reading",
     path: ["closingReading"],
   })
 

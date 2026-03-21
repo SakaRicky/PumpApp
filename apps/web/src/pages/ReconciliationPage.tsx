@@ -10,6 +10,7 @@ import {
   type ReconciliationSummaryWriteUpdateBody,
   type ShiftResponse,
   type WorkerResponse,
+  type CashHandInCreateBody,
   type CashHandInResponse,
 } from "@pumpapp/shared"
 import { PageLayout } from "@/components/layout/PageLayout"
@@ -48,12 +49,24 @@ const money = (n: number): string => n.toFixed(2)
 
 export const ReconciliationPage = () => {
   const { t } = useTranslation()
+
+  const workerLabelWithDesignation = useCallback(
+    (w: WorkerResponse) =>
+      t("reconciliation.handIns.workerLabel", {
+        name: w.name,
+        designation: w.designation?.trim() || t("workers.noDesignation"),
+      }),
+    [t]
+  )
   const { user } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
   const isAdmin = user?.role === "ADMIN"
 
   const [shifts, setShifts] = useState<ShiftResponse[]>([])
+  /** All workers (for resolving names on existing hand-ins). */
   const [workers, setWorkers] = useState<WorkerResponse[]>([])
+  /** Workers assigned to the selected shift (hand-in dropdown). */
+  const [shiftWorkers, setShiftWorkers] = useState<WorkerResponse[]>([])
   const [selectedShiftId, setSelectedShiftId] = useState<number | null>(null)
   const [reco, setReco] = useState<ReconciliationGetResponse | null>(null)
   const [handIns, setHandIns] = useState<CashHandInResponse[]>([])
@@ -78,6 +91,8 @@ export const ReconciliationPage = () => {
 
   const [chiWorkerId, setChiWorkerId] = useState("")
   const [chiAmount, setChiAmount] = useState("")
+  const [chiVariance, setChiVariance] = useState("")
+  const [chiVarianceNote, setChiVarianceNote] = useState("")
   const [chiSubmitting, setChiSubmitting] = useState(false)
   const [chiError, setChiError] = useState<string | null>(null)
 
@@ -134,17 +149,25 @@ export const ReconciliationPage = () => {
     async (shiftId: number) => {
       setLoadError(null)
       setLoading(true)
+      setChiWorkerId("")
+      setChiAmount("")
+      setChiVariance("")
+      setChiVarianceNote("")
+      setChiError(null)
       try {
-        const [r, h] = await Promise.all([
+        const [r, h, assigned] = await Promise.all([
           api.getShiftReconciliation(shiftId),
           api.getShiftCashHandIns(shiftId),
+          api.getShiftWorkers(shiftId),
         ])
         setReco(r)
         setHandIns(h)
+        setShiftWorkers(assigned.filter((w) => w.active))
         applySummaryToForm(r.summary)
       } catch (e) {
         setReco(null)
         setHandIns([])
+        setShiftWorkers([])
         setLoadError(e instanceof Error ? e.message : "Load failed")
       } finally {
         setLoading(false)
@@ -322,6 +345,13 @@ export const ReconciliationPage = () => {
     }
   }
 
+  const resolveWorkerForHandIn = useCallback(
+    (workerId: number): WorkerResponse | undefined =>
+      shiftWorkers.find((w) => w.id === workerId) ??
+      workers.find((w) => w.id === workerId),
+    [shiftWorkers, workers]
+  )
+
   const handleAddHandIn = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedShiftId || !isAdmin) return
@@ -331,16 +361,41 @@ export const ReconciliationPage = () => {
       setChiError(t("reconciliation.errors.workerRequired"))
       return
     }
+    if (!shiftWorkers.some((w) => w.id === workerId)) {
+      setChiError(t("reconciliation.errors.handInWorkerNotOnShift"))
+      return
+    }
     if (!Number.isFinite(amount) || amount < 0) {
       setChiError(t("reconciliation.errors.amountInvalid"))
       return
     }
+
+    const body: CashHandInCreateBody = {
+      workerId,
+      amount,
+    }
+    const varStr = chiVariance.trim()
+    if (varStr !== "") {
+      const v = Number.parseFloat(varStr)
+      if (!Number.isFinite(v)) {
+        setChiError(t("reconciliation.errors.varianceInvalid"))
+        return
+      }
+      body.varianceAmount = v
+    }
+    const vn = chiVarianceNote.trim()
+    if (vn !== "") {
+      body.varianceNote = vn
+    }
+
     setChiError(null)
     setChiSubmitting(true)
     try {
-      await api.createShiftCashHandIn(selectedShiftId, { workerId, amount })
+      await api.createShiftCashHandIn(selectedShiftId, body)
       setChiWorkerId("")
       setChiAmount("")
+      setChiVariance("")
+      setChiVarianceNote("")
       await loadShiftData(selectedShiftId)
     } catch (err) {
       setChiError(
@@ -350,6 +405,24 @@ export const ReconciliationPage = () => {
       )
     } finally {
       setChiSubmitting(false)
+    }
+  }
+
+  const handleClearHandInVariance = async (handInId: number) => {
+    if (!selectedShiftId || !isAdmin) return
+    setChiError(null)
+    try {
+      await api.patchShiftCashHandInVariance(selectedShiftId, handInId, {
+        varianceAmount: null,
+        varianceNote: null,
+      })
+      await loadShiftData(selectedShiftId)
+    } catch (err) {
+      setChiError(
+        err instanceof Error
+          ? err.message
+          : t("reconciliation.handIns.clearVarianceError")
+      )
     }
   }
 
@@ -449,6 +522,14 @@ export const ReconciliationPage = () => {
               <h2 className="text-lg font-semibold">
                 {t("reconciliation.handIns.title")}
               </h2>
+              <p className="text-sm text-muted-foreground">
+                {t("reconciliation.handIns.intro")}
+              </p>
+              {chiError && (
+                <Alert variant="destructive">
+                  <AlertDescription>{chiError}</AlertDescription>
+                </Alert>
+              )}
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
@@ -460,7 +541,16 @@ export const ReconciliationPage = () => {
                         {t("reconciliation.handIns.amount")}
                       </TableHead>
                       <TableHead>
+                        {t("reconciliation.handIns.variance")}
+                      </TableHead>
+                      <TableHead>
+                        {t("reconciliation.handIns.varianceNote")}
+                      </TableHead>
+                      <TableHead>
                         {t("reconciliation.handIns.recordedAt")}
+                      </TableHead>
+                      <TableHead className="w-[120px]">
+                        {t("reconciliation.handIns.actions")}
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -468,69 +558,135 @@ export const ReconciliationPage = () => {
                     {handIns.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={3}
+                          colSpan={6}
                           className="text-muted-foreground"
                         >
                           {t("reconciliation.handIns.empty")}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      handIns.map((row) => (
-                        <TableRow key={row.id}>
-                          <TableCell>
-                            {workers.find((w) => w.id === row.workerId)?.name ??
-                              `#${row.workerId}`}
-                          </TableCell>
-                          <TableCell>{money(row.amount)}</TableCell>
-                          <TableCell>
-                            {new Date(row.recordedAt).toLocaleString()}
-                          </TableCell>
-                        </TableRow>
-                      ))
+                      handIns.map((row) => {
+                        const w = resolveWorkerForHandIn(row.workerId)
+                        const hasVariance =
+                          row.varianceAmount != null || row.varianceNote
+                        return (
+                          <TableRow key={row.id}>
+                            <TableCell>
+                              {w
+                                ? workerLabelWithDesignation(w)
+                                : `#${row.workerId}`}
+                            </TableCell>
+                            <TableCell>{money(row.amount)}</TableCell>
+                            <TableCell>
+                              {row.varianceAmount != null
+                                ? money(row.varianceAmount)
+                                : "—"}
+                            </TableCell>
+                            <TableCell>{row.varianceNote ?? "—"}</TableCell>
+                            <TableCell>
+                              {new Date(row.recordedAt).toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              {hasVariance ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    void handleClearHandInVariance(row.id)
+                                  }
+                                >
+                                  {t("reconciliation.handIns.clearVariance")}
+                                </Button>
+                              ) : (
+                                "—"
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
                     )}
                   </TableBody>
                 </Table>
               </div>
 
+              <p className="text-sm text-muted-foreground">
+                {t("reconciliation.handIns.onlyShiftWorkersHint")}
+              </p>
+
               <form
                 onSubmit={(e) => void handleAddHandIn(e)}
                 className="flex flex-wrap gap-3 items-end"
               >
-                {chiError && (
-                  <p className="text-sm text-destructive w-full">{chiError}</p>
+                {shiftWorkers.length === 0 ? (
+                  <p className="text-sm text-muted-foreground w-full">
+                    {t("reconciliation.handIns.noShiftWorkers")}
+                  </p>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <Label>{t("reconciliation.handIns.worker")}</Label>
+                      <Select
+                        value={chiWorkerId}
+                        onValueChange={setChiWorkerId}
+                      >
+                        <SelectTrigger className="w-[min(100%,280px)] min-w-[200px]">
+                          <SelectValue placeholder="—" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {shiftWorkers.map((w) => (
+                            <SelectItem key={w.id} value={String(w.id)}>
+                              {workerLabelWithDesignation(w)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="chi-amount">
+                        {t("reconciliation.handIns.amount")}
+                      </Label>
+                      <Input
+                        id="chi-amount"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={chiAmount}
+                        onChange={(e) => setChiAmount(e.target.value)}
+                        className="w-32"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="chi-variance">
+                        {t("reconciliation.handIns.varianceOptional")}
+                      </Label>
+                      <Input
+                        id="chi-variance"
+                        type="number"
+                        step="0.01"
+                        value={chiVariance}
+                        onChange={(e) => setChiVariance(e.target.value)}
+                        className="w-36"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="chi-var-note">
+                        {t("reconciliation.handIns.varianceNoteOptional")}
+                      </Label>
+                      <Input
+                        id="chi-var-note"
+                        value={chiVarianceNote}
+                        onChange={(e) => setChiVarianceNote(e.target.value)}
+                        className="w-[min(100%,220px)]"
+                      />
+                    </div>
+                    <Button type="submit" disabled={chiSubmitting}>
+                      {chiSubmitting
+                        ? t("auth.loading")
+                        : t("reconciliation.handIns.record")}
+                    </Button>
+                  </>
                 )}
-                <div className="space-y-1">
-                  <Label>{t("reconciliation.handIns.worker")}</Label>
-                  <Select value={chiWorkerId} onValueChange={setChiWorkerId}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="—" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {workers.map((w) => (
-                        <SelectItem key={w.id} value={String(w.id)}>
-                          {w.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1">
-                  <Label htmlFor="chi-amount">
-                    {t("reconciliation.handIns.amount")}
-                  </Label>
-                  <Input
-                    id="chi-amount"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={chiAmount}
-                    onChange={(e) => setChiAmount(e.target.value)}
-                    className="w-32"
-                  />
-                </div>
-                <Button type="submit" disabled={chiSubmitting}>
-                  {t("reconciliation.handIns.add")}
-                </Button>
               </form>
             </section>
 
