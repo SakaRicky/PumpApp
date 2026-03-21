@@ -584,10 +584,11 @@ export const ShiftsPage = () => {
     )
   }
 
-  const canEditPumpReadings =
+  const canEditPumpReadings = Boolean(
     pumpDialogShift &&
-    (pumpDialogShift.status === ShiftStatus.PLANNED ||
-      pumpDialogShift.status === ShiftStatus.OPEN)
+      (pumpDialogShift.status === ShiftStatus.PLANNED ||
+        pumpDialogShift.status === ShiftStatus.OPEN)
+  )
 
   const handleSavePumpReadings = async (e: React.FormEvent) => {
     e.preventDefault()

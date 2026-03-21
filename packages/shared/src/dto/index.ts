@@ -346,6 +346,7 @@ export type ShiftStockBulkUpdateBody = ShiftStockItemBody[]
 export interface ShiftStockItemResponse {
   productId: number
   openingQty: number
+  receivedQty: number
   closingQty: number
   soldQty?: number
   product?: {
