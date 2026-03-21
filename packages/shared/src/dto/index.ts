@@ -393,7 +393,9 @@ export interface CashHandInCreateBody {
   varianceNote?: string | null
 }
 
-export interface CashHandInVariancePatchBody {
+export interface CashHandInPatchBody {
+  workerId?: number
+  amount?: number
   varianceAmount?: number | null
   varianceNote?: string | null
 }

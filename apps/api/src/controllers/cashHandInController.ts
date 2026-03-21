@@ -1,7 +1,7 @@
 import type { Request, Response } from "express"
 import {
   cashHandInCreateSchema,
-  cashHandInVariancePatchSchema,
+  cashHandInPatchSchema,
   type CashHandInResponse,
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
@@ -40,6 +40,14 @@ const toResponse = (row: CashHandInRow): CashHandInResponse => ({
   recordedAt: row.recordedAt.toISOString(),
 })
 
+const loadHandInForShift = async (
+  shiftId: number,
+  handInId: number
+): Promise<CashHandInRow | null> =>
+  prisma.cashHandIn.findFirst({
+    where: { id: handInId, shiftId },
+  })
+
 const listByShift = async (req: Request, res: Response): Promise<void> => {
   const shiftId = Number.parseInt(req.params.id, 10)
   if (Number.isNaN(shiftId)) {
@@ -57,6 +65,26 @@ const listByShift = async (req: Request, res: Response): Promise<void> => {
   })
 
   res.status(200).json(rows.map(toResponse))
+}
+
+const getByIdForShift = async (req: Request, res: Response): Promise<void> => {
+  const shiftId = Number.parseInt(req.params.id, 10)
+  const handInId = Number.parseInt(req.params.handInId, 10)
+  if (Number.isNaN(shiftId) || Number.isNaN(handInId)) {
+    throw new AppError("Invalid id", 400, ErrorCode.VALIDATION_ERROR)
+  }
+
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+  if (!shift) {
+    throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
+  }
+
+  const row = await loadHandInForShift(shiftId, handInId)
+  if (!row) {
+    throw new AppError("Cash hand-in not found", 404, ErrorCode.NOT_FOUND)
+  }
+
+  res.status(200).json(toResponse(row))
 }
 
 const createForShift = async (req: Request, res: Response): Promise<void> => {
@@ -113,17 +141,14 @@ const createForShift = async (req: Request, res: Response): Promise<void> => {
   res.status(201).json(toResponse(created))
 }
 
-const patchVarianceForShift = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+const patchForShift = async (req: Request, res: Response): Promise<void> => {
   const shiftId = Number.parseInt(req.params.id, 10)
   const handInId = Number.parseInt(req.params.handInId, 10)
   if (Number.isNaN(shiftId) || Number.isNaN(handInId)) {
     throw new AppError("Invalid id", 400, ErrorCode.VALIDATION_ERROR)
   }
 
-  const parsed = cashHandInVariancePatchSchema.safeParse(req.body)
+  const parsed = cashHandInPatchSchema.safeParse(req.body)
   if (!parsed.success) {
     throw new AppError("Validation failed", 400, ErrorCode.VALIDATION_ERROR, {
       errors: parsed.error.flatten().fieldErrors,
@@ -135,9 +160,7 @@ const patchVarianceForShift = async (
     throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
   }
 
-  const existing = await prisma.cashHandIn.findFirst({
-    where: { id: handInId, shiftId },
-  })
+  const existing = await loadHandInForShift(shiftId, handInId)
   if (!existing) {
     throw new AppError("Cash hand-in not found", 404, ErrorCode.NOT_FOUND)
   }
@@ -146,10 +169,28 @@ const patchVarianceForShift = async (
     throw new AppError("Unauthorized", 401, ErrorCode.UNAUTHORIZED)
   }
 
+  if (parsed.data.workerId !== undefined) {
+    const worker = await prisma.worker.findUnique({
+      where: { id: parsed.data.workerId },
+    })
+    if (!worker) {
+      throw new AppError("Worker not found", 404, ErrorCode.NOT_FOUND)
+    }
+    await ensureWorkerOnShift(shiftId, parsed.data.workerId)
+  }
+
   const data: {
+    workerId?: number
+    amount?: number
     varianceAmount?: number | null
     varianceNote?: string | null
   } = {}
+  if (parsed.data.workerId !== undefined) {
+    data.workerId = parsed.data.workerId
+  }
+  if (parsed.data.amount !== undefined) {
+    data.amount = parsed.data.amount
+  }
   if (parsed.data.varianceAmount !== undefined) {
     data.varianceAmount = parsed.data.varianceAmount
   }
@@ -170,4 +211,33 @@ const patchVarianceForShift = async (
   res.status(200).json(toResponse(updated))
 }
 
-export { listByShift, createForShift, patchVarianceForShift, toResponse }
+const deleteForShift = async (req: Request, res: Response): Promise<void> => {
+  const shiftId = Number.parseInt(req.params.id, 10)
+  const handInId = Number.parseInt(req.params.handInId, 10)
+  if (Number.isNaN(shiftId) || Number.isNaN(handInId)) {
+    throw new AppError("Invalid id", 400, ErrorCode.VALIDATION_ERROR)
+  }
+
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+  if (!shift) {
+    throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
+  }
+
+  const existing = await loadHandInForShift(shiftId, handInId)
+  if (!existing) {
+    throw new AppError("Cash hand-in not found", 404, ErrorCode.NOT_FOUND)
+  }
+
+  await prisma.cashHandIn.delete({ where: { id: handInId } })
+
+  res.status(204).send()
+}
+
+export {
+  listByShift,
+  getByIdForShift,
+  createForShift,
+  patchForShift,
+  deleteForShift,
+  toResponse,
+}

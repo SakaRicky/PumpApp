@@ -143,7 +143,10 @@ Backend computes `volume = closingReading - openingReading` and, together with f
 ### Cash hand-ins
 
 - `GET /api/shifts/:id/cash-handins` — list cash hand-ins for a shift.
+- `GET /api/shifts/:id/cash-handins/:handInId` (**ADMIN**) — get one hand-in (must belong to the shift).
 - `POST /api/shifts/:id/cash-handins` (**ADMIN**) — record cash hand-in.
+- `PATCH /api/shifts/:id/cash-handins/:handInId` (**ADMIN**) — partial update: optional `workerId`, `amount`, `varianceAmount`, `varianceNote` (at least one required; `null` on variance fields clears them).
+- `DELETE /api/shifts/:id/cash-handins/:handInId` (**ADMIN**) — remove the hand-in row.
 
 Body (conceptually):
 
@@ -158,8 +161,6 @@ Body (conceptually):
 
 - **`workerId` is required** — which worker handed in this amount (audit). Worker must be assigned to the shift. See [DOMAIN-DECISIONS.md](DOMAIN-DECISIONS.md) and [OPERATIONS.md](OPERATIONS.md).
 - **`varianceAmount` / `varianceNote` (optional)** — admin-recorded variance **for this hand-in event** (positive = missing / short; negative = surplus). Separate from the **system preview discrepancy** on the reconciliation summary. Omit or leave unset when there is no variance at remittance time.
-
-- `PATCH /api/shifts/:id/cash-handins/:handInId` (ADMIN) — update variance fields only: body `{ varianceAmount?: number | null, varianceNote?: string | null }` (at least one key required). Use `null` to clear.
 
 ### Shift reconciliation summary
 

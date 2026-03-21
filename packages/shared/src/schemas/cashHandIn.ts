@@ -10,20 +10,21 @@ export const cashHandInCreateSchema = z.object({
 
 export type CashHandInCreateInput = z.infer<typeof cashHandInCreateSchema>
 
-/** PATCH body: set fields to null to clear variance on that hand-in row. */
-export const cashHandInVariancePatchSchema = z
+/** PATCH: any subset; at least one field required. Use null on variance fields to clear. */
+export const cashHandInPatchSchema = z
   .object({
+    workerId: z.number().int().positive().optional(),
+    amount: z.number().nonnegative().optional(),
     varianceAmount: z.union([z.number().finite(), z.null()]).optional(),
     varianceNote: z.union([z.string().max(2000), z.null()]).optional(),
   })
   .refine(
-    (b) => b.varianceAmount !== undefined || b.varianceNote !== undefined,
-    {
-      message:
-        "At least one of varianceAmount or varianceNote must be provided",
-    }
+    (b) =>
+      b.workerId !== undefined ||
+      b.amount !== undefined ||
+      b.varianceAmount !== undefined ||
+      b.varianceNote !== undefined,
+    { message: "At least one field must be provided" }
   )
 
-export type CashHandInVariancePatchInput = z.infer<
-  typeof cashHandInVariancePatchSchema
->
+export type CashHandInPatchInput = z.infer<typeof cashHandInPatchSchema>

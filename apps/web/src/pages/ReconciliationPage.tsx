@@ -11,6 +11,7 @@ import {
   type ShiftResponse,
   type WorkerResponse,
   type CashHandInCreateBody,
+  type CashHandInPatchBody,
   type CashHandInResponse,
 } from "@pumpapp/shared"
 import { PageLayout } from "@/components/layout/PageLayout"
@@ -34,6 +35,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { useAuth } from "@/contexts/authContext"
 import { api } from "@/lib/api"
 
@@ -95,6 +103,15 @@ export const ReconciliationPage = () => {
   const [chiVarianceNote, setChiVarianceNote] = useState("")
   const [chiSubmitting, setChiSubmitting] = useState(false)
   const [chiError, setChiError] = useState<string | null>(null)
+
+  const [editOpen, setEditOpen] = useState(false)
+  const [editHandInId, setEditHandInId] = useState<number | null>(null)
+  const [editWorkerId, setEditWorkerId] = useState("")
+  const [editAmount, setEditAmount] = useState("")
+  const [editVariance, setEditVariance] = useState("")
+  const [editVarianceNote, setEditVarianceNote] = useState("")
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const eligibleShifts = useMemo(
     () =>
@@ -408,11 +425,85 @@ export const ReconciliationPage = () => {
     }
   }
 
+  const openEditHandIn = (row: CashHandInResponse) => {
+    setEditHandInId(row.id)
+    setEditWorkerId(String(row.workerId))
+    setEditAmount(String(row.amount))
+    setEditVariance(
+      row.varianceAmount != null ? String(row.varianceAmount) : ""
+    )
+    setEditVarianceNote(row.varianceNote ?? "")
+    setEditError(null)
+    setEditOpen(true)
+  }
+
+  const closeEditHandIn = () => {
+    setEditOpen(false)
+    setEditHandInId(null)
+    setEditWorkerId("")
+    setEditAmount("")
+    setEditVariance("")
+    setEditVarianceNote("")
+    setEditError(null)
+  }
+
+  const handleSaveEditHandIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedShiftId || !isAdmin || editHandInId == null) return
+    const workerId = Number.parseInt(editWorkerId, 10)
+    const amount = Number.parseFloat(editAmount)
+    if (!Number.isFinite(workerId) || workerId < 1) {
+      setEditError(t("reconciliation.errors.workerRequired"))
+      return
+    }
+    if (!shiftWorkers.some((w) => w.id === workerId)) {
+      setEditError(t("reconciliation.errors.handInWorkerNotOnShift"))
+      return
+    }
+    if (!Number.isFinite(amount) || amount < 0) {
+      setEditError(t("reconciliation.errors.amountInvalid"))
+      return
+    }
+
+    const body: CashHandInPatchBody = { workerId, amount }
+    const varStr = editVariance.trim()
+    if (varStr === "") {
+      body.varianceAmount = null
+      body.varianceNote =
+        editVarianceNote.trim() === "" ? null : editVarianceNote.trim()
+    } else {
+      const v = Number.parseFloat(varStr)
+      if (!Number.isFinite(v)) {
+        setEditError(t("reconciliation.errors.varianceInvalid"))
+        return
+      }
+      body.varianceAmount = v
+      body.varianceNote =
+        editVarianceNote.trim() === "" ? null : editVarianceNote.trim()
+    }
+
+    setEditSaving(true)
+    setEditError(null)
+    try {
+      await api.patchShiftCashHandIn(selectedShiftId, editHandInId, body)
+      closeEditHandIn()
+      await loadShiftData(selectedShiftId)
+    } catch (err) {
+      setEditError(
+        err instanceof Error
+          ? err.message
+          : t("reconciliation.handIns.editError")
+      )
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
   const handleClearHandInVariance = async (handInId: number) => {
     if (!selectedShiftId || !isAdmin) return
     setChiError(null)
     try {
-      await api.patchShiftCashHandInVariance(selectedShiftId, handInId, {
+      await api.patchShiftCashHandIn(selectedShiftId, handInId, {
         varianceAmount: null,
         varianceNote: null,
       })
@@ -422,6 +513,22 @@ export const ReconciliationPage = () => {
         err instanceof Error
           ? err.message
           : t("reconciliation.handIns.clearVarianceError")
+      )
+    }
+  }
+
+  const handleDeleteHandIn = async (handInId: number) => {
+    if (!selectedShiftId || !isAdmin) return
+    if (!window.confirm(t("reconciliation.handIns.deleteConfirm"))) return
+    setChiError(null)
+    try {
+      await api.deleteShiftCashHandIn(selectedShiftId, handInId)
+      await loadShiftData(selectedShiftId)
+    } catch (err) {
+      setChiError(
+        err instanceof Error
+          ? err.message
+          : t("reconciliation.handIns.deleteError")
       )
     }
   }
@@ -549,7 +656,7 @@ export const ReconciliationPage = () => {
                       <TableHead>
                         {t("reconciliation.handIns.recordedAt")}
                       </TableHead>
-                      <TableHead className="w-[120px]">
+                      <TableHead className="w-[220px] min-w-[200px]">
                         {t("reconciliation.handIns.actions")}
                       </TableHead>
                     </TableRow>
@@ -587,20 +694,38 @@ export const ReconciliationPage = () => {
                               {new Date(row.recordedAt).toLocaleString()}
                             </TableCell>
                             <TableCell>
-                              {hasVariance ? (
+                              <div className="flex flex-wrap gap-1">
                                 <Button
                                   type="button"
                                   variant="outline"
                                   size="sm"
+                                  onClick={() => openEditHandIn(row)}
+                                >
+                                  {t("reconciliation.handIns.edit")}
+                                </Button>
+                                {hasVariance ? (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      void handleClearHandInVariance(row.id)
+                                    }
+                                  >
+                                    {t("reconciliation.handIns.clearVariance")}
+                                  </Button>
+                                ) : null}
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
                                   onClick={() =>
-                                    void handleClearHandInVariance(row.id)
+                                    void handleDeleteHandIn(row.id)
                                   }
                                 >
-                                  {t("reconciliation.handIns.clearVariance")}
+                                  {t("reconciliation.handIns.delete")}
                                 </Button>
-                              ) : (
-                                "—"
-                              )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         )
@@ -688,6 +813,98 @@ export const ReconciliationPage = () => {
                   </>
                 )}
               </form>
+
+              <Dialog
+                open={editOpen}
+                onOpenChange={(open) => {
+                  if (!open) closeEditHandIn()
+                }}
+              >
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {t("reconciliation.handIns.editTitle")}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form
+                    onSubmit={(e) => void handleSaveEditHandIn(e)}
+                    className="space-y-4"
+                  >
+                    {editError && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{editError}</AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="space-y-1">
+                      <Label>{t("reconciliation.handIns.worker")}</Label>
+                      <Select
+                        value={editWorkerId}
+                        onValueChange={setEditWorkerId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="—" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {shiftWorkers.map((w) => (
+                            <SelectItem key={w.id} value={String(w.id)}>
+                              {workerLabelWithDesignation(w)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-chi-amount">
+                        {t("reconciliation.handIns.amount")}
+                      </Label>
+                      <Input
+                        id="edit-chi-amount"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={editAmount}
+                        onChange={(e) => setEditAmount(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-chi-var">
+                        {t("reconciliation.handIns.varianceOptional")}
+                      </Label>
+                      <Input
+                        id="edit-chi-var"
+                        type="number"
+                        step="0.01"
+                        value={editVariance}
+                        onChange={(e) => setEditVariance(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="edit-chi-var-note">
+                        {t("reconciliation.handIns.varianceNoteOptional")}
+                      </Label>
+                      <Input
+                        id="edit-chi-var-note"
+                        value={editVarianceNote}
+                        onChange={(e) => setEditVarianceNote(e.target.value)}
+                      />
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => closeEditHandIn()}
+                      >
+                        {t("reconciliation.handIns.cancel")}
+                      </Button>
+                      <Button type="submit" disabled={editSaving}>
+                        {editSaving
+                          ? t("auth.loading")
+                          : t("reconciliation.handIns.saveEdit")}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </section>
 
             <section className="space-y-4 rounded-md border p-4">

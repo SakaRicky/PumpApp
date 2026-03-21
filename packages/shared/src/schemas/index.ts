@@ -93,9 +93,9 @@ export {
 
 export {
   cashHandInCreateSchema,
-  cashHandInVariancePatchSchema,
+  cashHandInPatchSchema,
   type CashHandInCreateInput,
-  type CashHandInVariancePatchInput,
+  type CashHandInPatchInput,
 } from "./cashHandIn.js"
 
 export {

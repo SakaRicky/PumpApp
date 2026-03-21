@@ -20,8 +20,10 @@ import {
 } from "../controllers/pumpReadingController.js"
 import {
   listByShift as listCashHandIns,
+  getByIdForShift as getCashHandInByIdForShift,
   createForShift as createCashHandInForShift,
-  patchVarianceForShift as patchCashHandInVarianceForShift,
+  patchForShift as patchCashHandInForShift,
+  deleteForShift as deleteCashHandInForShift,
 } from "../controllers/cashHandInController.js"
 import {
   getByShift as getReconciliation,
@@ -78,6 +80,21 @@ shiftsRouter.post(
 )
 
 shiftsRouter.get(
+  "/:id/cash-handins/:handInId",
+  requireAdmin,
+  asyncHandler(getCashHandInByIdForShift)
+)
+shiftsRouter.delete(
+  "/:id/cash-handins/:handInId",
+  requireAdmin,
+  asyncHandler(deleteCashHandInForShift)
+)
+shiftsRouter.patch(
+  "/:id/cash-handins/:handInId",
+  requireAdmin,
+  asyncHandler(patchCashHandInForShift)
+)
+shiftsRouter.get(
   "/:id/cash-handins",
   requireAdmin,
   asyncHandler(listCashHandIns)
@@ -86,11 +103,6 @@ shiftsRouter.post(
   "/:id/cash-handins",
   requireAdmin,
   asyncHandler(createCashHandInForShift)
-)
-shiftsRouter.patch(
-  "/:id/cash-handins/:handInId",
-  requireAdmin,
-  asyncHandler(patchCashHandInVarianceForShift)
 )
 
 shiftsRouter.get(

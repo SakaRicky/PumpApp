@@ -43,7 +43,7 @@ import type {
   PumpReadingResponse,
   PumpReadingUpdateBody,
   CashHandInCreateBody,
-  CashHandInVariancePatchBody,
+  CashHandInPatchBody,
   CashHandInResponse,
   ReconciliationGetResponse,
   ReconciliationSummaryResponse,
@@ -93,7 +93,18 @@ const request = async <T>(
     headers,
     ...(body !== undefined && { body: JSON.stringify(body) }),
   })
-  const data = (await res.json().catch(() => ({}))) as T | ApiError
+  if (res.status === 204) {
+    return undefined as T
+  }
+  const raw = await res.text()
+  let data: T | ApiError = {} as T | ApiError
+  if (raw) {
+    try {
+      data = JSON.parse(raw) as T | ApiError
+    } catch {
+      data = {} as T | ApiError
+    }
+  }
   if (res.status === 401) {
     if (typeof window !== "undefined") {
       localStorage.removeItem(TOKEN_KEY)
@@ -380,6 +391,11 @@ export const api = {
 
   getShiftCashHandIns: (shiftId: number): Promise<CashHandInResponse[]> =>
     request<CashHandInResponse[]>(`/shifts/${shiftId}/cash-handins`),
+  getShiftCashHandIn: (
+    shiftId: number,
+    handInId: number
+  ): Promise<CashHandInResponse> =>
+    request<CashHandInResponse>(`/shifts/${shiftId}/cash-handins/${handInId}`),
   createShiftCashHandIn: (
     shiftId: number,
     body: CashHandInCreateBody
@@ -388,14 +404,18 @@ export const api = {
       method: "POST",
       body,
     }),
-  patchShiftCashHandInVariance: (
+  patchShiftCashHandIn: (
     shiftId: number,
     handInId: number,
-    body: CashHandInVariancePatchBody
+    body: CashHandInPatchBody
   ): Promise<CashHandInResponse> =>
     request<CashHandInResponse>(`/shifts/${shiftId}/cash-handins/${handInId}`, {
       method: "PATCH",
       body,
+    }),
+  deleteShiftCashHandIn: (shiftId: number, handInId: number): Promise<void> =>
+    request<void>(`/shifts/${shiftId}/cash-handins/${handInId}`, {
+      method: "DELETE",
     }),
 
   getShiftReconciliation: (

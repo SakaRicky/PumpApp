@@ -7,6 +7,7 @@ import type {
 } from "@pumpapp/shared"
 import { PageLayout } from "@/components/layout/PageLayout"
 import { Button } from "@/components/ui/button"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -200,15 +201,21 @@ export const WeeklyInventoryPage = () => {
         <section className="rounded-lg border p-4 space-y-3">
           <h2 className="font-semibold">{t("weeklyInventory.export.title")}</h2>
           <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
+            <div className="space-y-1 min-w-[min(100%,240px)]">
               <Label htmlFor="export-month">
                 {t("weeklyInventory.export.month")}
               </Label>
-              <Input
+              <DatePicker
                 id="export-month"
-                type="month"
+                mode="month"
                 value={exportMonth}
-                onChange={(e) => setExportMonth(e.target.value)}
+                onChange={setExportMonth}
+                placeholder={t("weeklyInventory.export.pickMonth")}
+                monthClearLabel={t("weeklyInventory.export.clear")}
+                monthThisMonthLabel={t("weeklyInventory.export.thisMonth")}
+                monthPrevYearAriaLabel={t("weeklyInventory.export.prevYear")}
+                monthNextYearAriaLabel={t("weeklyInventory.export.nextYear")}
+                className="w-full max-w-[280px]"
               />
             </div>
             <Button
@@ -236,22 +243,22 @@ export const WeeklyInventoryPage = () => {
                 <Label htmlFor="ws">
                   {t("weeklyInventory.form.weekStart")}
                 </Label>
-                <Input
+                <DatePicker
                   id="ws"
-                  type="date"
                   value={weekStart}
-                  onChange={(e) => setWeekStart(e.target.value)}
-                  required
+                  onChange={setWeekStart}
+                  placeholder={t("weeklyInventory.form.pickDate")}
+                  className="w-full"
                 />
               </div>
               <div className="space-y-1">
                 <Label htmlFor="we">{t("weeklyInventory.form.weekEnd")}</Label>
-                <Input
+                <DatePicker
                   id="we"
-                  type="date"
                   value={weekEnd}
-                  onChange={(e) => setWeekEnd(e.target.value)}
-                  required
+                  onChange={setWeekEnd}
+                  placeholder={t("weeklyInventory.form.pickDate")}
+                  className="w-full"
                 />
               </div>
             </div>
