@@ -83,7 +83,11 @@ const initials = (name: string): string =>
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("")
 
-export const Sidebar = () => {
+interface SidebarProps {
+  onNavigate?: () => void
+}
+
+export const Sidebar = ({ onNavigate }: SidebarProps) => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { user, logout } = useAuth()
@@ -91,7 +95,7 @@ export const Sidebar = () => {
 
   return (
     <aside
-      className="flex h-full w-60 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
+      className="flex h-full w-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground lg:w-60"
       aria-label={t("nav.ariaLabel")}
     >
       <div className="flex h-16 items-center px-4">
@@ -111,6 +115,7 @@ export const Sidebar = () => {
                 <li key={to}>
                   <NavLink
                     to={to}
+                    onClick={onNavigate}
                     className={({ isActive }: { isActive: boolean }) =>
                       cn(
                         "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
@@ -154,6 +159,7 @@ export const Sidebar = () => {
               title={t("auth.logout")}
               onClick={() => {
                 logout()
+                onNavigate?.()
                 navigate("/login", { replace: true })
               }}
             >
