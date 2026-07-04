@@ -74,11 +74,39 @@ import type {
   ShiftTeamResponse,
 } from "@pumpapp/shared"
 
-// In dev: use relative /api so Vite proxy forwards to the API. In prod: same (empty = same origin).
-const API_BASE =
+const rawApiBase =
   (import.meta as unknown as { env: { VITE_API_URL?: string } }).env
     .VITE_API_URL ?? ""
-const API_PREFIX = API_BASE || "/api"
+
+const isLocalHost = (hostname: string): boolean =>
+  hostname === "localhost" ||
+  hostname === "127.0.0.1" ||
+  hostname === "::1" ||
+  hostname.endsWith(".localhost")
+
+const resolveApiBase = (): string => {
+  const value = rawApiBase.trim()
+  if (!value) return "/api"
+
+  try {
+    const configured = new URL(value)
+    if (
+      typeof window !== "undefined" &&
+      isLocalHost(configured.hostname) &&
+      !isLocalHost(window.location.hostname)
+    ) {
+      return "/api"
+    }
+  } catch {
+    return value
+  }
+
+  return value
+}
+
+// In dev: use relative /api so Vite proxy forwards to the API. In prod: same
+// origin. A localhost VITE_API_URL is ignored on deployed domains.
+const API_BASE = resolveApiBase()
 
 const TOKEN_KEY = "pumpapp_token"
 
@@ -102,8 +130,7 @@ const request = async <T>(
 ): Promise<T> => {
   const { method = "GET", body } = options
   const pathStr = path.startsWith("/") ? path : `/${path}`
-  const base = API_BASE || API_PREFIX
-  const url = `${base}${pathStr}`
+  const url = `${API_BASE}${pathStr}`
   const token = getToken()
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -166,8 +193,7 @@ const requestText = async (
 ): Promise<string> => {
   const { method = "GET", body } = options
   const pathStr = path.startsWith("/") ? path : `/${path}`
-  const base = API_BASE || API_PREFIX
-  const url = `${base}${pathStr}`
+  const url = `${API_BASE}${pathStr}`
   const token = getToken()
   const headers: Record<string, string> = {
     ...(token && { Authorization: `Bearer ${token}` }),
