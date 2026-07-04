@@ -52,8 +52,10 @@ What they do:
 
 - `pnpm railway:build` builds the shared package, builds the frontend, copies the
   frontend files into `apps/api/public`, and builds the API.
-- `pnpm railway:start` applies Prisma migrations, runs the idempotent seed, then
-  starts the compiled API.
+- `pnpm railway:start` builds the shared workspace package, applies Prisma
+  migrations, runs the idempotent seed, then starts the compiled API. The shared
+  build at start is intentional: the API imports `@pumpapp/shared` from
+  `packages/shared/dist`.
 
 ## 4. First deploy
 
@@ -93,4 +95,3 @@ PostgreSQL database, then run:
 ```bash
 pnpm railway:start
 ```
-

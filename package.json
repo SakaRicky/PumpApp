@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "postinstall": "pnpm db:generate",
+    "postinstall": "pnpm db:generate && pnpm --filter @pumpapp/shared build",
     "dev:api": "pnpm --filter @pumpapp/shared build && pnpm --filter api dev",
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm -r build",
@@ -21,7 +21,7 @@
     "build:deploy": "pnpm --filter @pumpapp/shared build && pnpm --filter web build && node -e \"const fs=require('fs');const path=require('path');const src=path.join('apps','web','dist');const dest=path.join('apps','api','public');fs.mkdirSync(dest,{recursive:true});for(const e of fs.readdirSync(src)){const s=path.join(src,e);const d=path.join(dest,e);fs.cpSync(s,d,{recursive:true});}\" && pnpm --filter api build",
     "start:prod": "pnpm build:deploy && NODE_ENV=production pnpm --filter api start",
     "railway:build": "pnpm build:deploy",
-    "railway:start": "pnpm db:migrate:deploy && pnpm db:seed && NODE_ENV=production pnpm --filter api start"
+    "railway:start": "pnpm --filter @pumpapp/shared build && pnpm db:migrate:deploy && pnpm db:seed && NODE_ENV=production pnpm --filter api start"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
