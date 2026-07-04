@@ -317,12 +317,27 @@ const ensureCanCloseShift = async (shiftId: number): Promise<void> => {
   // Shop stock snapshot is not required to close a shift for now (inventory
   // decrement on close still applies only to existing ShiftProductStock rows).
 
-  const pumpReadingCount = await prisma.pumpReading.count({
+  const assignments = await prisma.shiftPumpAssignment.findMany({
     where: { shiftId },
+    include: { pump: { select: { name: true } } },
   })
-  if (pumpReadingCount === 0) {
+  if (assignments.length === 0) {
     throw new AppError(
-      "Cannot close shift without pump readings",
+      "Assign at least one operational pump before closing the shift",
+      400,
+      ErrorCode.VALIDATION_ERROR
+    )
+  }
+
+  const readings = await prisma.pumpReading.findMany({
+    where: { shiftId, pumpId: { in: assignments.map((a) => a.pumpId) } },
+    select: { pumpId: true },
+  })
+  const readPumpIds = new Set(readings.map((reading) => reading.pumpId))
+  const missing = assignments.filter((assignment) => !readPumpIds.has(assignment.pumpId))
+  if (missing.length > 0) {
+    throw new AppError(
+      `Missing pump readings for operational pumps: ${missing.map((m) => m.pump.name).join(", ")}`,
       400,
       ErrorCode.VALIDATION_ERROR
     )

@@ -11,8 +11,9 @@ const mockShiftUpdate = vi.fn()
 const mockShiftWorkerFindMany = vi.fn()
 const mockShiftWorkerFindUnique = vi.fn()
 const mockShiftProductStockCount = vi.fn()
-const mockPumpReadingCount = vi.fn()
+const mockPumpReadingFindMany = vi.fn()
 const mockPumpFindUnique = vi.fn()
+const mockShiftPumpAssignmentFindMany = vi.fn()
 const mockShiftPumpAssignmentUpsert = vi.fn()
 const mockProductUpdate = vi.fn()
 const mockTransaction = vi.fn()
@@ -35,12 +36,13 @@ vi.mock("../db.js", () => ({
       upsert: vi.fn(),
     },
     pumpReading: {
-      count: (...args: unknown[]) => mockPumpReadingCount(...args),
+      findMany: (...args: unknown[]) => mockPumpReadingFindMany(...args),
     },
     pump: {
       findUnique: (...args: unknown[]) => mockPumpFindUnique(...args),
     },
     shiftPumpAssignment: {
+      findMany: (...args: unknown[]) => mockShiftPumpAssignmentFindMany(...args),
       upsert: (...args: unknown[]) => mockShiftPumpAssignmentUpsert(...args),
     },
     product: {
@@ -209,7 +211,11 @@ describe("Shifts API (integration, basic rules)", () => {
       { ...saleShiftWorker, shiftId },
       { ...pumpShiftWorker, shiftId },
     ])
-    mockPumpReadingCount.mockResolvedValue(0)
+    mockShiftPumpAssignmentFindMany.mockResolvedValue([
+      { shiftId, pumpId: 1, workerId: 20, pump: { name: "Pump 1" } },
+      { shiftId, pumpId: 2, workerId: 20, pump: { name: "Pump 2" } },
+    ])
+    mockPumpReadingFindMany.mockResolvedValue([{ pumpId: 1 }])
 
     const res = await request(app)
       .patch(`/api/shifts/${shiftId}`)
@@ -217,9 +223,14 @@ describe("Shifts API (integration, basic rules)", () => {
       .send({ status: "CLOSED" })
       .expect(400)
 
-    expect(res.body.error).toBe("Cannot close shift without pump readings")
+    expect(res.body.error).toBe(
+      "Missing pump readings for operational pumps: Pump 2"
+    )
     expect(mockShiftProductStockCount).not.toHaveBeenCalled()
-    expect(mockPumpReadingCount).toHaveBeenCalled()
+    expect(mockPumpReadingFindMany).toHaveBeenCalledWith({
+      where: { shiftId, pumpId: { in: [1, 2] } },
+      select: { pumpId: true },
+    })
   })
 
   it("POST /api/shifts/:id/pump-assignments rejects shop workers", async () => {

@@ -16,11 +16,11 @@ export const buildClosePreview = async (
   const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
   if (!shift) return null
 
-  const [pumps, readings, stockRows, tanks] = await Promise.all([
-    prisma.pump.findMany({
-      where: { active: true },
-      include: { tank: true },
-      orderBy: { id: "asc" },
+  const [assignments, readings, stockRows, tanks] = await Promise.all([
+    prisma.shiftPumpAssignment.findMany({
+      where: { shiftId },
+      include: { pump: { include: { tank: true } } },
+      orderBy: { pumpId: "asc" },
     }),
     prisma.pumpReading.findMany({ where: { shiftId } }),
     prisma.shiftProductStock.findMany({
@@ -31,6 +31,7 @@ export const buildClosePreview = async (
     prisma.tank.findMany({ where: { active: true } }),
   ])
 
+  const operationalPumps = assignments.map((assignment) => assignment.pump)
   const readingByPump = new Map(readings.map((reading) => [reading.pumpId, reading]))
   const blockers: string[] = []
   const warnings: string[] = []
@@ -39,7 +40,7 @@ export const buildClosePreview = async (
   let fuelError: string | null = null
 
   const previewPumps = await Promise.all(
-    pumps.map(async (pump) => {
+    operationalPumps.map(async (pump) => {
       const reading = readingByPump.get(pump.id)
       if (!reading) {
         blockers.push(`Missing pump reading for ${pump.name}`)
@@ -107,6 +108,10 @@ export const buildClosePreview = async (
       }
     })
   )
+
+  if (operationalPumps.length === 0) {
+    blockers.push("No operational pumps assigned to this shift")
+  }
 
   const productIds = stockRows.map((row) => row.productId)
   const historyRows =

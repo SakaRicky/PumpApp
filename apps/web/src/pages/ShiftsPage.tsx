@@ -615,7 +615,15 @@ export const ShiftsPage = () => {
       const prefillByPumpId = new Map(
         prefill.map((p) => [p.pumpId, p])
       )
-      const rows: PumpReadingGridRow[] = pumps.map((pump) => {
+      const operationalPumpIds = new Set([
+        ...assignments
+          .filter((assignment) => assignment.workerId != null)
+          .map((assignment) => assignment.pumpId),
+        ...readings.map((reading) => reading.pumpId),
+      ])
+      const rows: PumpReadingGridRow[] = pumps.filter((pump) =>
+        operationalPumpIds.has(pump.id)
+      ).map((pump) => {
         const r = byPumpId.get(pump.id)
         const a = assignByPumpId.get(pump.id)
         const workerName =
@@ -1277,6 +1285,9 @@ export const ShiftsPage = () => {
                     <h3 className="mb-2 text-sm font-semibold">
                       {t("shifts.team.pumps")}
                     </h3>
+                    <p className="mb-3 text-sm text-muted-foreground">
+                      {t("shifts.team.pumpsHint")}
+                    </p>
                     {teamAssignments.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         {t("pumps.noPumps")}
@@ -1308,7 +1319,7 @@ export const ShiftsPage = () => {
                                     }
                                   >
                                     <option value="">
-                                      {t("shifts.assignPumpsSelectWorker")}
+                                      {t("shifts.assignPumpsNotOperational")}
                                     </option>
                                     {allWorkers
                                       .filter(

@@ -81,8 +81,14 @@ export const ShiftClosePage = () => {
       const byPumpId = new Map(readings.map((r) => [r.pumpId, r]))
       const assignByPumpId = new Map(assignments.map((a) => [a.pumpId, a]))
       const prefillByPumpId = new Map(prefill.map((p) => [p.pumpId, p]))
+      const operationalPumpIds = new Set([
+        ...assignments
+          .filter((assignment) => assignment.workerId != null)
+          .map((assignment) => assignment.pumpId),
+        ...readings.map((reading) => reading.pumpId),
+      ])
       setPumpRows(
-        pumps.map((pump) => {
+        pumps.filter((pump) => operationalPumpIds.has(pump.id)).map((pump) => {
           const reading = byPumpId.get(pump.id)
           const assignment = assignByPumpId.get(pump.id)
           const prefillItem = prefillByPumpId.get(pump.id)

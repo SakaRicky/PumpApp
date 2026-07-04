@@ -297,11 +297,13 @@
     "pumpReadingsOpening": "Opening reading",
     "pumpReadingsClosing": "Closing reading",
     "pumpReadingsUnassigned": "— assign in Assign pumps",
+    "pumpReadingsNoOperationalPumps": "No operational pumps are assigned to this shift. Assign pumps in the Team dialog first.",
     "pumpReadingsAssignFirstTitle": "Assign a worker to this pump for this shift before entering readings.",
     "assignPumps": "Assign pumps",
     "pump": "Pump",
     "worker": "Worker",
     "assignPumpsSelectWorker": "Select worker",
+    "assignPumpsNotOperational": "Not operational this shift",
     "assignPumpsNoShiftWorkers": "No workers on this shift yet. Use “Manage workers” to add people first, then assign them to pumps here.",
     "stock": {
       "title": "Shop stock for this shift",
@@ -356,6 +358,7 @@
       "title": "Shift team",
       "workers": "Workers on shift",
       "pumps": "Pump assignments",
+      "pumpsHint": "Assign only pumps operating on this shift. Leave a pump blank when it is out of service, closed for the day, or otherwise not operated.",
       "seller": "Accountable shop seller",
       "noSeller": "— None —",
       "save": "Save team"

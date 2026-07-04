@@ -5,7 +5,7 @@ import { app } from "../app.js"
 const ADMIN_TOKEN = "admin-token"
 
 const mockShiftFindUnique = vi.fn()
-const mockPumpFindMany = vi.fn()
+const mockShiftPumpAssignmentFindMany = vi.fn()
 const mockPumpReadingFindMany = vi.fn()
 const mockStockFindMany = vi.fn()
 const mockTankFindMany = vi.fn()
@@ -18,8 +18,8 @@ vi.mock("../db.js", () => ({
     shift: {
       findUnique: (...args: unknown[]) => mockShiftFindUnique(...args),
     },
-    pump: {
-      findMany: (...args: unknown[]) => mockPumpFindMany(...args),
+    shiftPumpAssignment: {
+      findMany: (...args: unknown[]) => mockShiftPumpAssignmentFindMany(...args),
     },
     pumpReading: {
       findMany: (...args: unknown[]) => mockPumpReadingFindMany(...args),
@@ -85,7 +85,9 @@ describe("Shift close-preview API (integration)", () => {
 
   it("flags missing readings and missing dip; blocks negative sold lines", async () => {
     mockShiftFindUnique.mockResolvedValue(shift)
-    mockPumpFindMany.mockResolvedValue([pumpWithTank])
+    mockShiftPumpAssignmentFindMany.mockResolvedValue([
+      { shiftId: 5, pumpId: 1, workerId: 2, pump: pumpWithTank },
+    ])
     mockPumpReadingFindMany.mockResolvedValue([])
     mockStockFindMany.mockResolvedValue([
       {
@@ -117,7 +119,9 @@ describe("Shift close-preview API (integration)", () => {
 
   it("computes per-pump revenue and shop expected total on the happy path", async () => {
     mockShiftFindUnique.mockResolvedValue(shift)
-    mockPumpFindMany.mockResolvedValue([pumpWithTank])
+    mockShiftPumpAssignmentFindMany.mockResolvedValue([
+      { shiftId: 5, pumpId: 1, workerId: 2, pump: pumpWithTank },
+    ])
     mockPumpReadingFindMany.mockResolvedValue([
       { pumpId: 1, shiftId: 5, openingReading: 100, closingReading: 220 },
     ])

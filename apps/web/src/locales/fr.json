@@ -293,11 +293,13 @@
     "pumpReadingsOpening": "Relevé d’ouverture",
     "pumpReadingsClosing": "Relevé de fermeture",
     "pumpReadingsUnassigned": "— affecter dans Affecter les pompes",
+    "pumpReadingsNoOperationalPumps": "Aucune pompe opérationnelle n'est affectée à ce poste. Affectez les pompes dans la fenêtre Équipe.",
     "pumpReadingsAssignFirstTitle": "Affectez d’abord un employé à cette pompe pour ce poste avant de saisir les relevés.",
     "assignPumps": "Affecter les pompes",
     "pump": "Pompe",
     "worker": "Employé",
     "assignPumpsSelectWorker": "Sélectionner un employé",
+    "assignPumpsNotOperational": "Non opérationnelle sur ce poste",
     "assignPumpsNoShiftWorkers": "Aucun employé sur ce poste pour l’instant. Utilisez « Gérer les employés » pour en ajouter, puis affectez-les aux pompes ici.",
     "stock": {
       "title": "Stock boutique pour ce poste",
@@ -352,6 +354,7 @@
       "title": "Équipe du poste",
       "workers": "Employés du poste",
       "pumps": "Affectation des pompes",
+      "pumpsHint": "Affectez uniquement les pompes utilisées sur ce poste. Laissez une pompe vide si elle est en panne, fermée pour la journée ou non exploitée.",
       "seller": "Vendeur boutique responsable",
       "noSeller": "— Aucun —",
       "save": "Enregistrer l'équipe"

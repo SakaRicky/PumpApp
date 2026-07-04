@@ -38,7 +38,13 @@ export const PumpReadingsGrid = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((row) => {
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-muted-foreground">
+                {t("shifts.pumpReadingsNoOperationalPumps")}
+              </TableCell>
+            </TableRow>
+          ) : rows.map((row) => {
             const rowNeedsAssignBeforeCreate =
               canEdit && row.readingId == null && !row.workerName
             const volume = getPumpReadingVolume(row)
