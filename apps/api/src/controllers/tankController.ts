@@ -23,6 +23,10 @@ const toTankResponse = (
   actualQuantityRecordedAt: row.actualQuantityRecordedAt
     ? row.actualQuantityRecordedAt.toISOString()
     : null,
+  dipToleranceLiters:
+    row.dipToleranceLiters !== null ? Number(row.dipToleranceLiters) : null,
+  dipTolerancePct:
+    row.dipTolerancePct !== null ? Number(row.dipTolerancePct) : null,
   active: row.active,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString(),
@@ -66,7 +70,8 @@ const create = async (req: Request, res: Response): Promise<void> => {
     })
   }
 
-  const { fuelTypeId, name, capacity, active } = parsed.data
+  const { fuelTypeId, name, capacity, active, dipToleranceLiters, dipTolerancePct } =
+    parsed.data
 
   const fuelType = await prisma.fuelType.findUnique({
     where: { id: fuelTypeId },
@@ -80,6 +85,8 @@ const create = async (req: Request, res: Response): Promise<void> => {
       fuelTypeId,
       name,
       ...(capacity !== undefined && { capacity }),
+      ...(dipToleranceLiters !== undefined && { dipToleranceLiters }),
+      ...(dipTolerancePct !== undefined && { dipTolerancePct }),
       active: active ?? true,
     },
     include: { fuelType: true },
@@ -131,6 +138,12 @@ const update = async (req: Request, res: Response): Promise<void> => {
       ...(parsed.data.actualQuantity !== undefined && {
         actualQuantity: parsed.data.actualQuantity,
         actualQuantityRecordedAt: new Date(),
+      }),
+      ...(parsed.data.dipToleranceLiters !== undefined && {
+        dipToleranceLiters: parsed.data.dipToleranceLiters,
+      }),
+      ...(parsed.data.dipTolerancePct !== undefined && {
+        dipTolerancePct: parsed.data.dipTolerancePct,
       }),
       ...(parsed.data.active !== undefined && { active: parsed.data.active }),
     },

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { api } from "@/lib/api"
 import { useAuth } from "@/contexts/authContext"
 import { Button } from "@/components/ui/button"
+import { BrandLogo } from "@/components/BrandLogo"
 
 export const LoginPage = () => {
   const { t } = useTranslation()
@@ -37,12 +38,13 @@ export const LoginPage = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background p-4">
+      <BrandLogo variant="light" withTagline className="scale-110" />
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-border bg-card p-6 shadow-sm"
+        className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6 shadow-lg shadow-primary/5"
       >
-        <h1 className="text-xl font-semibold">{t("login.title")}</h1>
+        <h1 className="text-xl font-bold tracking-tight">{t("login.title")}</h1>
         {error && (
           <p className="text-sm text-destructive" role="alert">
             {error}

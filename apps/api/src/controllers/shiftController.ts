@@ -5,6 +5,7 @@ import {
   shiftUpdateSchema,
   shiftWorkerAssignSchema,
   shiftStockBulkUpdateSchema,
+  shiftTeamUpdateSchema,
   type ShiftResponse,
   type ShiftStockItemResponse,
 } from "@pumpapp/shared"
@@ -14,6 +15,10 @@ import {
   coversFuelSide,
   coversShopSide,
 } from "../services/shiftWorkerCoverage.js"
+import { recordEvent } from "../services/events.js"
+import { assertShiftMutable } from "../services/shiftLock.js"
+import { getTodayActiveShift, startOfLocalDay } from "../services/todayShift.js"
+import { buildClosePreview } from "../services/closePreview.js"
 
 type ShiftRow = Awaited<ReturnType<typeof prisma.shift.findMany>>[number]
 
@@ -74,6 +79,20 @@ const getById = async (req: Request, res: Response): Promise<void> => {
   res.status(200).json(toShiftResponse(shift))
 }
 
+const getClosePreview = async (req: Request, res: Response): Promise<void> => {
+  const id = Number.parseInt(req.params.id, 10)
+  if (Number.isNaN(id)) {
+    throw new AppError("Invalid shift id", 400, ErrorCode.VALIDATION_ERROR)
+  }
+
+  const preview = await buildClosePreview(id)
+  if (!preview) {
+    throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
+  }
+
+  res.status(200).json(preview)
+}
+
 const create = async (req: Request, res: Response): Promise<void> => {
   const parsed = shiftCreateSchema.safeParse(req.body)
   if (!parsed.success) {
@@ -98,18 +117,145 @@ const create = async (req: Request, res: Response): Promise<void> => {
     }
   }
 
-  const shift = await prisma.shift.create({
-    data: {
-      date: new Date(date),
-      startTime: new Date(startTime),
-      endTime: new Date(endTime),
-      status,
-      notes,
-      ...(shopAccountableWorkerId !== undefined && {
-        shopAccountableWorkerId,
-      }),
-    },
+  const actorId = req.user?.id ?? null
+  const shift = await prisma.$transaction(async (tx) => {
+    const created = await tx.shift.create({
+      data: {
+        date: new Date(date),
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        status,
+        notes,
+        ...(shopAccountableWorkerId !== undefined && {
+          shopAccountableWorkerId,
+        }),
+      },
+    })
+    await recordEvent(
+      {
+        type: "SHIFT_CREATED",
+        actorUserId: actorId,
+        shiftId: created.id,
+        entity: "shift",
+        entityId: created.id,
+        payload: { date, startTime, endTime, status },
+      },
+      tx
+    )
+    return created
   })
+  res.status(201).json(toShiftResponse(shift))
+}
+
+/**
+ * One-click day start: create today's shift as OPEN, carrying over workers,
+ * pump assignments and the accountable shop seller from the latest shift.
+ */
+const quickOpen = async (req: Request, res: Response): Promise<void> => {
+  const now = new Date()
+  const dayStart = startOfLocalDay(now)
+
+  const conflicting = await getTodayActiveShift(now)
+  if (conflicting) {
+    throw new AppError(
+      "A planned or open shift already exists for today",
+      409,
+      ErrorCode.CONFLICT
+    )
+  }
+
+  const previous = await prisma.shift.findFirst({
+    orderBy: [{ date: "desc" }, { startTime: "desc" }],
+    include: { workers: true, pumpAssignments: true },
+  })
+
+  let workerIds: number[] = []
+  let assignments: Array<{ pumpId: number; workerId: number }> = []
+  let shopAccountableWorkerId: number | null = null
+
+  if (previous) {
+    const candidateIds = Array.from(
+      new Set([
+        ...previous.workers.map((w) => w.workerId),
+        ...(previous.shopAccountableWorkerId !== null
+          ? [previous.shopAccountableWorkerId]
+          : []),
+      ])
+    )
+    const [activeWorkers, activePumps] = await Promise.all([
+      prisma.worker.findMany({
+        where: { id: { in: candidateIds }, active: true },
+      }),
+      prisma.pump.findMany({ where: { active: true } }),
+    ])
+    const activeWorkerIds = new Set(activeWorkers.map((w) => w.id))
+    const activePumpIds = new Set(activePumps.map((p) => p.id))
+
+    workerIds = previous.workers
+      .map((w) => w.workerId)
+      .filter((id) => activeWorkerIds.has(id))
+    assignments = previous.pumpAssignments
+      .filter(
+        (a) => activeWorkerIds.has(a.workerId) && activePumpIds.has(a.pumpId)
+      )
+      .map((a) => ({ pumpId: a.pumpId, workerId: a.workerId }))
+    shopAccountableWorkerId =
+      previous.shopAccountableWorkerId !== null &&
+      activeWorkerIds.has(previous.shopAccountableWorkerId)
+        ? previous.shopAccountableWorkerId
+        : null
+  }
+
+  const startTime = new Date(dayStart)
+  startTime.setHours(8, 0, 0, 0)
+  const endTime = new Date(dayStart)
+  endTime.setHours(17, 0, 0, 0)
+
+  const shift = await prisma.$transaction(async (tx) => {
+    const created = await tx.shift.create({
+      data: {
+        date: dayStart,
+        startTime,
+        endTime,
+        status: "OPEN",
+        shopAccountableWorkerId,
+      },
+    })
+    if (workerIds.length > 0) {
+      await tx.shiftWorker.createMany({
+        data: workerIds.map((workerId) => ({ shiftId: created.id, workerId })),
+      })
+    }
+    if (assignments.length > 0) {
+      await tx.shiftPumpAssignment.createMany({
+        data: assignments.map((a) => ({
+          shiftId: created.id,
+          pumpId: a.pumpId,
+          workerId: a.workerId,
+        })),
+      })
+    }
+    await recordEvent(
+      {
+        type: "SHIFT_CREATED",
+        actorUserId: req.user?.id ?? null,
+        shiftId: created.id,
+        entity: "shift",
+        entityId: created.id,
+        payload: {
+          quickOpen: true,
+          copiedFromShiftId: previous?.id ?? null,
+          workersCopied: workerIds.length,
+          pumpAssignmentsCopied: assignments.length,
+          date: dayStart.toISOString(),
+          status: "OPEN",
+        },
+      },
+      tx
+    )
+    return created
+  })
+
   res.status(201).json(toShiftResponse(shift))
 }
 
@@ -262,6 +408,18 @@ const update = async (req: Request, res: Response): Promise<void> => {
         },
       })
 
+      await recordEvent(
+        {
+          type: "SHIFT_STATUS_CHANGED",
+          actorUserId: req.user?.id ?? null,
+          shiftId: id,
+          entity: "shift",
+          entityId: id,
+          payload: { from: existing.status, to: "CLOSED" },
+        },
+        tx
+      )
+
       return updatedShift
     })
 
@@ -271,18 +429,37 @@ const update = async (req: Request, res: Response): Promise<void> => {
 
   const optionalFields = await buildShiftOptionalUpdateData(parsed.data)
 
-  const updated = await prisma.shift.update({
-    where: { id },
-    data: {
-      ...(parsed.data.date && { date: new Date(parsed.data.date) }),
-      ...(parsed.data.startTime && {
-        startTime: new Date(parsed.data.startTime),
-      }),
-      ...(parsed.data.endTime && { endTime: new Date(parsed.data.endTime) }),
-      ...(parsed.data.status && { status: parsed.data.status }),
-      ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
-      ...optionalFields,
-    },
+  const statusChanged =
+    parsed.data.status !== undefined && parsed.data.status !== existing.status
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const row = await tx.shift.update({
+      where: { id },
+      data: {
+        ...(parsed.data.date && { date: new Date(parsed.data.date) }),
+        ...(parsed.data.startTime && {
+          startTime: new Date(parsed.data.startTime),
+        }),
+        ...(parsed.data.endTime && { endTime: new Date(parsed.data.endTime) }),
+        ...(parsed.data.status && { status: parsed.data.status }),
+        ...(parsed.data.notes !== undefined && { notes: parsed.data.notes }),
+        ...optionalFields,
+      },
+    })
+    await recordEvent(
+      {
+        type: statusChanged ? "SHIFT_STATUS_CHANGED" : "SHIFT_UPDATED",
+        actorUserId: req.user?.id ?? null,
+        shiftId: id,
+        entity: "shift",
+        entityId: id,
+        payload: statusChanged
+          ? { from: existing.status, to: parsed.data.status as string }
+          : { changes: parsed.data },
+      },
+      tx
+    )
+    return row
   })
 
   res.status(200).json(toShiftResponse(updated))
@@ -335,6 +512,7 @@ const assignWorkers = async (req: Request, res: Response): Promise<void> => {
   if (!shift) {
     throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
   }
+  assertShiftMutable(shift)
 
   const workerIds: number[] = []
   if (parsed.data.workerId !== undefined) workerIds.push(parsed.data.workerId)
@@ -382,6 +560,12 @@ const unassignWorker = async (req: Request, res: Response): Promise<void> => {
       ErrorCode.VALIDATION_ERROR
     )
   }
+
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+  if (!shift) {
+    throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
+  }
+  assertShiftMutable(shift)
 
   await prisma.shiftWorker.deleteMany({
     where: { shiftId, workerId },
@@ -447,6 +631,7 @@ const upsertStock = async (req: Request, res: Response): Promise<void> => {
   if (!shift) {
     throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
   }
+  assertShiftMutable(shift)
 
   const items = parsed.data
   const productIds = Array.from(
@@ -467,40 +652,210 @@ const upsertStock = async (req: Request, res: Response): Promise<void> => {
     )
   }
 
-  await prisma.$transaction(
-    items.map(
-      (item: {
-        productId: number
-        openingQty?: number
-        receivedQty?: number
-        closingQty: number
-      }) => {
-        const received =
-          item.receivedQty !== undefined ? item.receivedQty : undefined
-        return prisma.shiftProductStock.upsert({
-          where: {
-            shiftId_productId: { shiftId, productId: item.productId },
-          },
-          create: {
-            shiftId,
-            productId: item.productId,
-            openingQty: item.openingQty !== undefined ? item.openingQty : 0,
-            receivedQty: received ?? 0,
-            closingQty: item.closingQty,
-          },
-          update: {
-            ...(item.openingQty !== undefined && {
-              openingQty: item.openingQty,
-            }),
-            ...(received !== undefined && { receivedQty: received }),
-            closingQty: item.closingQty,
-          },
-        })
-      }
+  await prisma.$transaction(async (tx) => {
+    for (const item of items as Array<{
+      productId: number
+      openingQty?: number
+      receivedQty?: number
+      closingQty: number
+    }>) {
+      const received =
+        item.receivedQty !== undefined ? item.receivedQty : undefined
+      await tx.shiftProductStock.upsert({
+        where: {
+          shiftId_productId: { shiftId, productId: item.productId },
+        },
+        create: {
+          shiftId,
+          productId: item.productId,
+          openingQty: item.openingQty !== undefined ? item.openingQty : 0,
+          receivedQty: received ?? 0,
+          closingQty: item.closingQty,
+        },
+        update: {
+          ...(item.openingQty !== undefined && {
+            openingQty: item.openingQty,
+          }),
+          ...(received !== undefined && { receivedQty: received }),
+          closingQty: item.closingQty,
+        },
+      })
+    }
+    await recordEvent(
+      {
+        type: "SHIFT_STOCK_UPSERTED",
+        actorUserId: req.user?.id ?? null,
+        shiftId,
+        entity: "shiftProductStock",
+        payload: { items },
+      },
+      tx
     )
-  )
+  })
 
   res.status(204).send()
+}
+
+/**
+ * One-shot team sync for a shift: workers on shift, per-pump assignments and
+ * the accountable shop seller — one transaction, one journal event, replacing
+ * the three separate calls (workers / pump-assignments / shift patch).
+ */
+const updateTeam = async (req: Request, res: Response): Promise<void> => {
+  const shiftId = Number.parseInt(req.params.id, 10)
+  if (Number.isNaN(shiftId)) {
+    throw new AppError("Invalid shift id", 400, ErrorCode.VALIDATION_ERROR)
+  }
+
+  const parsed = shiftTeamUpdateSchema.safeParse(req.body)
+  if (!parsed.success) {
+    throw new AppError("Validation failed", 400, ErrorCode.VALIDATION_ERROR, {
+      errors: parsed.error.flatten().fieldErrors,
+    })
+  }
+
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+  if (!shift) {
+    throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
+  }
+  assertShiftMutable(shift)
+
+  const { workerIds, pumpAssignments, shopAccountableWorkerId } = parsed.data
+
+  // Workers referenced by an assignment or as accountable seller are on the
+  // shift by definition — include them so callers can't produce an
+  // inconsistent state.
+  const effectiveWorkerIds = Array.from(
+    new Set([
+      ...workerIds,
+      ...pumpAssignments
+        .map((a) => a.workerId)
+        .filter((id): id is number => id !== null),
+      ...(shopAccountableWorkerId != null ? [shopAccountableWorkerId] : []),
+    ])
+  )
+
+  const assignedPumpIds = pumpAssignments.map((a) => a.pumpId)
+  const [workers, pumps, existingShiftWorkers] = await Promise.all([
+    prisma.worker.findMany({ where: { id: { in: effectiveWorkerIds } } }),
+    prisma.pump.findMany({ where: { id: { in: assignedPumpIds } } }),
+    prisma.shiftWorker.findMany({ where: { shiftId } }),
+  ])
+
+  const inactive = workers.filter((w) => !w.active).map((w) => w.name)
+  if (workers.length !== effectiveWorkerIds.length || inactive.length > 0) {
+    throw new AppError(
+      inactive.length > 0
+        ? `Cannot assign inactive workers: ${inactive.join(", ")}`
+        : "Some workers do not exist",
+      400,
+      ErrorCode.VALIDATION_ERROR
+    )
+  }
+  const pumpById = new Map(pumps.map((p) => [p.id, p]))
+  for (const a of pumpAssignments) {
+    const pump = pumpById.get(a.pumpId)
+    if (!pump || !pump.active) {
+      throw new AppError(
+        `Pump ${a.pumpId} not found or inactive`,
+        400,
+        ErrorCode.VALIDATION_ERROR
+      )
+    }
+  }
+
+  const effectiveSet = new Set(effectiveWorkerIds)
+  const existingIds = existingShiftWorkers.map((sw) => sw.workerId)
+  const toAdd = effectiveWorkerIds.filter((id) => !existingIds.includes(id))
+  const toRemove = existingIds.filter((id) => !effectiveSet.has(id))
+
+  // A worker with recorded facts on this shift cannot be silently dropped.
+  if (toRemove.length > 0) {
+    const [readingCount, handInCount] = await Promise.all([
+      prisma.pumpReading.count({
+        where: { shiftId, workerId: { in: toRemove } },
+      }),
+      prisma.cashHandIn.count({
+        where: { shiftId, workerId: { in: toRemove } },
+      }),
+    ])
+    if (readingCount > 0 || handInCount > 0) {
+      throw new AppError(
+        "Cannot remove workers who already have pump readings or cash hand-ins on this shift",
+        409,
+        ErrorCode.CONFLICT
+      )
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (toAdd.length > 0) {
+      await tx.shiftWorker.createMany({
+        data: toAdd.map((workerId) => ({ shiftId, workerId })),
+      })
+    }
+    if (toRemove.length > 0) {
+      await tx.shiftWorker.deleteMany({
+        where: { shiftId, workerId: { in: toRemove } },
+      })
+      await tx.shiftPumpAssignment.deleteMany({
+        where: { shiftId, workerId: { in: toRemove } },
+      })
+    }
+    for (const a of pumpAssignments) {
+      if (a.workerId === null) {
+        await tx.shiftPumpAssignment.deleteMany({
+          where: { shiftId, pumpId: a.pumpId },
+        })
+      } else {
+        await tx.shiftPumpAssignment.upsert({
+          where: { shiftId_pumpId: { shiftId, pumpId: a.pumpId } },
+          create: { shiftId, pumpId: a.pumpId, workerId: a.workerId },
+          update: { workerId: a.workerId },
+        })
+      }
+    }
+    if (shopAccountableWorkerId !== undefined) {
+      await tx.shift.update({
+        where: { id: shiftId },
+        data: { shopAccountableWorkerId },
+      })
+    }
+    await recordEvent(
+      {
+        type: "SHIFT_UPDATED",
+        actorUserId: req.user?.id ?? null,
+        shiftId,
+        entity: "shift",
+        entityId: shiftId,
+        payload: {
+          team: {
+            workerIds: effectiveWorkerIds,
+            pumpAssignments,
+            ...(shopAccountableWorkerId !== undefined && {
+              shopAccountableWorkerId,
+            }),
+          },
+        },
+      },
+      tx
+    )
+  })
+
+  const assignments = await prisma.shiftPumpAssignment.findMany({
+    where: { shiftId },
+  })
+  res.status(200).json({
+    workerIds: effectiveWorkerIds,
+    pumpAssignments: assignments.map((a) => ({
+      pumpId: a.pumpId,
+      workerId: a.workerId,
+    })),
+    shopAccountableWorkerId:
+      shopAccountableWorkerId !== undefined
+        ? shopAccountableWorkerId
+        : shift.shopAccountableWorkerId,
+  })
 }
 
 const listPumpAssignments = async (
@@ -575,12 +930,14 @@ const assignPump = async (req: Request, res: Response): Promise<void> => {
     prisma.pump.findUnique({ where: { id: pumpId } }),
     prisma.shiftWorker.findUnique({
       where: { shiftId_workerId: { shiftId, workerId } },
+      include: { worker: { include: { user: true } } },
     }),
   ])
 
   if (!shift) {
     throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
   }
+  assertShiftMutable(shift)
   if (!pump || !pump.active) {
     throw new AppError(
       "Pump not found or inactive",
@@ -591,6 +948,13 @@ const assignPump = async (req: Request, res: Response): Promise<void> => {
   if (!shiftWorker) {
     throw new AppError(
       "Worker must be assigned to this shift before assigning a pump",
+      400,
+      ErrorCode.VALIDATION_ERROR
+    )
+  }
+  if (coversShopSide(shiftWorker.worker) || !coversFuelSide(shiftWorker.worker)) {
+    throw new AppError(
+      "Only fuel-side workers can be assigned to pumps; shop workers cannot work pumps on the same shift",
       400,
       ErrorCode.VALIDATION_ERROR
     )
@@ -619,7 +983,9 @@ const assignPump = async (req: Request, res: Response): Promise<void> => {
 export {
   list,
   getById,
+  getClosePreview,
   create,
+  quickOpen,
   update,
   listWorkers,
   assignWorkers,
@@ -628,5 +994,6 @@ export {
   upsertStock,
   listPumpAssignments,
   assignPump,
+  updateTeam,
   toShiftResponse,
 }

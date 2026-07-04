@@ -7,21 +7,21 @@ export const LanguageSwitcher = () => {
 
   return (
     <div
-      className="border-t border-sidebar-border px-3 py-2"
+      className="px-1"
       role="group"
       aria-label={i18n.t("languageSwitcher.label")}
     >
-      <div className="flex gap-1 rounded-md p-1">
+      <div className="flex gap-1 rounded-lg bg-white/5 p-1">
         {(["en", "fr"] as const).map((lng) => (
           <button
             key={lng}
             type="button"
             onClick={() => changeLanguage(lng)}
             className={cn(
-              "flex-1 rounded px-2 py-1.5 text-xs font-medium transition-colors",
+              "flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors",
               i18n.language === lng
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                : "text-sidebar-foreground/60 hover:text-white"
             )}
           >
             {i18n.t(`languageSwitcher.${lng}`)}

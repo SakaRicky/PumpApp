@@ -31,6 +31,12 @@ import { Label } from "@/components/ui/label"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import {
+  StockCountGrid,
+} from "@/components/shift/StockCountGrid"
+import { PumpReadingsGrid } from "@/components/shift/PumpReadingsGrid"
+import { deriveStockRow, type StockCountRow } from "@/components/shift/stockCount"
+import type { PumpReadingGridRow } from "@/components/shift/pumpReadings"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -125,14 +131,17 @@ export const ShiftsPage = () => {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
-  const [manageWorkersOpen, setManageWorkersOpen] = useState(false)
-  const [workersLoading, setWorkersLoading] = useState(false)
-  const [workersError, setWorkersError] = useState<string | null>(null)
   const [allWorkers, setAllWorkers] = useState<WorkerResponse[]>([])
   const [allUsers, setAllUsers] = useState<UserResponse[]>([])
-  const [selectedShiftForWorkers, setSelectedShiftForWorkers] =
-    useState<ShiftResponse | null>(null)
-  const [assignedWorkerIds, setAssignedWorkerIds] = useState<number[]>([])
+
+  // One-shot team dialog (workers + pump assignments + accountable seller)
+  const [teamOpen, setTeamOpen] = useState(false)
+  const [teamShift, setTeamShift] = useState<ShiftResponse | null>(null)
+  const [teamLoading, setTeamLoading] = useState(false)
+  const [teamSaving, setTeamSaving] = useState(false)
+  const [teamError, setTeamError] = useState<string | null>(null)
+  const [teamWorkerIds, setTeamWorkerIds] = useState<number[]>([])
+  const [teamSellerId, setTeamSellerId] = useState<string>("")
 
   const [stockOpen, setStockOpen] = useState(false)
   const [stockLoading, setStockLoading] = useState(false)
@@ -141,16 +150,7 @@ export const ShiftsPage = () => {
   const [selectedShiftForStock, setSelectedShiftForStock] =
     useState<ShiftResponse | null>(null)
 
-  type StockRow = {
-    productId: number
-    productName: string
-    categoryName: string
-    openingQty: string
-    receivedQty: string
-    closingQty: string
-    sellingPrice: number
-  }
-  const [stockRows, setStockRows] = useState<StockRow[]>([])
+  const [stockRows, setStockRows] = useState<StockCountRow[]>([])
   const [stockSearch, setStockSearch] = useState("")
   const [stockOnlyChanged, setStockOnlyChanged] = useState(false)
 
@@ -161,32 +161,21 @@ export const ShiftsPage = () => {
   const [pumpReadingsError, setPumpReadingsError] = useState<string | null>(
     null
   )
-  type PumpReadingRow = {
-    pumpId: number
-    pumpName: string
-    readingId?: number
-    /** Worker linked to the saved reading, or current assignee from Assign pumps. */
-    workerName: string | null
-    openingReading: string
-    closingReading: string
-  }
-  const [pumpReadingRows, setPumpReadingRows] = useState<PumpReadingRow[]>([])
+  const [pumpReadingRows, setPumpReadingRows] = useState<
+    PumpReadingGridRow[]
+  >([])
+  const [pumpOverrideRow, setPumpOverrideRow] =
+    useState<PumpReadingGridRow | null>(null)
+  const [pumpOverrideReason, setPumpOverrideReason] = useState("")
 
-  const [pumpAssignmentsOpen, setPumpAssignmentsOpen] = useState(false)
-  const [selectedShiftForPumpAssignments, setSelectedShiftForPumpAssignments] =
-    useState<ShiftResponse | null>(null)
   type PumpAssignmentRow = {
     pumpId: number
     pumpName: string
     workerId: number | null
   }
-  const [pumpAssignmentRows, setPumpAssignmentRows] = useState<
-    PumpAssignmentRow[]
-  >([])
-  const [pumpAssignmentsError, setPumpAssignmentsError] = useState<
-    string | null
-  >(null)
-  const [pumpAssignmentsLoading, setPumpAssignmentsLoading] = useState(false)
+  const [teamAssignments, setTeamAssignments] = useState<PumpAssignmentRow[]>(
+    []
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -212,6 +201,23 @@ export const ShiftsPage = () => {
       .then((w) => setAllWorkers(w))
       .catch(() => {})
   }, [isAdmin])
+
+  const [quickOpening, setQuickOpening] = useState(false)
+
+  const handleQuickOpen = async () => {
+    setQuickOpening(true)
+    setLoadError(null)
+    try {
+      await api.quickOpenShift()
+      await load()
+    } catch (e) {
+      setLoadError(
+        e instanceof Error ? e.message : t("shifts.errors.createFailed")
+      )
+    } finally {
+      setQuickOpening(false)
+    }
+  }
 
   const openCreate = () => {
     const today = new Date()
@@ -342,38 +348,102 @@ export const ShiftsPage = () => {
   const hasActiveFilters =
     statusFilter !== SHIFT_STATUS_FILTER_ALL || Boolean(dateFilter)
 
-  const openManageWorkers = async (shift: ShiftResponse) => {
-    setSelectedShiftForWorkers(shift)
-    setManageWorkersOpen(true)
-    setWorkersLoading(true)
-    setWorkersError(null)
+  const openTeam = async (shift: ShiftResponse) => {
+    setTeamShift(shift)
+    setTeamOpen(true)
+    setTeamLoading(true)
+    setTeamError(null)
     try {
-      const [workersRes, usersRes, shiftWorkersRes] = await Promise.all([
-        api.getWorkers(),
-        api.getUsers(),
-        api.getShiftWorkers(shift.id),
-      ])
+      const [workersRes, usersRes, shiftWorkersRes, assignments] =
+        await Promise.all([
+          api.getWorkers(),
+          api.getUsers(),
+          api.getShiftWorkers(shift.id),
+          api.getShiftPumpAssignments(shift.id),
+        ])
       setAllWorkers(workersRes)
       setAllUsers(usersRes)
-      setAssignedWorkerIds(shiftWorkersRes.map((w) => w.id))
+      setTeamWorkerIds(shiftWorkersRes.map((w) => w.id))
+      setTeamAssignments(
+        assignments.map((a) => ({
+          pumpId: a.pumpId,
+          pumpName: a.pumpName,
+          workerId: a.workerId,
+        }))
+      )
+      setTeamSellerId(
+        shift.shopAccountableWorkerId != null
+          ? String(shift.shopAccountableWorkerId)
+          : ""
+      )
     } catch (e) {
-      setWorkersError(
+      setTeamError(
         e instanceof Error ? e.message : t("shifts.errors.loadWorkersFailed")
       )
     } finally {
-      setWorkersLoading(false)
+      setTeamLoading(false)
     }
   }
 
-  const closeManageWorkers = () => {
-    setManageWorkersOpen(false)
-    setSelectedShiftForWorkers(null)
-    setWorkersError(null)
-    setAssignedWorkerIds([])
+  const closeTeam = () => {
+    setTeamOpen(false)
+    setTeamShift(null)
+    setTeamError(null)
+    setTeamWorkerIds([])
+    setTeamAssignments([])
+    setTeamSellerId("")
   }
 
-  const isWorkerAssigned = (workerId: number): boolean =>
-    assignedWorkerIds.includes(workerId)
+  const toggleTeamWorker = (workerId: number) => {
+    setTeamWorkerIds((prev) =>
+      prev.includes(workerId)
+        ? prev.filter((id) => id !== workerId)
+        : [...prev, workerId]
+    )
+    // Unchecking a worker also clears their pump assignments and seller role.
+    setTeamAssignments((prev) =>
+      prev.map((row) =>
+        row.workerId === workerId ? { ...row, workerId: null } : row
+      )
+    )
+    setTeamSellerId((prev) => (prev === String(workerId) ? "" : prev))
+  }
+
+  const setTeamPumpWorker = (pumpId: number, workerId: number | null) => {
+    setTeamAssignments((prev) =>
+      prev.map((row) => (row.pumpId === pumpId ? { ...row, workerId } : row))
+    )
+    if (workerId !== null) {
+      setTeamWorkerIds((prev) =>
+        prev.includes(workerId) ? prev : [...prev, workerId]
+      )
+    }
+  }
+
+  const handleTeamSave = async () => {
+    if (!teamShift) return
+    setTeamSaving(true)
+    setTeamError(null)
+    try {
+      await api.updateShiftTeam(teamShift.id, {
+        workerIds: teamWorkerIds,
+        pumpAssignments: teamAssignments.map(({ pumpId, workerId }) => ({
+          pumpId,
+          workerId,
+        })),
+        shopAccountableWorkerId:
+          teamSellerId === "" ? null : Number(teamSellerId),
+      })
+      closeTeam()
+      await load()
+    } catch (e) {
+      setTeamError(
+        e instanceof Error ? e.message : t("shifts.errors.updateWorkersFailed")
+      )
+    } finally {
+      setTeamSaving(false)
+    }
+  }
 
   const workerRoleLabel = (workerId: number): string | null => {
     const user = allUsers.find((u) => u.workerId === workerId)
@@ -381,23 +451,16 @@ export const ShiftsPage = () => {
     return t(`users.role.${user.role}`)
   }
 
-  const toggleWorker = async (worker: WorkerResponse) => {
-    if (!selectedShiftForWorkers) return
-    const shiftId = selectedShiftForWorkers.id
-    const currentlyAssigned = isWorkerAssigned(worker.id)
-    try {
-      if (currentlyAssigned) {
-        await api.unassignShiftWorker(shiftId, worker.id)
-        setAssignedWorkerIds((prev) => prev.filter((id) => id !== worker.id))
-      } else {
-        await api.assignShiftWorkers(shiftId, { workerId: worker.id })
-        setAssignedWorkerIds((prev) => [...prev, worker.id])
-      }
-    } catch (e) {
-      setWorkersError(
-        e instanceof Error ? e.message : t("shifts.errors.updateWorkersFailed")
-      )
-    }
+  const isFuelSideWorker = (worker: WorkerResponse): boolean => {
+    const role = allUsers.find((u) => u.workerId === worker.id)?.role
+    const designation = (worker.designation ?? "").toLowerCase()
+    return role === "PUMPIST" || /\bpump/.test(designation)
+  }
+
+  const isShopSideWorker = (worker: WorkerResponse): boolean => {
+    const role = allUsers.find((u) => u.workerId === worker.id)?.role
+    const designation = (worker.designation ?? "").toLowerCase()
+    return role === "SALE" || /\bshop\b/.test(designation) || /\bcashier\b/.test(designation)
   }
 
   const openStock = async (shift: ShiftResponse) => {
@@ -413,7 +476,7 @@ export const ShiftsPage = () => {
       const stockByProduct = new Map(
         stock.map((s) => [s.productId, s] as const)
       )
-      const rows: StockRow[] = products
+      const rows: StockCountRow[] = products
         .filter((p) => p.active)
         .map((p: ProductResponse) => {
           const s = stockByProduct.get(p.id)
@@ -421,11 +484,10 @@ export const ShiftsPage = () => {
             s?.openingQty != null
               ? Number(s.openingQty)
               : Number(p.currentStock)
-          const closing =
-            s?.closingQty != null
-              ? Number(s.closingQty)
-              : Number(p.currentStock)
           const received = s?.receivedQty != null ? Number(s.receivedQty) : 0
+          const closingSuggested = s?.closingQty == null
+          const closing =
+            s?.closingQty != null ? Number(s.closingQty) : opening + received
           return {
             productId: p.id,
             productName: p.name,
@@ -434,6 +496,7 @@ export const ShiftsPage = () => {
             receivedQty: received.toString(),
             closingQty: closing.toString(),
             sellingPrice: Number(p.sellingPrice),
+            closingSuggested,
           }
         })
       setStockRows(rows)
@@ -463,33 +526,32 @@ export const ShiftsPage = () => {
   ) => {
     setStockRows((prev) =>
       prev.map((row) =>
-        row.productId === productId ? { ...row, [field]: value } : row
+        row.productId === productId
+          ? {
+              ...row,
+              [field]: value,
+              ...(field === "closingQty" && { closingSuggested: false }),
+            }
+          : row
       )
     )
   }
 
-  const parsedRows = stockRows.map((row) => {
-    const opening = Number(row.openingQty)
-    const received = Number(row.receivedQty)
-    const closing = Number(row.closingQty)
-    const sold = opening + received - closing
-    const revenue = sold * row.sellingPrice
-    const warning = closing > opening + received || sold < 0
-    return { ...row, opening, received, closing, sold, revenue, warning }
-  })
+  const fillAllStockSuggestions = () => {
+    setStockRows((prev) =>
+      prev.map((row) => {
+        if (!row.closingSuggested) return row
+        const opening = Number(row.openingQty)
+        const received = Number(row.receivedQty)
+        return {
+          ...row,
+          closingQty: (opening + received).toString(),
+        }
+      })
+    )
+  }
 
-  const filteredRows = parsedRows.filter((row) => {
-    if (
-      stockSearch &&
-      !row.productName.toLowerCase().includes(stockSearch.toLowerCase())
-    ) {
-      return false
-    }
-    if (stockOnlyChanged && row.opening === row.closing && row.received === 0) {
-      return false
-    }
-    return true
-  })
+  const parsedRows = stockRows.map(deriveStockRow)
 
   const stockSummary = parsedRows.reduce(
     (acc, row) => {
@@ -509,6 +571,10 @@ export const ShiftsPage = () => {
   const handleSaveStock = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedShiftForStock) return
+    if (parsedRows.some((row) => row.warning)) {
+      setStockError(t("shifts.stock.negativeBlocked"))
+      return
+    }
     setStockSaving(true)
     setStockError(null)
     try {
@@ -533,27 +599,45 @@ export const ShiftsPage = () => {
     setPumpReadingsLoading(true)
     setPumpReadingsError(null)
     try {
-      const [pumps, readings, assignments] = await Promise.all([
+      const canEdit =
+        shift.status === ShiftStatus.PLANNED ||
+        shift.status === ShiftStatus.OPEN
+      const [pumps, readings, assignments, prefill] = await Promise.all([
         api.getPumps(),
         api.getShiftPumpReadings(shift.id),
         api.getShiftPumpAssignments(shift.id),
+        canEdit
+          ? api.getShiftPumpReadingPrefill(shift.id).catch(() => [])
+          : Promise.resolve([]),
       ])
       const byPumpId = new Map(readings.map((r) => [r.pumpId, r]))
       const assignByPumpId = new Map(assignments.map((a) => [a.pumpId, a]))
-      const rows: PumpReadingRow[] = pumps.map((pump) => {
+      const prefillByPumpId = new Map(
+        prefill.map((p) => [p.pumpId, p])
+      )
+      const rows: PumpReadingGridRow[] = pumps.map((pump) => {
         const r = byPumpId.get(pump.id)
         const a = assignByPumpId.get(pump.id)
         const workerName =
           r != null ? (r.workerName ?? null) : (a?.workerName ?? null)
+        // Spec 6.2: opening index pre-filled from this pump's last closing.
+        const prefillItem = prefillByPumpId.get(pump.id)
+        const suggestedOpening = prefillItem?.lastClosingReading
         return {
           pumpId: pump.id,
           pumpName: pump.name,
           readingId: r?.id,
           workerName,
           openingReading:
-            r?.openingReading != null ? String(r.openingReading) : "",
+            r?.openingReading != null
+              ? String(r.openingReading)
+              : suggestedOpening != null
+                ? String(suggestedOpening)
+                : "",
           closingReading:
             r?.closingReading != null ? String(r.closingReading) : "",
+          recentAverageVolume: prefillItem?.recentAverageVolume ?? null,
+          volumeCeiling: prefillItem?.volumeCeiling ?? null,
         }
       })
       setPumpReadingRows(rows)
@@ -570,6 +654,8 @@ export const ShiftsPage = () => {
     setPumpDialogShift(null)
     setPumpReadingsError(null)
     setPumpReadingRows([])
+    setPumpOverrideRow(null)
+    setPumpOverrideReason("")
   }
 
   const updatePumpReadingRow = (
@@ -589,6 +675,30 @@ export const ShiftsPage = () => {
       (pumpDialogShift.status === ShiftStatus.PLANNED ||
         pumpDialogShift.status === ShiftStatus.OPEN)
   )
+
+  const savePumpReadingRow = async (
+    row: PumpReadingGridRow,
+    override?: { overrideCeiling: boolean; overrideReason: string }
+  ) => {
+    if (!pumpDialogShift) return
+    const opening = Number(row.openingReading)
+    const closing = Number(row.closingReading)
+    if (row.readingId != null) {
+      await api.updatePumpReading(row.readingId, {
+        openingReading: opening,
+        closingReading: closing,
+        ...override,
+      })
+    } else {
+      if (!row.workerName) return
+      await api.createShiftPumpReading(pumpDialogShift.id, {
+        pumpId: row.pumpId,
+        openingReading: opening,
+        closingReading: closing,
+        ...override,
+      })
+    }
+  }
 
   const handleSavePumpReadings = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -636,82 +746,51 @@ export const ShiftsPage = () => {
         const opening = Number(row.openingReading)
         const closing = Number(row.closingReading)
         if (Number.isNaN(opening) || Number.isNaN(closing)) continue
-        if (row.readingId != null) {
-          await api.updatePumpReading(row.readingId, {
-            openingReading: opening,
-            closingReading: closing,
-          })
-        } else {
-          if (!row.workerName) continue
-          await api.createShiftPumpReading(pumpDialogShift.id, {
-            pumpId: row.pumpId,
-            openingReading: opening,
-            closingReading: closing,
-          })
-        }
+        await savePumpReadingRow(row)
       }
       setPumpReadingsLoading(false)
       closePumpReadings()
     } catch (err) {
-      setPumpReadingsError(
+      const message =
         err instanceof Error ? err.message : t("shifts.errors.updateFailed")
+      const rowAboveCeiling = pumpReadingRows.find((row) => {
+        const opening = Number(row.openingReading)
+        const closing = Number(row.closingReading)
+        return (
+          row.volumeCeiling != null &&
+          !Number.isNaN(opening) &&
+          !Number.isNaN(closing) &&
+          closing - opening > row.volumeCeiling
+        )
+      })
+      if (message.includes("exceeds") && rowAboveCeiling) {
+        setPumpOverrideRow(rowAboveCeiling)
+      }
+      setPumpReadingsError(
+        message
       )
       setPumpReadingsLoading(false)
     }
   }
 
-  const openPumpAssignments = async (shift: ShiftResponse) => {
-    setSelectedShiftForPumpAssignments(shift)
-    setPumpAssignmentsOpen(true)
-    setPumpAssignmentsLoading(true)
-    setPumpAssignmentsError(null)
+  const handleForcePumpReading = async () => {
+    if (!pumpOverrideRow || !pumpOverrideReason.trim()) return
+    setPumpReadingsLoading(true)
+    setPumpReadingsError(null)
     try {
-      const [assignments, workersRes, shiftWorkersRes] = await Promise.all([
-        api.getShiftPumpAssignments(shift.id),
-        api.getWorkers(),
-        api.getShiftWorkers(shift.id),
-      ])
-      setAllWorkers(workersRes)
-      setAssignedWorkerIds(shiftWorkersRes.map((w) => w.id))
-      const rows: PumpAssignmentRow[] = assignments.map((a) => ({
-        pumpId: a.pumpId,
-        pumpName: a.pumpName,
-        workerId: a.workerId,
-      }))
-      setPumpAssignmentRows(rows)
-    } catch (e) {
-      setPumpAssignmentsError(
-        e instanceof Error ? e.message : t("shifts.errors.loadWorkersFailed")
-      )
-    } finally {
-      setPumpAssignmentsLoading(false)
-    }
-  }
-
-  const closePumpAssignments = () => {
-    setPumpAssignmentsOpen(false)
-    setSelectedShiftForPumpAssignments(null)
-    setPumpAssignmentsError(null)
-    setPumpAssignmentRows([])
-  }
-
-  const handleAssignPumpWorker = async (
-    pumpId: number,
-    workerId: number | null
-  ) => {
-    if (!selectedShiftForPumpAssignments || workerId == null) return
-    try {
-      await api.assignShiftPump(selectedShiftForPumpAssignments.id, {
-        pumpId,
-        workerId,
+      await savePumpReadingRow(pumpOverrideRow, {
+        overrideCeiling: true,
+        overrideReason: pumpOverrideReason.trim(),
       })
-      setPumpAssignmentRows((prev) =>
-        prev.map((row) => (row.pumpId === pumpId ? { ...row, workerId } : row))
-      )
+      setPumpOverrideRow(null)
+      setPumpOverrideReason("")
+      setPumpReadingsLoading(false)
+      closePumpReadings()
     } catch (e) {
-      setPumpAssignmentsError(
-        e instanceof Error ? e.message : t("shifts.errors.updateWorkersFailed")
+      setPumpReadingsError(
+        e instanceof Error ? e.message : t("shifts.errors.updateFailed")
       )
+      setPumpReadingsLoading(false)
     }
   }
 
@@ -723,7 +802,16 @@ export const ShiftsPage = () => {
             <CalendarClock className="size-5 shrink-0 mt-0.5" aria-hidden />
             <p>{t("shifts.intro")}</p>
           </div>
-          <Button onClick={openCreate}>{t("shifts.addShift")}</Button>
+          <div className="flex gap-2">
+            {isAdmin && (
+              <Button onClick={handleQuickOpen} disabled={quickOpening}>
+                {quickOpening ? t("auth.loading") : t("shifts.quickOpen")}
+              </Button>
+            )}
+            <Button variant="outline" onClick={openCreate}>
+              {t("shifts.addShift")}
+            </Button>
+          </div>
         </div>
 
         {loadError && (
@@ -841,9 +929,9 @@ export const ShiftsPage = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => void openManageWorkers(shift)}
+                        onClick={() => void openTeam(shift)}
                       >
-                        {t("shifts.manageWorkers")}
+                        {t("shifts.team.button")}
                       </Button>
                       <Button
                         size="sm"
@@ -859,13 +947,17 @@ export const ShiftsPage = () => {
                       >
                         {t("shifts.pumpReadings")}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void openPumpAssignments(shift)}
-                      >
-                        {t("shifts.assignPumps")}
-                      </Button>
+                      {isAdmin && shift.status === ShiftStatus.OPEN && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            navigate(`/shifts/${String(shift.id)}/close`)
+                          }
+                        >
+                          {t("shifts.closeShift")}
+                        </Button>
+                      )}
                       {isAdmin &&
                         (shift.status === ShiftStatus.CLOSED ||
                           shift.status === ShiftStatus.RECONCILED) && (
@@ -1101,91 +1193,179 @@ export const ShiftsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Manage workers dialog */}
-      <Dialog
-        open={manageWorkersOpen}
-        onOpenChange={(open) => !open && closeManageWorkers()}
-      >
-        <DialogContent className="max-w-2xl">
+      {/* Team dialog: workers + pump assignments + accountable seller */}
+      <Dialog open={teamOpen} onOpenChange={(open) => !open && closeTeam()}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{t("shifts.manageWorkersTitle")}</DialogTitle>
+            <DialogTitle>{t("shifts.team.title")}</DialogTitle>
           </DialogHeader>
-          {selectedShiftForWorkers && (
+          {teamShift && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {t("shifts.manageWorkersForShift", {
-                  id: selectedShiftForWorkers.id,
-                  date: formatIsoDate(selectedShiftForWorkers.date),
-                })}
+                {formatIsoDate(teamShift.date)} •{" "}
+                {formatIsoTime(teamShift.startTime)} –{" "}
+                {formatIsoTime(teamShift.endTime)} •{" "}
+                {statusLabel(teamShift.status)}
               </p>
-              {workersError && (
+              {teamError && (
                 <Alert variant="destructive">
-                  <AlertDescription>{workersError}</AlertDescription>
+                  <AlertDescription>{teamError}</AlertDescription>
                 </Alert>
               )}
-              {workersLoading ? (
+              {teamLoading ? (
                 <p className="text-muted-foreground text-sm">
                   {t("auth.loading")}
                 </p>
-              ) : allWorkers.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  {t("workers.noWorkers")}
-                </p>
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead />
-                        <TableHead>{t("workers.table.name")}</TableHead>
-                        <TableHead>{t("workers.table.designation")}</TableHead>
-                        <TableHead
-                          title={t("shifts.workerPickerLoginRoleHint")}
-                        >
-                          {t("shifts.workerPickerLoginRole")}
-                        </TableHead>
-                        <TableHead>{t("workers.table.active")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allWorkers.map((worker) => (
-                        <TableRow key={worker.id}>
-                          <TableCell>
-                            <input
-                              type="checkbox"
-                              aria-label={t("shifts.assignWorkerCheckbox", {
-                                name: worker.name,
-                              })}
-                              checked={isWorkerAssigned(worker.id)}
-                              onChange={() => void toggleWorker(worker)}
-                              className="h-4 w-4 rounded border-input"
-                            />
-                          </TableCell>
-                          <TableCell>{worker.name}</TableCell>
-                          <TableCell>
-                            {worker.designation ?? t("workers.noDesignation")}
-                          </TableCell>
-                          <TableCell>
-                            {workerRoleLabel(worker.id) ?? t("users.role.USER")}
-                          </TableCell>
-                          <TableCell>
-                            {worker.active
-                              ? t("workers.activeYes")
-                              : t("workers.activeNo")}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="space-y-5">
+                  <section>
+                    <h3 className="mb-2 text-sm font-semibold">
+                      {t("shifts.team.workers")}
+                    </h3>
+                    <div className="rounded-md border">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead />
+                            <TableHead>{t("workers.table.name")}</TableHead>
+                            <TableHead>
+                              {t("workers.table.designation")}
+                            </TableHead>
+                            <TableHead
+                              title={t("shifts.workerPickerLoginRoleHint")}
+                            >
+                              {t("shifts.workerPickerLoginRole")}
+                            </TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allWorkers
+                            .filter((w) => w.active)
+                            .map((worker) => (
+                              <TableRow key={worker.id}>
+                                <TableCell>
+                                  <input
+                                    type="checkbox"
+                                    aria-label={t(
+                                      "shifts.assignWorkerCheckbox",
+                                      { name: worker.name }
+                                    )}
+                                    checked={teamWorkerIds.includes(worker.id)}
+                                    onChange={() =>
+                                      toggleTeamWorker(worker.id)
+                                    }
+                                    className="h-4 w-4 rounded border-input"
+                                  />
+                                </TableCell>
+                                <TableCell>{worker.name}</TableCell>
+                                <TableCell>
+                                  {worker.designation ??
+                                    t("workers.noDesignation")}
+                                </TableCell>
+                                <TableCell>
+                                  {workerRoleLabel(worker.id) ??
+                                    t("users.role.USER")}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </section>
+
+                  <section>
+                    <h3 className="mb-2 text-sm font-semibold">
+                      {t("shifts.team.pumps")}
+                    </h3>
+                    {teamAssignments.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        {t("pumps.noPumps")}
+                      </p>
+                    ) : (
+                      <div className="rounded-md border">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>{t("shifts.pump")}</TableHead>
+                              <TableHead>{t("shifts.worker")}</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {teamAssignments.map((row) => (
+                              <TableRow key={row.pumpId}>
+                                <TableCell>{row.pumpName}</TableCell>
+                                <TableCell>
+                                  <select
+                                    className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                    value={row.workerId ?? ""}
+                                    onChange={(e) =>
+                                      setTeamPumpWorker(
+                                        row.pumpId,
+                                        e.target.value
+                                          ? Number(e.target.value)
+                                          : null
+                                      )
+                                    }
+                                  >
+                                    <option value="">
+                                      {t("shifts.assignPumpsSelectWorker")}
+                                    </option>
+                                    {allWorkers
+                                      .filter(
+                                        (w) =>
+                                          w.active &&
+                                          isFuelSideWorker(w) &&
+                                          !isShopSideWorker(w)
+                                      )
+                                      .map((worker) => (
+                                        <option
+                                          key={worker.id}
+                                          value={worker.id}
+                                        >
+                                          {worker.name}
+                                        </option>
+                                      ))}
+                                  </select>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </section>
+
+                  <section>
+                    <h3 className="mb-2 text-sm font-semibold">
+                      {t("shifts.team.seller")}
+                    </h3>
+                    <select
+                      className="h-9 w-full max-w-sm rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      value={teamSellerId}
+                      onChange={(e) => setTeamSellerId(e.target.value)}
+                    >
+                      <option value="">{t("shifts.team.noSeller")}</option>
+                      {allWorkers
+                        .filter((w) => w.active && isShopSideWorker(w))
+                        .map((worker) => (
+                          <option key={worker.id} value={worker.id}>
+                            {worker.name}
+                          </option>
+                        ))}
+                    </select>
+                  </section>
                 </div>
               )}
               <DialogFooter>
+                <Button type="button" variant="outline" onClick={closeTeam}>
+                  {t("shifts.cancel")}
+                </Button>
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={closeManageWorkers}
+                  onClick={() => void handleTeamSave()}
+                  disabled={teamSaving || teamLoading}
                 >
-                  {t("shifts.close")}
+                  {teamSaving ? t("auth.loading") : t("shifts.team.save")}
                 </Button>
               </DialogFooter>
             </div>
@@ -1221,7 +1401,7 @@ export const ShiftsPage = () => {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1 text-sm">
                       <div>
-                        {t("shifts.stock.summary.totalRevenue")}:{" "}
+                        {t("shifts.stock.expectedTotal")}:{" "}
                         {stockSummary.totalRevenue.toFixed(2)}
                       </div>
                       <div>
@@ -1233,116 +1413,17 @@ export const ShiftsPage = () => {
                         {stockSummary.warnings}
                       </div>
                     </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Input
-                        className="w-full sm:w-60"
-                        placeholder={t("shifts.stock.filters.search")}
-                        value={stockSearch}
-                        onChange={(e) => setStockSearch(e.target.value)}
-                      />
-                      <label className="flex items-center gap-2 text-sm">
-                        <input
-                          type="checkbox"
-                          className="h-4 w-4 rounded border-input"
-                          checked={stockOnlyChanged}
-                          onChange={(e) =>
-                            setStockOnlyChanged(e.target.checked)
-                          }
-                        />
-                        {t("shifts.stock.filters.onlyChanged")}
-                      </label>
-                    </div>
                   </div>
-                  <div className="max-h-[60vh] overflow-y-auto rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>
-                            {t("shifts.stock.table.product")}
-                          </TableHead>
-                          <TableHead>
-                            {t("shifts.stock.table.category")}
-                          </TableHead>
-                          <TableHead className="w-[90px]">
-                            {t("shifts.stock.table.opening")}
-                          </TableHead>
-                          <TableHead className="w-[90px]">
-                            {t("shifts.stock.table.received")}
-                          </TableHead>
-                          <TableHead className="w-[90px]">
-                            {t("shifts.stock.table.closing")}
-                          </TableHead>
-                          <TableHead className="w-[90px]">
-                            {t("shifts.stock.table.sold")}
-                          </TableHead>
-                          <TableHead className="w-[110px]">
-                            {t("shifts.stock.table.revenue")}
-                          </TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredRows.map((row) => (
-                          <TableRow
-                            key={row.productId}
-                            className={row.warning ? "bg-amber-50" : undefined}
-                          >
-                            <TableCell>{row.productName}</TableCell>
-                            <TableCell>{row.categoryName}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.001"
-                                min="0"
-                                value={row.openingQty}
-                                disabled={!canEditStock}
-                                onChange={(e) =>
-                                  updateStockRow(
-                                    row.productId,
-                                    "openingQty",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.001"
-                                min="0"
-                                value={row.receivedQty}
-                                disabled={!canEditStock}
-                                onChange={(e) =>
-                                  updateStockRow(
-                                    row.productId,
-                                    "receivedQty",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                step="0.001"
-                                min="0"
-                                value={row.closingQty}
-                                disabled={!canEditStock}
-                                onChange={(e) =>
-                                  updateStockRow(
-                                    row.productId,
-                                    "closingQty",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>{row.sold.toFixed(3)}</TableCell>
-                            <TableCell>{row.revenue.toFixed(2)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <StockCountGrid
+                    rows={parsedRows}
+                    canEdit={Boolean(canEditStock)}
+                    search={stockSearch}
+                    onlyChanged={stockOnlyChanged}
+                    onSearchChange={setStockSearch}
+                    onOnlyChangedChange={setStockOnlyChanged}
+                    onRowChange={updateStockRow}
+                    onFillAll={fillAllStockSuggestions}
+                  />
                 </>
               )}
               <DialogFooter>
@@ -1390,91 +1471,32 @@ export const ShiftsPage = () => {
                   {t("auth.loading")}
                 </p>
               ) : (
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("shifts.pump")}</TableHead>
-                        <TableHead>
-                          {t("shifts.pumpReadingsAssignedWorker")}
-                        </TableHead>
-                        <TableHead>{t("shifts.pumpReadingsOpening")}</TableHead>
-                        <TableHead>{t("shifts.pumpReadingsClosing")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pumpReadingRows.map((row) => {
-                        const rowNeedsAssignBeforeCreate =
-                          canEditPumpReadings &&
-                          row.readingId == null &&
-                          !row.workerName
-                        return (
-                          <TableRow key={row.pumpId}>
-                            <TableCell>{row.pumpName}</TableCell>
-                            <TableCell>
-                              {row.workerName ? (
-                                <span className="font-medium">
-                                  {row.workerName}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">
-                                  {t("shifts.pumpReadingsUnassigned")}
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.001"
-                                value={row.openingReading}
-                                disabled={
-                                  !canEditPumpReadings ||
-                                  rowNeedsAssignBeforeCreate
-                                }
-                                title={
-                                  rowNeedsAssignBeforeCreate
-                                    ? t("shifts.pumpReadingsAssignFirstTitle")
-                                    : undefined
-                                }
-                                onChange={(e) =>
-                                  updatePumpReadingRow(
-                                    row.pumpId,
-                                    "openingReading",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.001"
-                                value={row.closingReading}
-                                disabled={
-                                  !canEditPumpReadings ||
-                                  rowNeedsAssignBeforeCreate
-                                }
-                                title={
-                                  rowNeedsAssignBeforeCreate
-                                    ? t("shifts.pumpReadingsAssignFirstTitle")
-                                    : undefined
-                                }
-                                onChange={(e) =>
-                                  updatePumpReadingRow(
-                                    row.pumpId,
-                                    "closingReading",
-                                    e.target.value
-                                  )
-                                }
-                              />
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
+                <PumpReadingsGrid
+                  rows={pumpReadingRows}
+                  canEdit={canEditPumpReadings}
+                  onRowChange={updatePumpReadingRow}
+                />
+              )}
+              {pumpOverrideRow && (
+                <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 p-3">
+                  <p className="text-sm font-medium text-amber-950">
+                    {t("shifts.guards.forceTitle", {
+                      pump: pumpOverrideRow.pumpName,
+                    })}
+                  </p>
+                  <Input
+                    value={pumpOverrideReason}
+                    onChange={(e) => setPumpOverrideReason(e.target.value)}
+                    placeholder={t("shifts.guards.overrideReason")}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={!pumpOverrideReason.trim() || pumpReadingsLoading}
+                    onClick={handleForcePumpReading}
+                  >
+                    {t("shifts.guards.forceSave")}
+                  </Button>
                 </div>
               )}
               <DialogFooter>
@@ -1496,104 +1518,6 @@ export const ShiftsPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Pump assignments dialog */}
-      <Dialog
-        open={pumpAssignmentsOpen}
-        onOpenChange={(open) => !open && closePumpAssignments()}
-      >
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{t("shifts.assignPumps")}</DialogTitle>
-          </DialogHeader>
-          {selectedShiftForPumpAssignments && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {formatIsoDate(selectedShiftForPumpAssignments.date)} •{" "}
-                {formatIsoTime(selectedShiftForPumpAssignments.startTime)} –{" "}
-                {formatIsoTime(selectedShiftForPumpAssignments.endTime)} •{" "}
-                {statusLabel(selectedShiftForPumpAssignments.status)}
-              </p>
-              {pumpAssignmentsError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{pumpAssignmentsError}</AlertDescription>
-                </Alert>
-              )}
-              {pumpAssignmentsLoading ? (
-                <p className="text-muted-foreground text-sm">
-                  {t("auth.loading")}
-                </p>
-              ) : pumpAssignmentRows.length === 0 ? (
-                <p className="text-muted-foreground text-sm">
-                  {t("pumps.noPumps")}
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {assignedWorkerIds.length === 0 && (
-                    <Alert>
-                      <AlertDescription>
-                        {t("shifts.assignPumpsNoShiftWorkers")}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("shifts.pump")}</TableHead>
-                          <TableHead>{t("shifts.worker")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pumpAssignmentRows.map((row) => (
-                          <TableRow key={row.pumpId}>
-                            <TableCell>{row.pumpName}</TableCell>
-                            <TableCell>
-                              <select
-                                className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                value={row.workerId ?? ""}
-                                onChange={(e) =>
-                                  handleAssignPumpWorker(
-                                    row.pumpId,
-                                    e.target.value
-                                      ? Number(e.target.value)
-                                      : null
-                                  )
-                                }
-                              >
-                                <option value="">
-                                  {t("shifts.assignPumpsSelectWorker")}
-                                </option>
-                                {allWorkers
-                                  .filter((w) =>
-                                    assignedWorkerIds.includes(w.id)
-                                  )
-                                  .map((worker) => (
-                                    <option key={worker.id} value={worker.id}>
-                                      {worker.name}
-                                    </option>
-                                  ))}
-                              </select>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </div>
-              )}
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={closePumpAssignments}
-                >
-                  {t("shifts.close")}
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </PageLayout>
   )
 }

@@ -1,7 +1,12 @@
 import type { Request, Response, NextFunction } from "express"
 import { Router } from "express"
 import { requireAuth, requireAdmin } from "../middleware/auth.js"
-import { list, create, update } from "../controllers/productController.js"
+import {
+  list,
+  create,
+  update,
+  listSellingPrices,
+} from "../controllers/productController.js"
 import {
   list as listPurchasePrices,
   create as createPurchasePrice,
@@ -27,6 +32,10 @@ productsRouter.post(
   "/:productId/purchase-prices",
   requireAdmin,
   asyncHandler(createPurchasePrice)
+)
+productsRouter.get(
+  "/:productId/selling-prices",
+  asyncHandler(listSellingPrices)
 )
 productsRouter.patch("/:id", requireAdmin, asyncHandler(update))
 

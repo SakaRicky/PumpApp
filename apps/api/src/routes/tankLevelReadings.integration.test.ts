@@ -10,6 +10,7 @@ const mockTankLevelReadingFindFirst = vi.fn()
 const mockTankLevelReadingCreate = vi.fn()
 const mockTankLevelReadingUpdate = vi.fn()
 const mockTankUpdate = vi.fn()
+const mockEventCreate = vi.fn()
 
 vi.mock("../db.js", () => ({
   prisma: {
@@ -23,6 +24,9 @@ vi.mock("../db.js", () => ({
       create: (...args: unknown[]) => mockTankLevelReadingCreate(...args),
       update: (...args: unknown[]) => mockTankLevelReadingUpdate(...args),
     },
+    event: {
+      create: (...args: unknown[]) => mockEventCreate(...args),
+    },
     $transaction: (arg: unknown) =>
       Array.isArray(arg)
         ? Promise.all(arg as Promise<unknown>[])
@@ -31,11 +35,16 @@ vi.mock("../db.js", () => ({
               tankLevelReading: {
                 findFirst: (...args: unknown[]) =>
                   mockTankLevelReadingFindFirst(...args),
+                create: (...args: unknown[]) =>
+                  mockTankLevelReadingCreate(...args),
                 update: (...args: unknown[]) =>
                   mockTankLevelReadingUpdate(...args),
               },
               tank: {
                 update: (...args: unknown[]) => mockTankUpdate(...args),
+              },
+              event: {
+                create: (...args: unknown[]) => mockEventCreate(...args),
               },
             })
           : Promise.resolve(),

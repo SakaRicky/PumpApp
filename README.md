@@ -117,6 +117,7 @@ For full workflow parity (including the same Node/Postgres environment), you can
 ### Documentation
 
 - `docs/DEPLOYMENT.md`: deploy with Supabase, GitHub Secrets, migrations, seed, and single build.
+- `RAILWAY.md`: Railway-specific deployment steps, build/start commands, and seed variables.
 - `docs/REQUIREMENTS.md`: product requirements (PumpPro spec)
 - `docs/GLOSSARY.md`: domain terms (Shift, PumpReading, CashHandIn, etc.)
 - `docs/ARCHITECTURE.md`: monorepo architecture and data flow

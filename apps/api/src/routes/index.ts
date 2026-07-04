@@ -13,6 +13,13 @@ import { tanksRouter } from "./tanks.js"
 import { fuelDeliveriesRouter } from "./fuelDeliveries.js"
 import { pumpReadingsRouter } from "./pumpReadings.js"
 import { weeklyInventoryClosesRouter } from "./weeklyInventoryCloses.js"
+import { eventsRouter } from "./events.js"
+import { dashboardRouter } from "./dashboard.js"
+import { expensesRouter } from "./expenses.js"
+import { cashDepositsRouter } from "./cashDeposits.js"
+import { reportsRouter } from "./reports.js"
+import { shortagesRouter } from "./shortages.js"
+import { settingsRouter } from "./settings.js"
 
 const apiRouter = Router()
 
@@ -33,5 +40,12 @@ apiRouter.use("/pumps", pumpsRouter)
 apiRouter.use("/fuel-prices", fuelPricesRouter)
 apiRouter.use("/pump-readings", pumpReadingsRouter)
 apiRouter.use("/weekly-inventory-closes", weeklyInventoryClosesRouter)
+apiRouter.use("/events", eventsRouter)
+apiRouter.use("/dashboard", dashboardRouter)
+apiRouter.use("/expenses", expensesRouter)
+apiRouter.use("/cash-deposits", cashDepositsRouter)
+apiRouter.use("/reports", reportsRouter)
+apiRouter.use("/shortages", shortagesRouter)
+apiRouter.use("/settings", settingsRouter)
 
 export { apiRouter }

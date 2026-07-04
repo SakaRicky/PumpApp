@@ -143,6 +143,40 @@ To have GitHub Actions build and deploy on push to `main`:
 
 Platform-specific steps (Railway, Render, Fly.io, etc.) differ; configure the service to use the same env vars and start command above.
 
+## Railway deployment
+
+Railway can run the API and built frontend as one service. Use Railway Postgres
+or another Postgres provider, then set these variables on the Railway service:
+
+| Name                  | Required | Description |
+| --------------------- | -------- | ----------- |
+| `DATABASE_URL`        | Yes      | Railway Postgres connection string, or any reachable PostgreSQL URI. |
+| `JWT_SECRET`          | Yes      | Long random string used to sign login tokens. |
+| `SEED_ADMIN_EMAIL`    | Recommended | Initial admin login email. Defaults to `admin@pumpapp.local`. |
+| `SEED_ADMIN_PASSWORD` | Recommended | Initial admin password. Defaults to `admin123`; change this for production. |
+| `SEED_ADMIN_NAME`     | Optional | Initial admin display name. Defaults to `Station Admin`. |
+| `SEED_DEMO_SHIFT`     | Optional | Set to `true` only if you want a sample planned shift. Leave unset for production. |
+
+Railway settings:
+
+```bash
+Build Command: pnpm railway:build
+Start Command: pnpm railway:start
+```
+
+`pnpm railway:start` runs Prisma migrations, runs the idempotent seed, then starts
+the compiled API. Because the seed is idempotent, repeated Railway restarts update
+baseline records without duplicating them.
+
+After the first successful deploy, log in with:
+
+```text
+SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD
+```
+
+If you used the fallback credentials, change the password immediately after
+first login or redeploy with `SEED_ADMIN_PASSWORD` set to a strong value.
+
 ## Summary checklist
 
 - [ ] Supabase project created; connection string (with password) copied.

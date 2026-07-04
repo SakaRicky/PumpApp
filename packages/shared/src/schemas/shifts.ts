@@ -84,3 +84,19 @@ export type ShiftStockBulkUpdateInput = z.infer<
   typeof shiftStockBulkUpdateSchema
 >
 export type ShiftPumpAssignmentInput = z.infer<typeof shiftPumpAssignmentSchema>
+
+/** One-shot team sync: workers, per-pump assignments, accountable shop seller. */
+export const shiftTeamUpdateSchema = z.object({
+  workerIds: z.array(z.number().int().positive()).max(100),
+  pumpAssignments: z
+    .array(
+      z.object({
+        pumpId: z.number().int().positive(),
+        workerId: z.number().int().positive().nullable(),
+      })
+    )
+    .max(100),
+  shopAccountableWorkerId: z.number().int().positive().nullable().optional(),
+})
+
+export type ShiftTeamUpdateInput = z.infer<typeof shiftTeamUpdateSchema>

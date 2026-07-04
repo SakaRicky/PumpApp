@@ -2,6 +2,8 @@ import {
   ShopSalesSource,
   ShiftStatus,
   type ReconciliationGetResponse,
+  type ReconciliationExpectedFuelHandIn,
+  type ReconciliationAssignmentIssue,
   type ReconciliationSummaryResponse,
   type ReconciliationSummaryWriteCreateInput,
   type ReconciliationSummaryWriteUpdateInput,
@@ -10,6 +12,9 @@ import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
 import { getVolumeAndRevenueForShift } from "./fuelRevenue.js"
 import { getShopSalesTotalFromShiftStock } from "./shopShiftRevenue.js"
+import { recordEvent } from "./events.js"
+import { getPriceForShift } from "../controllers/fuelPriceHistoryController.js"
+import { coversFuelSide, coversShopSide } from "./shiftWorkerCoverage.js"
 
 const roundMoney = (n: number): number => Math.round(n * 100) / 100
 
@@ -26,6 +31,84 @@ const sumCashHandInsForShift = async (shiftId: number): Promise<number> => {
     _sum: { amount: true },
   })
   return roundMoney(Number(agg._sum.amount ?? 0))
+}
+
+export const getExpectedFuelHandInsForShift = async (
+  shiftId: number
+): Promise<{
+  expectedFuelHandIns: ReconciliationExpectedFuelHandIn[]
+  assignmentIssues: ReconciliationAssignmentIssue[]
+}> => {
+  const shift = await prisma.shift.findUnique({ where: { id: shiftId } })
+  if (!shift) {
+    throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
+  }
+
+  const readings = await prisma.pumpReading.findMany({
+    where: { shiftId },
+    include: {
+      worker: { include: { user: true } },
+      pump: {
+        include: {
+          tank: true,
+        },
+      },
+    },
+  })
+
+  const byWorker = new Map<number, ReconciliationExpectedFuelHandIn>()
+  const assignmentIssues: ReconciliationAssignmentIssue[] = []
+  for (const reading of readings) {
+    if (reading.workerId == null) continue
+    if (
+      !reading.worker ||
+      coversShopSide(reading.worker) ||
+      !coversFuelSide(reading.worker)
+    ) {
+      assignmentIssues.push({
+        workerId: reading.workerId,
+        workerName: reading.worker?.name ?? null,
+        pumpId: reading.pumpId,
+        pumpName: reading.pump.name,
+        message:
+          "Pump reading is linked to a worker who is not fuel-side for this shift",
+      })
+      continue
+    }
+    const fuelTypeId = reading.pump.tank?.fuelTypeId
+    if (!fuelTypeId) continue
+
+    const volume = Number(reading.closingReading) - Number(reading.openingReading)
+    const price = await getPriceForShift(fuelTypeId, shift.date)
+    const amount = roundMoney(volume * price.pricePerUnit)
+    const current =
+      byWorker.get(reading.workerId) ??
+      {
+        workerId: reading.workerId,
+        workerName: reading.worker?.name ?? null,
+        volume: 0,
+        expectedAmount: 0,
+        pumps: [],
+      }
+
+    current.volume = Math.round((current.volume + volume) * 1000) / 1000
+    current.expectedAmount = roundMoney(current.expectedAmount + amount)
+    current.pumps.push({
+      pumpId: reading.pumpId,
+      pumpName: reading.pump.name,
+      volume: Math.round(volume * 1000) / 1000,
+      pricePerUnit: price.pricePerUnit,
+      amount,
+    })
+    byWorker.set(reading.workerId, current)
+  }
+
+  return {
+    expectedFuelHandIns: Array.from(byWorker.values()).sort((a, b) =>
+      (a.workerName ?? "").localeCompare(b.workerName ?? "")
+    ),
+    assignmentIssues,
+  }
 }
 
 export const getReconciliationHints = async (
@@ -68,12 +151,16 @@ export const getReconciliationGetResponse = async (
   }
 
   const hints = await getReconciliationHints(shiftId)
+  const { expectedFuelHandIns, assignmentIssues } =
+    await getExpectedFuelHandInsForShift(shiftId)
   const row = await prisma.shiftReconciliationSummary.findUnique({
     where: { shiftId },
   })
 
   return {
     summary: row ? mapRowToResponse(row, hints) : null,
+    expectedFuelHandIns,
+    assignmentIssues,
     ...hints,
   }
 }
@@ -325,7 +412,7 @@ export const createShiftReconciliation = async ({
   )
 
   await prisma.$transaction(async (tx) => {
-    await tx.shiftReconciliationSummary.create({
+    const summary = await tx.shiftReconciliationSummary.create({
       data: {
         shiftId,
         shopSalesSource: body.shopSalesSource,
@@ -346,6 +433,23 @@ export const createShiftReconciliation = async ({
       where: { id: shiftId },
       data: { status: ShiftStatus.RECONCILED },
     })
+    await recordEvent(
+      {
+        type: "RECONCILIATION_CREATED",
+        actorUserId: userId,
+        shiftId,
+        entity: "shiftReconciliationSummary",
+        entityId: summary.id,
+        payload: {
+          shopSalesSource: body.shopSalesSource,
+          effectiveShopSalesTotal: shop.effectiveShopSalesTotal,
+          fuelSalesTotal: fuel.fuelSalesTotal,
+          cashHandedTotal: cash.cashHandedTotal,
+          discrepancyAmount,
+        },
+      },
+      tx
+    )
   })
 
   const created = await prisma.shiftReconciliationSummary.findUnique({
@@ -439,6 +543,29 @@ export const updateShiftReconciliation = async ({
       where: { id: shiftId },
       data: { status: ShiftStatus.RECONCILED },
     })
+    await recordEvent(
+      {
+        type: "RECONCILIATION_UPDATED",
+        actorUserId: userId,
+        shiftId,
+        entity: "shiftReconciliationSummary",
+        entityId: existing.id,
+        payload: {
+          previous: {
+            effectiveShopSalesTotal: existing.effectiveShopSalesTotal.toNumber(),
+            fuelSalesTotal: existing.fuelSalesTotal.toNumber(),
+            cashHandedTotal: existing.cashHandedTotal.toNumber(),
+            discrepancyAmount: existing.discrepancyAmount.toNumber(),
+          },
+          shopSalesSource,
+          effectiveShopSalesTotal: shop.effectiveShopSalesTotal,
+          fuelSalesTotal: fuel.fuelSalesTotal,
+          cashHandedTotal: cash.cashHandedTotal,
+          discrepancyAmount,
+        },
+      },
+      tx
+    )
   })
 
   const updated = await prisma.shiftReconciliationSummary.findUnique({

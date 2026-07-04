@@ -9,6 +9,17 @@ const mockCreate = vi.fn()
 const mockUpdate = vi.fn()
 const mockFindFirst = vi.fn()
 const mockFuelTypeFindUnique = vi.fn()
+const mockEventCreate = vi.fn()
+
+const txClient = {
+  fuelPriceHistory: {
+    create: (...args: unknown[]) => mockCreate(...args),
+    update: (...args: unknown[]) => mockUpdate(...args),
+  },
+  event: {
+    create: (...args: unknown[]) => mockEventCreate(...args),
+  },
+}
 
 vi.mock("../db.js", () => ({
   prisma: {
@@ -22,6 +33,13 @@ vi.mock("../db.js", () => ({
     fuelType: {
       findUnique: (...args: unknown[]) => mockFuelTypeFindUnique(...args),
     },
+    event: {
+      create: (...args: unknown[]) => mockEventCreate(...args),
+    },
+    $transaction: (arg: unknown) =>
+      Array.isArray(arg)
+        ? Promise.all(arg as Promise<unknown>[])
+        : (arg as (tx: unknown) => Promise<unknown>)(txClient),
   },
 }))
 

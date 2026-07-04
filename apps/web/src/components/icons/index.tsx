@@ -24,6 +24,7 @@ import {
   Settings,
   LogOut,
   ClipboardList,
+  Banknote,
   type LucideIcon,
 } from "lucide-react"
 import { forwardRef } from "react"
@@ -59,6 +60,7 @@ export {
   Settings,
   LogOut,
   ClipboardList,
+  Banknote,
 }
 
 export type { LucideIcon, LucideProps }

@@ -6,6 +6,7 @@ import {
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
+import { recordEvent } from "../services/events.js"
 
 type LevelReadingRow = Awaited<
   ReturnType<typeof prisma.tankLevelReading.findMany>
@@ -103,23 +104,39 @@ const create = async (req: Request, res: Response): Promise<void> => {
   const theoreticalAtTime =
     tank.theoreticalQuantity !== null ? Number(tank.theoreticalQuantity) : null
 
-  const [reading] = await prisma.$transaction([
-    prisma.tankLevelReading.create({
+  const reading = await prisma.$transaction(async (tx) => {
+    const created = await tx.tankLevelReading.create({
       data: {
         tankId,
         quantity,
         measuredAt,
         theoreticalQuantityAtTime: theoreticalAtTime,
       },
-    }),
-    prisma.tank.update({
+    })
+    await tx.tank.update({
       where: { id: tankId },
       data: {
         actualQuantity: quantity,
         actualQuantityRecordedAt: measuredAt,
       },
-    }),
-  ])
+    })
+    await recordEvent(
+      {
+        type: "TANK_LEVEL_READING_RECORDED",
+        actorUserId: req.user?.id ?? null,
+        entity: "tankLevelReading",
+        entityId: created.id,
+        payload: {
+          tankId,
+          quantity,
+          measuredAt: measuredAt.toISOString(),
+          theoreticalQuantityAtTime: theoreticalAtTime,
+        },
+      },
+      tx
+    )
+    return created
+  })
 
   res.status(201).json(toLevelReadingResponse(reading))
 }

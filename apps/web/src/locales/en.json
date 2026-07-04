@@ -5,22 +5,23 @@
   "nav": {
     "ariaLabel": "Main navigation",
     "groups": {
-      "operations": "Operations",
+      "operations": "Main",
       "masterData": "Master data",
       "reports": "Reports",
-      "admin": "Admin"
+      "admin": "Settings"
     },
     "links": {
       "shifts": "Shifts",
       "reconciliation": "Reconciliation",
       "categories": "Categories",
       "products": "Products",
-      "categoriesAndMore": "Categories & more",
       "reports": "Reports",
       "users": "Users",
       "workers": "Workers",
       "pumps": "Fuel setup",
-      "weeklyInventory": "Weekly inventory"
+      "weeklyInventory": "Weekly inventory",
+      "money": "Cash & treasury",
+      "dashboard": "Dashboard"
     }
   },
   "categories": {
@@ -128,15 +129,114 @@
     "cancel": "Cancel",
     "errorLoad": "Failed to load workers.",
     "errorCreate": "Failed to create worker.",
-    "errorUpdate": "Failed to update worker."
+    "errorUpdate": "Failed to update worker.",
+    "shortages": {
+      "button": "Shortages",
+      "title": "Shortages — {{name}}",
+      "charges": "Enforced shortfalls (FCFA)",
+      "settlements": "Settlements (FCFA)",
+      "balance": "Balance owed (FCFA)",
+      "empty": "No shortfalls or settlements for this employee.",
+      "date": "Date",
+      "kind": "Kind",
+      "amount": "Amount (FCFA)",
+      "balanceAfter": "Balance after",
+      "charge": "Shortfall (weekly close)",
+      "settlement": "Settlement",
+      "settleTitle": "Record a settlement (salary deduction or repayment)",
+      "settle": "Settle",
+      "invalidAmount": "Invalid amount."
+    }
   },
   "breadcrumbs": {
     "ariaLabel": "Breadcrumb",
-    "home": "Home"
+    "home": "Home",
+    "money": "Cash & treasury"
   },
   "home": {
     "title": "Dashboard",
-    "welcome": "Welcome to PumpPro. Use the sidebar to open Shifts, Reconciliation, Products, or Reports."
+    "welcome": "Welcome to PumpPro. Use the menu to access Shifts, Reconciliation, Products or Reports.",
+    "loading": "Loading dashboard…",
+    "pending": {
+      "title": "Pending reconciliations",
+      "empty": "No pending reconciliations. Everything is up to date.",
+      "item": "Shift #{{id}} of {{date}}",
+      "staleTitle": "Unclosed shifts",
+      "staleItem": "Shift #{{id}} of {{date}} is still open",
+      "reconciliationTitle": "Shifts to reconcile",
+      "age_zero": "today",
+      "age_one": "{{count}} day",
+      "age_other": "{{count}} days",
+      "goto": "View all"
+    },
+    "actions": {
+      "title": "Quick actions",
+      "openShift": "Open shift",
+      "enterReadings": "Close the day",
+      "reconcile": "Reconcile ({{count}})",
+      "expense": "Expense",
+      "deposit": "Deposit"
+    },
+    "today": {
+      "title": "Today",
+      "fuelVolume": "Fuel sold",
+      "fuelRevenue": "Fuel revenue (FCFA)",
+      "shopRevenue": "Shop revenue (FCFA)",
+      "cashHandedIn": "Cash handed in (FCFA)",
+      "shifts": "{{reconciled}}/{{total}} shifts reconciled",
+      "unknown": "—",
+      "missingPrice": "Missing fuel price for a shift",
+      "expenses": "Expenses (FCFA)"
+    },
+    "tanks": {
+      "title": "Tank levels",
+      "empty": "No active tanks.",
+      "variance": "Actual − theoretical variance: {{value}} L",
+      "toleranceExceeded": "Tolerance exceeded"
+    },
+    "discrepancies": {
+      "title": "Recent cash discrepancies",
+      "empty": "No reconciliations recorded yet.",
+      "item": "Shift #{{id}} of {{date}}",
+      "short": "Short {{value}} FCFA",
+      "over": "Over {{value}} FCFA",
+      "balanced": "Balanced"
+    },
+    "safe": {
+      "title": "Safe",
+      "cashCollected": "Cash collected (FCFA)",
+      "expensesTotal": "Expenses (FCFA)",
+      "depositsTotal": "Bank deposits (FCFA)",
+      "balance": "Safe balance (FCFA)"
+    },
+    "subtitle": "Overview of your station's performance"
+  },
+  "closeWizard": {
+    "title": "Close the day",
+    "invalidShift": "Invalid shift.",
+    "loadFailed": "Failed to load close workflow.",
+    "saveFailed": "Failed to save this step.",
+    "closeFailed": "Failed to close the shift.",
+    "saveContinue": "Save and continue",
+    "closeShift": "Close shift",
+    "shiftMeta": "Shift #{{id}}",
+    "skipDips": "Continue",
+    "saveDips": "Save dips",
+    "dipQuantity": "Measured quantity (L)",
+    "invalidDip": "Invalid quantity for {{tank}}.",
+    "noDips": "No tank dip recorded today. This step is optional.",
+    "dipsRecorded": "{{count}} dip(s) recorded today.",
+    "steps": {
+      "readings": "Pump readings",
+      "stock": "Shop stock",
+      "dips": "Tank dips",
+      "summary": "Summary"
+    },
+    "summary": {
+      "fuel": "Fuel",
+      "shop": "Expected shop",
+      "dips": "Dips"
+    }
   },
   "shifts": {
     "title": "Shifts",
@@ -190,6 +290,7 @@
     "workerPickerLoginRole": "Login role",
     "workerPickerLoginRoleHint": "App permission (ADMIN, USER, …). Closing a shift also checks job designations (e.g. Pumpist, Shop).",
     "close": "Close",
+    "closeShift": "Close day",
     "pumpReadings": "Pump readings",
     "pumpReadingsLinkedHint": "Each reading is tied to the worker assigned to that pump for this shift (use “Assign pumps” first). That link is stored for accountability.",
     "pumpReadingsAssignedWorker": "Assigned pumpist",
@@ -222,7 +323,19 @@
       "filters": {
         "search": "Search products",
         "onlyChanged": "Only products with changes"
-      }
+      },
+      "prefillHint": "Suggestion",
+      "fillAll": "Fill all",
+      "expectedTotal": "Expected shop cash",
+      "negativeBlocked": "One line has a negative sold quantity. Fix the closing count before saving."
+    },
+    "guards": {
+      "volume": "Volume",
+      "ceilingHint": "Ceiling {{ceiling}} L",
+      "averageHint": "Above 3× recent average",
+      "forceTitle": "Ceiling exceeded for {{pump}}. Enter a reason to force the save.",
+      "overrideReason": "Override reason",
+      "forceSave": "Force save"
     },
     "errors": {
       "dateAndTimesRequired": "Date, start time, and end time are required.",
@@ -236,6 +349,16 @@
       "pumpReadingsNeedAssignment": "Assign a worker to each pump (Assign pumps) before saving readings for pumps that do not have a saved reading yet.",
       "pumpReadingsClosingBeforeOpening": "For {{pump}}, the closing reading must be greater than or equal to the opening reading.",
       "pumpReadingsInvalidNumber": "For {{pump}}, enter valid numbers for the opening and closing readings."
+    },
+    "quickOpen": "Open today's shift",
+    "team": {
+      "button": "Team",
+      "title": "Shift team",
+      "workers": "Workers on shift",
+      "pumps": "Pump assignments",
+      "seller": "Accountable shop seller",
+      "noSeller": "— None —",
+      "save": "Save team"
     }
   },
   "reconciliation": {
@@ -253,6 +376,15 @@
       "shopFromStock": "Shop from stock snapshot",
       "fuelComputed": "Fuel from pump readings",
       "sumCashHandIns": "Sum of cash hand-ins"
+    },
+    "expected": {
+      "title": "Expected fuel hand-ins",
+      "intro": "Calculated from each pumpist's assigned pump readings and the fuel price in force for this shift.",
+      "pumps": "Pumps",
+      "volume": "Liters sold",
+      "amount": "Expected amount",
+      "empty": "No assigned pump readings with fuel prices were found for this shift.",
+      "assignmentIssue": "This shift has pump readings linked to a shop or non-fuel worker. Fix the pump assignment/reading before reconciliation."
     },
     "handIns": {
       "title": "Cash hand-ins & variance",
@@ -278,6 +410,9 @@
       "deleteError": "Failed to delete hand-in.",
       "clearVariance": "Clear variance",
       "clearVarianceError": "Failed to clear variance on this hand-in.",
+      "autoVarianceHint": "Auto-calculated as expected {{expected}} minus handed in.",
+      "autoVarianceFormula": "Expected {{expected}} − handed in {{amount}} = variance {{variance}}.",
+      "custodyVarianceHint": "For shop custody, leave daily variance blank; settle against the physical custody close.",
       "onlyShiftWorkersHint": "Only workers assigned to this shift can receive a hand-in (same list as in Shifts → Manage workers).",
       "noShiftWorkers": "No workers on this shift yet. Use Shifts → Manage workers to assign people before recording hand-ins."
     },
@@ -369,10 +504,6 @@
       "effectiveAtRequired": "Effective date/time is required.",
       "errorCreate": "Failed to add purchase price."
     }
-  },
-  "masterData": {
-    "title": "Categories & more",
-    "intro": "Categories, workers, pumps, fuel price history."
   },
   "pumps": {
     "title": "Fuel setup",
@@ -472,7 +603,9 @@
         "fuelTypePlaceholder": "Select fuel type",
         "capacity": "Capacity",
         "required": "Name and fuel type are required.",
-        "invalidCapacity": "Capacity must be a non-negative number."
+        "invalidCapacity": "Capacity must be a non-negative number.",
+        "dipToleranceLiters": "Dip tolerance (L)",
+        "dipTolerancePct": "Dip tolerance (%)"
       }
     },
     "deliveries": {
@@ -551,11 +684,109 @@
   },
   "reports": {
     "title": "Reports",
-    "intro": "Reports and profit analysis. Use Weekly inventory (admin) for payroll-style CSV export by month."
+    "intro": "Reports and profit analysis. Use Weekly inventory (admin) for payroll-style CSV export by month.",
+    "tabs": {
+      "shifts": "By shift",
+      "daily": "By day",
+      "variance": "Tank variance",
+      "audit": "Audit log"
+    },
+    "filters": {
+      "from": "From",
+      "to": "To"
+    },
+    "exportCsv": "Export CSV",
+    "empty": "No data for the period.",
+    "errors": {
+      "load": "Could not load the report."
+    },
+    "columns": {
+      "shift": "Shift",
+      "date": "Date",
+      "status": "Status",
+      "shifts": "Shifts (rec./total)",
+      "fuelVolume": "Fuel (L)",
+      "fuelRevenue": "Fuel revenue",
+      "shopRevenue": "Shop revenue",
+      "cash": "Cash handed in",
+      "discrepancy": "Discrepancy"
+    },
+    "variance": {
+      "tank": "Tank",
+      "chartTitle": "Cumulative variance — {{tank}} (leak detector)",
+      "chartHint": "Cumulative actual − theoretical at each dip. A steady downward slope can indicate a leak or losses.",
+      "chartAria": "Cumulative variance line for tank {{tank}}",
+      "noData": "No dips with a theoretical quantity in the period.",
+      "actual": "Actual (L)",
+      "theoretical": "Theoretical (L)",
+      "variance": "Variance (L)",
+      "cumulative": "Cumulative (L)",
+      "verdict": "Tolerance",
+      "ok": "OK",
+      "exceeded": "Exceeded"
+    },
+    "audit": {
+      "type": "Event type",
+      "allTypes": "All types",
+      "when": "When",
+      "eventType": "Type",
+      "shift": "Shift",
+      "details": "Details",
+      "total": "{{count}} event(s)",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "subtitle": "Fuel, shop and treasury reports plus the audit log — CSV export"
   },
   "languageSwitcher": {
     "label": "Language",
     "en": "English",
     "fr": "Français"
+  },
+  "money": {
+    "title": "Cash & treasury",
+    "cancel": "Cancel",
+    "save": "Save",
+    "errors": {
+      "load": "Could not load treasury data.",
+      "save": "Saving failed.",
+      "invalidForm": "Please fill the required fields with valid values."
+    },
+    "safe": {
+      "cashCollected": "Cash collected (FCFA)",
+      "expensesTotal": "Expenses (FCFA)",
+      "depositsTotal": "Bank deposits (FCFA)",
+      "balance": "Safe balance (FCFA)"
+    },
+    "table": {
+      "date": "Date",
+      "amount": "Amount (FCFA)",
+      "actions": "Actions",
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "expenses": {
+      "title": "Expenses",
+      "add": "Add expense",
+      "empty": "No expenses recorded.",
+      "category": "Category",
+      "paidBy": "Paid by",
+      "description": "Description",
+      "createTitle": "New expense",
+      "editTitle": "Edit expense",
+      "confirmDelete": "Delete this expense? The action will be journaled."
+    },
+    "deposits": {
+      "title": "Bank deposits",
+      "add": "Add deposit",
+      "empty": "No deposits recorded.",
+      "destination": "Bank / destination",
+      "reference": "Reference",
+      "notes": "Notes",
+      "createTitle": "New deposit",
+      "editTitle": "Edit deposit",
+      "confirmDelete": "Delete this deposit? The action will be journaled."
+    },
+    "subtitle": "Track the safe, expenses and bank deposits"
   }
 }

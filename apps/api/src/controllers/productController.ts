@@ -6,6 +6,7 @@ import {
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
+import { recordEvent } from "../services/events.js"
 
 type ProductListInclude = {
   include: {
@@ -74,15 +75,35 @@ const create = async (req: Request, res: Response): Promise<void> => {
     throw new AppError("Category not found", 400, ErrorCode.VALIDATION_ERROR)
   }
 
-  const product = await prisma.product.create({
-    data: {
-      name,
-      categoryId,
-      sellingPrice,
-      currentStock: currentStock ?? 0,
-      active: active ?? true,
-    },
-    include: { category: true },
+  const product = await prisma.$transaction(async (tx) => {
+    const created = await tx.product.create({
+      data: {
+        name,
+        categoryId,
+        sellingPrice,
+        currentStock: currentStock ?? 0,
+        active: active ?? true,
+      },
+      include: { category: true },
+    })
+    await tx.sellingPriceHistory.create({
+      data: {
+        productId: created.id,
+        price: sellingPrice,
+        effectiveAt: new Date(),
+      },
+    })
+    await recordEvent(
+      {
+        type: "SELLING_PRICE_SET",
+        actorUserId: req.user?.id ?? null,
+        entity: "product",
+        entityId: created.id,
+        payload: { price: sellingPrice, initial: true },
+      },
+      tx
+    )
+    return created
   })
   res.status(201).json(toProductResponse(product))
 }
@@ -118,22 +139,81 @@ const update = async (req: Request, res: Response): Promise<void> => {
     }
   }
 
-  const product = await prisma.product.update({
-    where: { id },
-    data: {
-      ...(data.name !== undefined && { name: data.name }),
-      ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
-      ...(data.sellingPrice !== undefined && {
-        sellingPrice: data.sellingPrice,
-      }),
-      ...(data.currentStock !== undefined && {
-        currentStock: data.currentStock,
-      }),
-      ...(data.active !== undefined && { active: data.active }),
-    },
-    include: { category: true },
+  const priceChanged =
+    data.sellingPrice !== undefined &&
+    data.sellingPrice !== Number(existing.sellingPrice)
+
+  const product = await prisma.$transaction(async (tx) => {
+    const updated = await tx.product.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+        ...(data.sellingPrice !== undefined && {
+          sellingPrice: data.sellingPrice,
+        }),
+        ...(data.currentStock !== undefined && {
+          currentStock: data.currentStock,
+        }),
+        ...(data.active !== undefined && { active: data.active }),
+      },
+      include: { category: true },
+    })
+    if (priceChanged) {
+      await tx.sellingPriceHistory.create({
+        data: {
+          productId: id,
+          price: data.sellingPrice!,
+          effectiveAt: new Date(),
+        },
+      })
+      await recordEvent(
+        {
+          type: "SELLING_PRICE_SET",
+          actorUserId: req.user?.id ?? null,
+          entity: "product",
+          entityId: id,
+          payload: {
+            price: data.sellingPrice!,
+            previousPrice: Number(existing.sellingPrice),
+          },
+        },
+        tx
+      )
+    }
+    return updated
   })
   res.status(200).json(toProductResponse(product))
 }
 
-export { list, create, update, toProductResponse }
+const listSellingPrices = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const productId = parseInt(req.params.productId, 10)
+  if (Number.isNaN(productId)) {
+    throw new AppError("Invalid product id", 400, ErrorCode.VALIDATION_ERROR)
+  }
+
+  const product = await prisma.product.findUnique({ where: { id: productId } })
+  if (!product) {
+    throw new AppError("Product not found", 404, ErrorCode.NOT_FOUND)
+  }
+
+  const rows = await prisma.sellingPriceHistory.findMany({
+    where: { productId },
+    orderBy: { effectiveAt: "desc" },
+  })
+
+  res.status(200).json(
+    rows.map((row) => ({
+      id: row.id,
+      productId: row.productId,
+      price: row.price.toNumber(),
+      effectiveAt: row.effectiveAt.toISOString(),
+      createdAt: row.createdAt.toISOString(),
+    }))
+  )
+}
+
+export { list, create, update, listSellingPrices, toProductResponse }

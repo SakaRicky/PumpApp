@@ -1,4 +1,9 @@
-import type { Role, ShiftStatus, ShopSalesSource } from "../enums.js"
+import type {
+  EventType,
+  Role,
+  ShiftStatus,
+  ShopSalesSource,
+} from "../enums.js"
 
 // --- Auth ---
 
@@ -218,6 +223,8 @@ export interface TankCreateBody {
   name: string
   capacity?: number
   active?: boolean
+  dipToleranceLiters?: number | null
+  dipTolerancePct?: number | null
 }
 
 export interface TankUpdateBody {
@@ -226,6 +233,8 @@ export interface TankUpdateBody {
   capacity?: number
   active?: boolean
   actualQuantity?: number
+  dipToleranceLiters?: number | null
+  dipTolerancePct?: number | null
 }
 
 export interface TankResponse {
@@ -236,6 +245,8 @@ export interface TankResponse {
   theoreticalQuantity: number | null
   actualQuantity: number | null
   actualQuantityRecordedAt: string | null
+  dipToleranceLiters: number | null
+  dipTolerancePct: number | null
   active: boolean
   createdAt: string
   updatedAt: string
@@ -363,11 +374,15 @@ export interface PumpReadingCreateBody {
   pumpId: number
   openingReading: number
   closingReading: number
+  overrideCeiling?: boolean
+  overrideReason?: string
 }
 
 export interface PumpReadingUpdateBody {
   openingReading?: number
   closingReading?: number
+  overrideCeiling?: boolean
+  overrideReason?: string
 }
 
 export interface PumpReadingResponse {
@@ -468,6 +483,28 @@ export interface ReconciliationSummaryResponse {
   fuelComputationError?: string | null
 }
 
+export interface ReconciliationExpectedFuelHandIn {
+  workerId: number
+  workerName: string | null
+  volume: number
+  expectedAmount: number
+  pumps: Array<{
+    pumpId: number
+    pumpName: string
+    volume: number
+    pricePerUnit: number
+    amount: number
+  }>
+}
+
+export interface ReconciliationAssignmentIssue {
+  workerId: number | null
+  workerName: string | null
+  pumpId: number
+  pumpName: string
+  message: string
+}
+
 /** GET /shifts/:id/reconciliation — current snapshot + hints (summary null if not created yet). */
 export interface ReconciliationGetResponse {
   summary: ReconciliationSummaryResponse | null
@@ -475,6 +512,8 @@ export interface ReconciliationGetResponse {
   computedFuelSalesTotal: number | null
   sumCashHandIns: number
   fuelComputationError: string | null
+  expectedFuelHandIns: ReconciliationExpectedFuelHandIn[]
+  assignmentIssues: ReconciliationAssignmentIssue[]
 }
 
 // --- Weekly inventory close ---
@@ -539,4 +578,337 @@ export interface FixedCostResponse {
   monthlyAmount: number
   effectiveMonth: string
   notes: string | null
+}
+
+// --- Events (append-only audit journal) ---
+
+export interface EventResponse {
+  id: number
+  type: EventType
+  occurredAt: string
+  actorUserId: number | null
+  workerId: number | null
+  shiftId: number | null
+  entity: string | null
+  entityId: number | null
+  payload: unknown
+  correctsEventId: number | null
+  notes: string | null
+}
+
+export interface EventListResponse {
+  items: EventResponse[]
+  total: number
+}
+
+// --- Dashboard ---
+
+export interface DashboardPendingShift {
+  shiftId: number
+  date: string
+  startTime: string
+  endTime: string
+  status: ShiftStatus
+  /** Whole days since the shift date (aging badge for the pending queue). */
+  ageDays: number
+}
+
+export interface DashboardToday {
+  date: string
+  shiftsTotal: number
+  shiftsReconciled: number
+  currentShiftId: number | null
+  currentShiftStatus: ShiftStatus | null
+  fuelVolume: number
+  /** Null when a fuel price could not be resolved for a shift. */
+  fuelRevenue: number | null
+  shopRevenue: number
+  cashHandedIn: number
+  /** Expenses recorded for today. */
+  expenses: number
+}
+
+export interface DashboardTank {
+  id: number
+  name: string
+  fuelTypeName: string
+  capacity: number | null
+  theoreticalQuantity: number | null
+  actualQuantity: number | null
+  actualQuantityRecordedAt: string | null
+  /** actual − theoretical when both are known (negative = loss). */
+  varianceQuantity: number | null
+  /** Verdict of the last variance against the tank's tolerance; null when not verifiable. */
+  withinTolerance: boolean | null
+}
+
+export interface DashboardRecentDiscrepancy {
+  shiftId: number
+  date: string
+  discrepancyAmount: number
+}
+
+export interface DashboardResponse {
+  pendingReconciliations: DashboardPendingShift[]
+  staleOpenShifts: DashboardPendingShift[]
+  today: DashboardToday
+  tanks: DashboardTank[]
+  recentDiscrepancies: DashboardRecentDiscrepancy[]
+  safeBalance: SafeBalanceResponse
+}
+
+// --- Expenses & cash deposits (safe money) ---
+
+export interface ExpenseCreateBody {
+  date: string
+  category: string
+  amount: number
+  paidBy?: string | null
+  description?: string | null
+}
+
+export interface ExpenseUpdateBody {
+  date?: string
+  category?: string
+  amount?: number
+  paidBy?: string | null
+  description?: string | null
+}
+
+export interface ExpenseResponse {
+  id: number
+  date: string
+  category: string
+  amount: number
+  paidBy: string | null
+  description: string | null
+  recordedById: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CashDepositCreateBody {
+  date: string
+  amount: number
+  destination: string
+  reference?: string | null
+  notes?: string | null
+}
+
+export interface CashDepositUpdateBody {
+  date?: string
+  amount?: number
+  destination?: string
+  reference?: string | null
+  notes?: string | null
+}
+
+export interface CashDepositResponse {
+  id: number
+  date: string
+  amount: number
+  destination: string
+  reference: string | null
+  notes: string | null
+  recordedById: number
+  createdAt: string
+  updatedAt: string
+}
+
+/** Safe balance projection: cash collected − expenses − deposits. */
+export interface SafeBalanceResponse {
+  cashCollected: number
+  expensesTotal: number
+  depositsTotal: number
+  balance: number
+}
+
+// --- Reports (P4) ---
+
+export interface ShiftReportRow {
+  shiftId: number
+  date: string
+  startTime: string
+  endTime: string
+  status: ShiftStatus
+  reconciled: boolean
+  fuelVolume: number
+  /** Null when a fuel price could not be resolved and no summary exists. */
+  fuelRevenue: number | null
+  shopRevenue: number | null
+  cashHandedIn: number
+  /** Null until the shift is reconciled (server-derived on the summary). */
+  discrepancy: number | null
+}
+
+export interface DailyReportRow {
+  date: string
+  shiftsTotal: number
+  shiftsReconciled: number
+  fuelVolume: number
+  fuelRevenue: number | null
+  shopRevenue: number | null
+  cashHandedIn: number
+  discrepancy: number | null
+}
+
+export interface TankVarianceRow {
+  readingId: number
+  measuredAt: string
+  actualQuantity: number
+  theoreticalQuantity: number | null
+  /** actual − theoretical (negative = loss). Null when theoretical unknown. */
+  variance: number | null
+  /** Running sum of variances over the requested window. */
+  cumulativeVariance: number | null
+  /** Verdict against the tank's configured tolerance; null when not verifiable. */
+  withinTolerance: boolean | null
+}
+
+export interface TankVarianceReportResponse {
+  tankId: number
+  tankName: string
+  fuelTypeName: string
+  capacity: number | null
+  dipToleranceLiters: number | null
+  dipTolerancePct: number | null
+  rows: TankVarianceRow[]
+}
+
+// --- Shortage ledger (P5) ---
+
+export interface ShortageLedgerEntry {
+  /** "charge" = weekly close enforced shortfall; "settlement" = repayment/deduction. */
+  kind: "charge" | "settlement"
+  id: number
+  date: string
+  amount: number
+  /** Running balance after this entry (positive = owed by the worker). */
+  balanceAfter: number
+  notes: string | null
+}
+
+export interface WorkerShortageBalance {
+  workerId: number
+  workerName: string
+  chargesTotal: number
+  settlementsTotal: number
+  balance: number
+}
+
+export interface WorkerShortageLedgerResponse extends WorkerShortageBalance {
+  entries: ShortageLedgerEntry[]
+}
+
+export interface ShortageSettlementCreateBody {
+  workerId: number
+  date: string
+  amount: number
+  notes?: string | null
+}
+
+export interface ShortageSettlementResponse {
+  id: number
+  workerId: number
+  date: string
+  amount: number
+  notes: string | null
+  recordedById: number
+  createdAt: string
+}
+
+// --- Settings (P5) ---
+
+export interface SettingResponse {
+  key: string
+  value: unknown
+  updatedAt: string
+}
+
+export interface SettingPutBody {
+  value: unknown
+}
+
+// --- Selling price history (P5) ---
+
+export interface SellingPriceResponse {
+  id: number
+  productId: number
+  price: number
+  effectiveAt: string
+  createdAt: string
+}
+
+// --- Pump reading prefill (opening = last closing) ---
+
+export interface PumpReadingPrefillItem {
+  pumpId: number
+  lastClosingReading: number
+  recentAverageVolume?: number | null
+  volumeCeiling?: number | null
+}
+
+// --- Shift close preview ---
+
+export interface ShiftClosePreviewPump {
+  pumpId: number
+  name: string
+  opening: number | null
+  closing: number | null
+  volume: number | null
+  price: number | null
+  revenue: number | null
+  error: string | null
+}
+
+export interface ShiftClosePreviewFuelTotal {
+  volume: number
+  revenue: number | null
+  error: string | null
+}
+
+export interface ShiftClosePreviewShopLine {
+  productId: number
+  productName: string
+  opening: number
+  received: number
+  closing: number
+  sold: number
+  sellingPrice: number
+  value: number
+}
+
+export interface ShiftClosePreviewDip {
+  tankId: number
+  measuredAt: string
+  variance: number | null
+  withinTolerance: boolean | null
+}
+
+export interface ShiftClosePreviewResponse {
+  shiftId: number
+  pumps: ShiftClosePreviewPump[]
+  fuelTotal: ShiftClosePreviewFuelTotal
+  shop: {
+    lines: ShiftClosePreviewShopLine[]
+    expectedTotal: number
+    negativeLines: ShiftClosePreviewShopLine[]
+  }
+  dipsToday: ShiftClosePreviewDip[]
+  blockers: string[]
+  warnings: string[]
+}
+
+// --- Shift team (one-shot workers + pump assignments + seller) ---
+
+export interface ShiftTeamUpdateBody {
+  workerIds: number[]
+  pumpAssignments: Array<{ pumpId: number; workerId: number | null }>
+  shopAccountableWorkerId?: number | null
+}
+
+export interface ShiftTeamResponse {
+  workerIds: number[]
+  pumpAssignments: Array<{ pumpId: number; workerId: number | null }>
+  shopAccountableWorkerId: number | null
 }

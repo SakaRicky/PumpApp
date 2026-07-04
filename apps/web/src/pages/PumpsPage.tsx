@@ -106,6 +106,8 @@ export const PumpsPage = () => {
   const [editTankFuelTypeId, setEditTankFuelTypeId] = useState<number | "">("")
   const [editTankCapacity, setEditTankCapacity] = useState<string>("")
   const [editTankActive, setEditTankActive] = useState(true)
+  const [editTankTolLiters, setEditTankTolLiters] = useState<string>("")
+  const [editTankTolPct, setEditTankTolPct] = useState<string>("")
 
   const [priceDialogFuelType, setPriceDialogFuelType] = useState<{
     id: number
@@ -588,6 +590,12 @@ export const PumpsPage = () => {
     setEditTankFuelTypeId(tank.fuelTypeId)
     setEditTankCapacity(tank.capacity !== null ? String(tank.capacity) : "")
     setEditTankActive(tank.active)
+    setEditTankTolLiters(
+      tank.dipToleranceLiters !== null ? String(tank.dipToleranceLiters) : ""
+    )
+    setEditTankTolPct(
+      tank.dipTolerancePct !== null ? String(tank.dipTolerancePct) : ""
+    )
     setSubmitError(null)
   }
 
@@ -612,11 +620,16 @@ export const PumpsPage = () => {
     setSubmitting(true)
     setSubmitError(null)
     try {
+      const tolLiters =
+        editTankTolLiters.trim() === "" ? null : Number(editTankTolLiters)
+      const tolPct = editTankTolPct.trim() === "" ? null : Number(editTankTolPct)
       await api.updateTank(editTank.id, {
         fuelTypeId: Number(editTankFuelTypeId),
         name: editTankName.trim(),
         ...(capacity !== undefined && { capacity }),
         active: editTankActive,
+        dipToleranceLiters: tolLiters,
+        dipTolerancePct: tolPct,
       })
       closeEditTank()
       showAlert(t("pumps.messages.tankSaved"), "success")
@@ -1911,6 +1924,35 @@ export const PumpsPage = () => {
                   value={editTankCapacity}
                   onChange={(e) => setEditTankCapacity(e.target.value)}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-tank-tol-liters">
+                    {t("pumps.tanks.form.dipToleranceLiters")}
+                  </Label>
+                  <Input
+                    id="edit-tank-tol-liters"
+                    type="number"
+                    min="0"
+                    step="0.001"
+                    value={editTankTolLiters}
+                    onChange={(e) => setEditTankTolLiters(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-tank-tol-pct">
+                    {t("pumps.tanks.form.dipTolerancePct")}
+                  </Label>
+                  <Input
+                    id="edit-tank-tol-pct"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={editTankTolPct}
+                    onChange={(e) => setEditTankTolPct(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 <input

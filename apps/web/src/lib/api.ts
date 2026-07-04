@@ -40,6 +40,7 @@ import type {
   FuelDeliveryCreateBody,
   FuelDeliveryResponse,
   ShiftPumpAssignmentBody,
+  PumpReadingCreateBody,
   PumpReadingResponse,
   PumpReadingUpdateBody,
   CashHandInCreateBody,
@@ -51,6 +52,26 @@ import type {
   ReconciliationSummaryWriteUpdateBody,
   WeeklyInventoryCloseCreateBody,
   WeeklyInventoryCloseResponse,
+  DashboardResponse,
+  EventListResponse,
+  EventType,
+  ExpenseCreateBody,
+  ExpenseUpdateBody,
+  ExpenseResponse,
+  CashDepositCreateBody,
+  CashDepositUpdateBody,
+  CashDepositResponse,
+  ShiftReportRow,
+  DailyReportRow,
+  TankVarianceReportResponse,
+  WorkerShortageBalance,
+  WorkerShortageLedgerResponse,
+  ShortageSettlementCreateBody,
+  ShortageSettlementResponse,
+  PumpReadingPrefillItem,
+  ShiftClosePreviewResponse,
+  ShiftTeamUpdateBody,
+  ShiftTeamResponse,
 } from "@pumpapp/shared"
 
 // In dev: use relative /api so Vite proxy forwards to the API. In prod: same (empty = same origin).
@@ -319,8 +340,12 @@ export const api = {
     request<ShiftResponse[]>("/shifts"),
   getShift: (id: number): Promise<ShiftResponse> =>
     request<ShiftResponse>(`/shifts/${id}`),
+  getShiftClosePreview: (id: number): Promise<ShiftClosePreviewResponse> =>
+    request<ShiftClosePreviewResponse>(`/shifts/${id}/close-preview`),
   createShift: (body: ShiftCreateBody): Promise<ShiftResponse> =>
     request<ShiftResponse>("/shifts", { method: "POST", body }),
+  quickOpenShift: (): Promise<ShiftResponse> =>
+    request<ShiftResponse>("/shifts/quick-open", { method: "POST" }),
   updateShift: (id: number, body: ShiftUpdateBody): Promise<ShiftResponse> =>
     request<ShiftResponse>(`/shifts/${id}`, { method: "PATCH", body }),
 
@@ -346,6 +371,14 @@ export const api = {
       workerName: string | null
     }[]
   > => request(`/shifts/${shiftId}/pump-assignments`),
+  updateShiftTeam: (
+    shiftId: number,
+    body: ShiftTeamUpdateBody
+  ): Promise<ShiftTeamResponse> =>
+    request<ShiftTeamResponse>(`/shifts/${shiftId}/team`, {
+      method: "PUT",
+      body,
+    }),
   assignShiftPump: (
     shiftId: number,
     body: ShiftPumpAssignmentBody
@@ -368,13 +401,15 @@ export const api = {
 
   getShiftPumpReadings: (shiftId: number): Promise<PumpReadingResponse[]> =>
     request<PumpReadingResponse[]>(`/shifts/${shiftId}/pump-readings`),
+  getShiftPumpReadingPrefill: (
+    shiftId: number
+  ): Promise<PumpReadingPrefillItem[]> =>
+    request<PumpReadingPrefillItem[]>(
+      `/shifts/${shiftId}/pump-readings/prefill`
+    ),
   createShiftPumpReading: (
     shiftId: number,
-    body: {
-      pumpId: number
-      openingReading: number
-      closingReading: number
-    }
+    body: PumpReadingCreateBody
   ): Promise<PumpReadingResponse> =>
     request<PumpReadingResponse>(`/shifts/${shiftId}/pump-readings`, {
       method: "POST",
@@ -470,6 +505,134 @@ export const api = {
     requestText(
       `/weekly-inventory-closes/export.csv?month=${encodeURIComponent(month)}`
     ),
+
+  getDashboard: (): Promise<DashboardResponse> =>
+    request<DashboardResponse>("/dashboard"),
+
+  getExpenses: (params?: {
+    from?: string
+    to?: string
+    category?: string
+  }): Promise<ExpenseResponse[]> => {
+    const sp = new URLSearchParams()
+    if (params?.from) sp.set("from", params.from)
+    if (params?.to) sp.set("to", params.to)
+    if (params?.category) sp.set("category", params.category)
+    const qs = sp.toString()
+    return request<ExpenseResponse[]>(`/expenses${qs ? `?${qs}` : ""}`)
+  },
+  createExpense: (body: ExpenseCreateBody): Promise<ExpenseResponse> =>
+    request<ExpenseResponse>("/expenses", { method: "POST", body }),
+  updateExpense: (
+    id: number,
+    body: ExpenseUpdateBody
+  ): Promise<ExpenseResponse> =>
+    request<ExpenseResponse>(`/expenses/${id}`, { method: "PATCH", body }),
+  deleteExpense: (id: number): Promise<void> =>
+    request<void>(`/expenses/${id}`, { method: "DELETE" }),
+
+  getCashDeposits: (params?: {
+    from?: string
+    to?: string
+  }): Promise<CashDepositResponse[]> => {
+    const sp = new URLSearchParams()
+    if (params?.from) sp.set("from", params.from)
+    if (params?.to) sp.set("to", params.to)
+    const qs = sp.toString()
+    return request<CashDepositResponse[]>(`/cash-deposits${qs ? `?${qs}` : ""}`)
+  },
+  createCashDeposit: (
+    body: CashDepositCreateBody
+  ): Promise<CashDepositResponse> =>
+    request<CashDepositResponse>("/cash-deposits", { method: "POST", body }),
+  updateCashDeposit: (
+    id: number,
+    body: CashDepositUpdateBody
+  ): Promise<CashDepositResponse> =>
+    request<CashDepositResponse>(`/cash-deposits/${id}`, {
+      method: "PATCH",
+      body,
+    }),
+  deleteCashDeposit: (id: number): Promise<void> =>
+    request<void>(`/cash-deposits/${id}`, { method: "DELETE" }),
+
+  getShiftReport: (params?: {
+    from?: string
+    to?: string
+  }): Promise<ShiftReportRow[]> => {
+    const sp = new URLSearchParams()
+    if (params?.from) sp.set("from", params.from)
+    if (params?.to) sp.set("to", params.to)
+    const qs = sp.toString()
+    return request<ShiftReportRow[]>(`/reports/shifts${qs ? `?${qs}` : ""}`)
+  },
+  getDailyReport: (params?: {
+    from?: string
+    to?: string
+  }): Promise<DailyReportRow[]> => {
+    const sp = new URLSearchParams()
+    if (params?.from) sp.set("from", params.from)
+    if (params?.to) sp.set("to", params.to)
+    const qs = sp.toString()
+    return request<DailyReportRow[]>(`/reports/daily${qs ? `?${qs}` : ""}`)
+  },
+  getTankVarianceReport: (
+    tankId: number,
+    params?: { from?: string; to?: string }
+  ): Promise<TankVarianceReportResponse> => {
+    const sp = new URLSearchParams()
+    sp.set("tankId", String(tankId))
+    if (params?.from) sp.set("from", params.from)
+    if (params?.to) sp.set("to", params.to)
+    return request<TankVarianceReportResponse>(
+      `/reports/tank-variance?${sp.toString()}`
+    )
+  },
+  downloadReportCsv: (
+    report: "shifts" | "daily" | "tank-variance",
+    params: Record<string, string>
+  ): Promise<string> => {
+    const sp = new URLSearchParams(params)
+    sp.set("format", "csv")
+    return requestText(`/reports/${report}?${sp.toString()}`)
+  },
+
+  getShortageBalances: (): Promise<WorkerShortageBalance[]> =>
+    request<WorkerShortageBalance[]>("/shortages"),
+  getWorkerShortageLedger: (
+    workerId: number
+  ): Promise<WorkerShortageLedgerResponse> =>
+    request<WorkerShortageLedgerResponse>(`/shortages?workerId=${workerId}`),
+  createShortageSettlement: (
+    body: ShortageSettlementCreateBody
+  ): Promise<ShortageSettlementResponse> =>
+    request<ShortageSettlementResponse>("/shortages/settlements", {
+      method: "POST",
+      body,
+    }),
+
+  getEvents: (params?: {
+    type?: EventType
+    shiftId?: number
+    workerId?: number
+    from?: string
+    to?: string
+    limit?: number
+    offset?: number
+  }): Promise<EventListResponse> => {
+    const sp = new URLSearchParams()
+    if (params?.type) sp.set("type", params.type)
+    if (params?.shiftId !== undefined) sp.set("shiftId", String(params.shiftId))
+    if (params?.workerId !== undefined) {
+      sp.set("workerId", String(params.workerId))
+    }
+    if (params?.from) sp.set("from", params.from)
+    if (params?.to) sp.set("to", params.to)
+    if (params?.limit !== undefined) sp.set("limit", String(params.limit))
+    if (params?.offset !== undefined) sp.set("offset", String(params.offset))
+    const qs = sp.toString()
+    return request<EventListResponse>(`/events${qs ? `?${qs}` : ""}`)
+  },
 }
 
 export type { LoginResponseUser }

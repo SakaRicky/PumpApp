@@ -5,6 +5,7 @@ import {
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
+import { recordEvent } from "../services/events.js"
 
 type DeliveryRow = Awaited<
   ReturnType<typeof prisma.fuelDelivery.findMany>
@@ -76,16 +77,16 @@ const create = async (req: Request, res: Response): Promise<void> => {
   const { quantity, deliveredAt, notes } = parsed.data
   const deliveredAtDate = deliveredAt ? new Date(deliveredAt) : new Date()
 
-  const [delivery] = await prisma.$transaction([
-    prisma.fuelDelivery.create({
+  const delivery = await prisma.$transaction(async (tx) => {
+    const created = await tx.fuelDelivery.create({
       data: {
         tankId,
         quantity,
         deliveredAt: deliveredAtDate,
         notes: notes ?? null,
       },
-    }),
-    prisma.tank.update({
+    })
+    await tx.tank.update({
       where: { id: tankId },
       data: {
         theoreticalQuantity:
@@ -93,8 +94,24 @@ const create = async (req: Request, res: Response): Promise<void> => {
             ? Number(tank.theoreticalQuantity)
             : 0) + quantity,
       },
-    }),
-  ])
+    })
+    await recordEvent(
+      {
+        type: "FUEL_DELIVERY_RECORDED",
+        actorUserId: req.user?.id ?? null,
+        entity: "fuelDelivery",
+        entityId: created.id,
+        payload: {
+          tankId,
+          quantity,
+          deliveredAt: deliveredAtDate.toISOString(),
+        },
+        notes: notes ?? null,
+      },
+      tx
+    )
+    return created
+  })
 
   const row = await prisma.fuelDelivery.findUnique({
     where: { id: delivery.id },

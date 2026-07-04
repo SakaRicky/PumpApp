@@ -6,6 +6,8 @@ import {
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
+import { recordEvent } from "../services/events.js"
+import { assertShiftMutable } from "../services/shiftLock.js"
 
 const ensureWorkerOnShift = async (
   shiftId: number,
@@ -104,6 +106,7 @@ const createForShift = async (req: Request, res: Response): Promise<void> => {
   if (!shift) {
     throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
   }
+  assertShiftMutable(shift)
 
   const worker = await prisma.worker.findUnique({
     where: { id: parsed.data.workerId },
@@ -127,15 +130,35 @@ const createForShift = async (req: Request, res: Response): Promise<void> => {
         ? null
         : parsed.data.varianceNote.trim()
 
-  const created = await prisma.cashHandIn.create({
-    data: {
-      shiftId,
-      workerId: parsed.data.workerId,
-      amount: parsed.data.amount,
-      varianceAmount,
-      varianceNote,
-      recordedById: req.user.id,
-    },
+  const actorId = req.user.id
+  const created = await prisma.$transaction(async (tx) => {
+    const row = await tx.cashHandIn.create({
+      data: {
+        shiftId,
+        workerId: parsed.data.workerId,
+        amount: parsed.data.amount,
+        varianceAmount,
+        varianceNote,
+        recordedById: actorId,
+      },
+    })
+    await recordEvent(
+      {
+        type: "CASH_HAND_IN_RECORDED",
+        actorUserId: actorId,
+        workerId: parsed.data.workerId,
+        shiftId,
+        entity: "cashHandIn",
+        entityId: row.id,
+        payload: {
+          amount: parsed.data.amount,
+          varianceAmount,
+          varianceNote,
+        },
+      },
+      tx
+    )
+    return row
   })
 
   res.status(201).json(toResponse(created))
@@ -159,6 +182,7 @@ const patchForShift = async (req: Request, res: Response): Promise<void> => {
   if (!shift) {
     throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
   }
+  assertShiftMutable(shift)
 
   const existing = await loadHandInForShift(shiftId, handInId)
   if (!existing) {
@@ -203,9 +227,32 @@ const patchForShift = async (req: Request, res: Response): Promise<void> => {
           : parsed.data.varianceNote.trim()
   }
 
-  const updated = await prisma.cashHandIn.update({
-    where: { id: handInId },
-    data,
+  const actorId = req.user.id
+  const updated = await prisma.$transaction(async (tx) => {
+    const row = await tx.cashHandIn.update({
+      where: { id: handInId },
+      data,
+    })
+    await recordEvent(
+      {
+        type: "CASH_HAND_IN_UPDATED",
+        actorUserId: actorId,
+        workerId: row.workerId,
+        shiftId,
+        entity: "cashHandIn",
+        entityId: handInId,
+        payload: {
+          previous: {
+            workerId: existing.workerId,
+            amount: existing.amount.toNumber(),
+            varianceAmount: existing.varianceAmount?.toNumber() ?? null,
+          },
+          changes: data,
+        },
+      },
+      tx
+    )
+    return row
   })
 
   res.status(200).json(toResponse(updated))
@@ -222,13 +269,31 @@ const deleteForShift = async (req: Request, res: Response): Promise<void> => {
   if (!shift) {
     throw new AppError("Shift not found", 404, ErrorCode.NOT_FOUND)
   }
+  assertShiftMutable(shift)
 
   const existing = await loadHandInForShift(shiftId, handInId)
   if (!existing) {
     throw new AppError("Cash hand-in not found", 404, ErrorCode.NOT_FOUND)
   }
 
-  await prisma.cashHandIn.delete({ where: { id: handInId } })
+  await prisma.$transaction(async (tx) => {
+    await tx.cashHandIn.delete({ where: { id: handInId } })
+    await recordEvent(
+      {
+        type: "CASH_HAND_IN_DELETED",
+        actorUserId: req.user?.id ?? null,
+        workerId: existing.workerId,
+        shiftId,
+        entity: "cashHandIn",
+        entityId: handInId,
+        payload: {
+          amount: existing.amount.toNumber(),
+          varianceAmount: existing.varianceAmount?.toNumber() ?? null,
+        },
+      },
+      tx
+    )
+  })
 
   res.status(204).send()
 }

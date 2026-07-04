@@ -6,6 +6,7 @@ import {
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
+import { recordEvent } from "../services/events.js"
 
 const toPurchasePriceResponse = (row: {
   id: number
@@ -69,13 +70,31 @@ const create = async (req: Request, res: Response): Promise<void> => {
   const previousPrice = previous ? Number(previous.purchasePrice) : null
   const alert = previousPrice !== null && purchasePrice > previousPrice
 
-  const row = await prisma.purchasePriceHistory.create({
-    data: {
-      productId,
-      purchasePrice,
-      effectiveAt: new Date(effectiveAt),
-      notes: notes ?? null,
-    },
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await tx.purchasePriceHistory.create({
+      data: {
+        productId,
+        purchasePrice,
+        effectiveAt: new Date(effectiveAt),
+        notes: notes ?? null,
+      },
+    })
+    await recordEvent(
+      {
+        type: "PURCHASE_PRICE_SET",
+        actorUserId: req.user?.id ?? null,
+        entity: "purchasePriceHistory",
+        entityId: created.id,
+        payload: {
+          productId,
+          purchasePrice,
+          effectiveAt,
+        },
+        notes: notes ?? null,
+      },
+      tx
+    )
+    return created
   })
 
   const response: PurchasePriceCreateResponse = {

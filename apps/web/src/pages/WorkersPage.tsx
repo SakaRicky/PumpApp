@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import type { UserResponse, WorkerResponse } from "@pumpapp/shared"
+import type {
+  UserResponse,
+  WorkerResponse,
+  WorkerShortageLedgerResponse,
+} from "@pumpapp/shared"
 import { PageLayout } from "@/components/layout/PageLayout"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +26,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { api } from "@/lib/api"
+import { cn } from "@/lib/utils"
+
+const formatNumber = (n: number): string =>
+  new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(n)
+
+const todayInputValue = (): string => {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, "0")
+  const d = String(now.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
 
 export const WorkersPage = () => {
   const { t } = useTranslation()
@@ -42,6 +58,15 @@ export const WorkersPage = () => {
 
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  const [ledgerWorker, setLedgerWorker] = useState<WorkerResponse | null>(null)
+  const [ledger, setLedger] = useState<WorkerShortageLedgerResponse | null>(
+    null
+  )
+  const [ledgerLoading, setLedgerLoading] = useState(false)
+  const [settleDate, setSettleDate] = useState(todayInputValue())
+  const [settleAmount, setSettleAmount] = useState("")
+  const [settleNotes, setSettleNotes] = useState("")
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -133,6 +158,58 @@ export const WorkersPage = () => {
     }
   }
 
+  const openLedger = async (worker: WorkerResponse) => {
+    setLedgerWorker(worker)
+    setLedger(null)
+    setSettleDate(todayInputValue())
+    setSettleAmount("")
+    setSettleNotes("")
+    setSubmitError(null)
+    setLedgerLoading(true)
+    try {
+      setLedger(await api.getWorkerShortageLedger(worker.id))
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : t("workers.errorLoad"))
+    } finally {
+      setLedgerLoading(false)
+    }
+  }
+
+  const closeLedger = () => {
+    setLedgerWorker(null)
+    setLedger(null)
+    setSubmitError(null)
+  }
+
+  const handleSettle = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!ledgerWorker) return
+    const amount = Number(settleAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setSubmitError(t("workers.shortages.invalidAmount"))
+      return
+    }
+    setSubmitting(true)
+    setSubmitError(null)
+    try {
+      await api.createShortageSettlement({
+        workerId: ledgerWorker.id,
+        date: settleDate,
+        amount,
+        notes: settleNotes.trim() || null,
+      })
+      setSettleAmount("")
+      setSettleNotes("")
+      setLedger(await api.getWorkerShortageLedger(ledgerWorker.id))
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : t("workers.errorUpdate")
+      )
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <PageLayout title={t("workers.title")}>
       <div className="space-y-4">
@@ -183,13 +260,22 @@ export const WorkersPage = () => {
                         : t("workers.hasAccountNo")}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEdit(worker)}
-                      >
-                        {t("workers.editWorker")}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEdit(worker)}
+                        >
+                          {t("workers.editWorker")}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openLedger(worker)}
+                        >
+                          {t("workers.shortages.button")}
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -296,6 +382,162 @@ export const WorkersPage = () => {
               </DialogFooter>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!ledgerWorker}
+        onOpenChange={(open) => !open && closeLedger()}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {t("workers.shortages.title", { name: ledgerWorker?.name ?? "" })}
+            </DialogTitle>
+          </DialogHeader>
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
+          {ledgerLoading ? (
+            <p className="text-muted-foreground">{t("auth.loading")}</p>
+          ) : ledger ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">
+                    {t("workers.shortages.charges")}
+                  </p>
+                  <p className="text-lg font-semibold tabular-nums">
+                    {formatNumber(ledger.chargesTotal)}
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">
+                    {t("workers.shortages.settlements")}
+                  </p>
+                  <p className="text-lg font-semibold tabular-nums">
+                    {formatNumber(ledger.settlementsTotal)}
+                  </p>
+                </div>
+                <div className="rounded-lg border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">
+                    {t("workers.shortages.balance")}
+                  </p>
+                  <p
+                    className={cn(
+                      "text-lg font-semibold tabular-nums",
+                      ledger.balance > 0 && "text-red-600",
+                      ledger.balance < 0 && "text-green-600"
+                    )}
+                  >
+                    {formatNumber(ledger.balance)}
+                  </p>
+                </div>
+              </div>
+
+              {ledger.entries.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t("workers.shortages.empty")}
+                </p>
+              ) : (
+                <div className="max-h-64 overflow-y-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("workers.shortages.date")}</TableHead>
+                        <TableHead>{t("workers.shortages.kind")}</TableHead>
+                        <TableHead className="text-right">
+                          {t("workers.shortages.amount")}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {t("workers.shortages.balanceAfter")}
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ledger.entries.map((entry) => (
+                        <TableRow key={`${entry.kind}-${entry.id}`}>
+                          <TableCell>
+                            {new Date(entry.date).toLocaleDateString("fr-FR")}
+                          </TableCell>
+                          <TableCell>
+                            {entry.kind === "charge"
+                              ? t("workers.shortages.charge")
+                              : t("workers.shortages.settlement")}
+                          </TableCell>
+                          <TableCell
+                            className={cn(
+                              "text-right tabular-nums",
+                              entry.kind === "charge"
+                                ? "text-red-600"
+                                : "text-green-600"
+                            )}
+                          >
+                            {entry.kind === "charge" ? "+" : "−"}
+                            {formatNumber(entry.amount)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatNumber(entry.balanceAfter)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              <form onSubmit={handleSettle} className="space-y-3 border-t pt-3">
+                <p className="text-sm font-medium">
+                  {t("workers.shortages.settleTitle")}
+                </p>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="settle-date">
+                      {t("workers.shortages.date")}
+                    </Label>
+                    <Input
+                      id="settle-date"
+                      type="date"
+                      value={settleDate}
+                      onChange={(e) => setSettleDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="settle-amount">
+                      {t("workers.shortages.amount")}
+                    </Label>
+                    <Input
+                      id="settle-amount"
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={settleAmount}
+                      onChange={(e) => setSettleAmount(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <Label htmlFor="settle-notes">
+                      {t("workers.shortages.notes")}
+                    </Label>
+                    <Input
+                      id="settle-notes"
+                      value={settleNotes}
+                      onChange={(e) => setSettleNotes(e.target.value)}
+                    />
+                  </div>
+                  <Button type="submit" disabled={submitting}>
+                    {submitting
+                      ? t("auth.loading")
+                      : t("workers.shortages.settle")}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
     </PageLayout>

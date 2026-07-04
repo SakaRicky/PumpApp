@@ -5,22 +5,23 @@
   "nav": {
     "ariaLabel": "Navigation principale",
     "groups": {
-      "operations": "Opérations",
+      "operations": "Principal",
       "masterData": "Données de base",
       "reports": "Rapports",
-      "admin": "Admin"
+      "admin": "Paramètres"
     },
     "links": {
       "shifts": "Postes",
       "reconciliation": "Réconciliation",
       "categories": "Catégories",
       "products": "Produits",
-      "categoriesAndMore": "Catégories et plus",
       "reports": "Rapports",
       "users": "Utilisateurs",
       "workers": "Employés",
       "pumps": "Carburants",
-      "weeklyInventory": "Inventaire hebdo"
+      "weeklyInventory": "Inventaire hebdo",
+      "money": "Caisse & trésorerie",
+      "dashboard": "Tableau de bord"
     }
   },
   "categories": {
@@ -128,15 +129,114 @@
     "cancel": "Annuler",
     "errorLoad": "Impossible de charger les employés.",
     "errorCreate": "Impossible de créer l'employé.",
-    "errorUpdate": "Impossible de modifier l'employé."
+    "errorUpdate": "Impossible de modifier l'employé.",
+    "shortages": {
+      "button": "Manquants",
+      "title": "Manquants — {{name}}",
+      "charges": "Manquants imposés (FCFA)",
+      "settlements": "Règlements (FCFA)",
+      "balance": "Solde dû (FCFA)",
+      "empty": "Aucun manquant ni règlement pour cet employé.",
+      "date": "Date",
+      "kind": "Type",
+      "amount": "Montant (FCFA)",
+      "balanceAfter": "Solde après",
+      "charge": "Manquant (clôture hebdo)",
+      "settlement": "Règlement",
+      "settleTitle": "Enregistrer un règlement (retenue salaire ou remboursement)",
+      "settle": "Régler",
+      "invalidAmount": "Montant invalide."
+    }
   },
   "breadcrumbs": {
     "ariaLabel": "Fil d'Ariane",
-    "home": "Accueil"
+    "home": "Accueil",
+    "money": "Caisse & trésorerie"
   },
   "home": {
     "title": "Tableau de bord",
-    "welcome": "Bienvenue sur PumpPro. Utilisez le menu pour accéder aux Postes, Réconciliation, Produits ou Rapports."
+    "welcome": "Bienvenue sur PumpPro. Utilisez le menu pour accéder aux Postes, Réconciliation, Produits ou Rapports.",
+    "loading": "Chargement du tableau de bord…",
+    "pending": {
+      "title": "Réconciliations en attente",
+      "empty": "Aucune réconciliation en attente. Tout est à jour.",
+      "item": "Poste n°{{id}} du {{date}}",
+      "staleTitle": "Postes non clôturés",
+      "staleItem": "Poste n°{{id}} du {{date}} encore ouvert",
+      "reconciliationTitle": "Postes à réconcilier",
+      "age_zero": "aujourd'hui",
+      "age_one": "{{count}} jour",
+      "age_other": "{{count}} jours",
+      "goto": "Tout voir"
+    },
+    "actions": {
+      "title": "Actions rapides",
+      "openShift": "Ouvrir le poste",
+      "enterReadings": "Clôturer la journée",
+      "reconcile": "Réconcilier ({{count}})",
+      "expense": "Dépense",
+      "deposit": "Dépôt"
+    },
+    "today": {
+      "title": "Aujourd'hui",
+      "fuelVolume": "Carburant vendu",
+      "fuelRevenue": "Recettes carburant (FCFA)",
+      "shopRevenue": "Recettes boutique (FCFA)",
+      "cashHandedIn": "Caisse remise (FCFA)",
+      "shifts": "{{reconciled}}/{{total}} postes réconciliés",
+      "unknown": "—",
+      "missingPrice": "Prix carburant manquant pour un poste",
+      "expenses": "Dépenses (FCFA)"
+    },
+    "tanks": {
+      "title": "Niveaux des cuves",
+      "empty": "Aucune cuve active.",
+      "variance": "Écart réel − théorique : {{value}} L",
+      "toleranceExceeded": "Tolérance dépassée"
+    },
+    "discrepancies": {
+      "title": "Derniers écarts de caisse",
+      "empty": "Aucune réconciliation enregistrée pour le moment.",
+      "item": "Poste n°{{id}} du {{date}}",
+      "short": "Manque {{value}} FCFA",
+      "over": "Surplus {{value}} FCFA",
+      "balanced": "Équilibré"
+    },
+    "safe": {
+      "title": "Coffre",
+      "cashCollected": "Caisse encaissée (FCFA)",
+      "expensesTotal": "Dépenses (FCFA)",
+      "depositsTotal": "Dépôts banque (FCFA)",
+      "balance": "Solde du coffre (FCFA)"
+    },
+    "subtitle": "Vue d'ensemble de la performance de votre station"
+  },
+  "closeWizard": {
+    "title": "Clôturer la journée",
+    "invalidShift": "Poste invalide.",
+    "loadFailed": "Impossible de charger la clôture.",
+    "saveFailed": "Impossible d’enregistrer cette étape.",
+    "closeFailed": "Impossible de clôturer le poste.",
+    "saveContinue": "Enregistrer et continuer",
+    "closeShift": "Clôturer le poste",
+    "shiftMeta": "Poste n°{{id}}",
+    "skipDips": "Continuer",
+    "saveDips": "Enregistrer les jaugeages",
+    "dipQuantity": "Quantité mesurée (L)",
+    "invalidDip": "Quantité invalide pour {{tank}}.",
+    "noDips": "Aucun jaugeage de cuve enregistré aujourd’hui. Cette étape est optionnelle.",
+    "dipsRecorded": "{{count}} jaugeage(s) enregistré(s) aujourd’hui.",
+    "steps": {
+      "readings": "Relevés pompes",
+      "stock": "Stock boutique",
+      "dips": "Jaugeage cuves",
+      "summary": "Récapitulatif"
+    },
+    "summary": {
+      "fuel": "Carburant",
+      "shop": "Boutique attendue",
+      "dips": "Jaugeages"
+    }
   },
   "shifts": {
     "title": "Postes",
@@ -186,6 +286,7 @@
     "workerPickerLoginRole": "Rôle de connexion",
     "workerPickerLoginRoleHint": "Droits dans l’application (ADMIN, USER, …). La clôture du poste tient aussi compte des fonctions (ex. Pumpist, Shop).",
     "close": "Fermer",
+    "closeShift": "Clôturer",
     "pumpReadings": "Relevés pompes",
     "pumpReadingsLinkedHint": "Chaque relevé est lié à l’employé affecté à cette pompe pour ce poste (utilisez d’abord « Affecter les pompes »). Ce lien est conservé pour la traçabilité.",
     "pumpReadingsAssignedWorker": "Pumpist affecté",
@@ -218,7 +319,19 @@
       "filters": {
         "search": "Rechercher un produit",
         "onlyChanged": "Uniquement les produits modifiés"
-      }
+      },
+      "prefillHint": "Suggestion",
+      "fillAll": "Tout remplir",
+      "expectedTotal": "Caisse boutique attendue",
+      "negativeBlocked": "Une ligne indique une quantité vendue négative. Corrigez la fermeture avant d’enregistrer."
+    },
+    "guards": {
+      "volume": "Volume",
+      "ceilingHint": "Plafond {{ceiling}} L",
+      "averageHint": "Supérieur à 3× la moyenne récente",
+      "forceTitle": "Dépassement du plafond pour {{pump}}. Saisissez une raison pour forcer l’enregistrement.",
+      "overrideReason": "Raison de l’override",
+      "forceSave": "Forcer l’enregistrement"
     },
     "errors": {
       "dateAndTimesRequired": "La date, l'heure de début et l'heure de fin sont obligatoires.",
@@ -232,6 +345,16 @@
       "pumpReadingsNeedAssignment": "Affectez un employé à chaque pompe (Affecter les pompes) avant d’enregistrer les relevés pour les pompes sans relevé enregistré.",
       "pumpReadingsClosingBeforeOpening": "Pour {{pump}}, le relevé de fermeture doit être supérieur ou égal au relevé d’ouverture.",
       "pumpReadingsInvalidNumber": "Pour {{pump}}, saisissez des nombres valides pour les relevés d’ouverture et de fermeture."
+    },
+    "quickOpen": "Ouvrir le poste du jour",
+    "team": {
+      "button": "Équipe",
+      "title": "Équipe du poste",
+      "workers": "Employés du poste",
+      "pumps": "Affectation des pompes",
+      "seller": "Vendeur boutique responsable",
+      "noSeller": "— Aucun —",
+      "save": "Enregistrer l'équipe"
     }
   },
   "reconciliation": {
@@ -249,6 +372,15 @@
       "shopFromStock": "Boutique depuis le stock du poste",
       "fuelComputed": "Carburant depuis les relevés pompes",
       "sumCashHandIns": "Somme des remises de caisse"
+    },
+    "expected": {
+      "title": "Remises carburant attendues",
+      "intro": "Calculé depuis les relevés des pompes affectées à chaque pompiste et le prix carburant en vigueur pour ce poste.",
+      "pumps": "Pompes",
+      "volume": "Litres vendus",
+      "amount": "Montant attendu",
+      "empty": "Aucun relevé de pompe affecté avec prix carburant n’a été trouvé pour ce poste.",
+      "assignmentIssue": "Ce poste contient des relevés liés à un employé boutique ou non-carburant. Corrigez l’affectation pompe/le relevé avant la réconciliation."
     },
     "handIns": {
       "title": "Remises de caisse et écarts",
@@ -274,6 +406,9 @@
       "deleteError": "Impossible de supprimer la remise.",
       "clearVariance": "Effacer l'écart",
       "clearVarianceError": "Impossible d'effacer l'écart sur cette remise.",
+      "autoVarianceHint": "Calcul automatique : attendu {{expected}} moins montant remis.",
+      "autoVarianceFormula": "Attendu {{expected}} − remis {{amount}} = écart {{variance}}.",
+      "custodyVarianceHint": "Pour une garde boutique, laissez l'écart quotidien vide ; il sera réglé au comptage physique de fin de garde.",
       "onlyShiftWorkersHint": "Seuls les employés affectés à ce poste peuvent avoir une remise (même liste que Postes → Gérer les employés).",
       "noShiftWorkers": "Aucun employé sur ce poste. Utilisez Postes → Gérer les employés pour en ajouter avant d’enregistrer des remises."
     },
@@ -366,10 +501,6 @@
       "errorCreate": "Impossible d'ajouter le prix d'achat."
     }
   },
-  "masterData": {
-    "title": "Catégories et plus",
-    "intro": "Catégories, employés, pompes, historique des prix des carburants."
-  },
   "pumps": {
     "title": "Pompes",
     "intro": "Gérer les pompes à carburant (admin).",
@@ -456,7 +587,9 @@
         "fuelTypePlaceholder": "Choisir un type",
         "capacity": "Capacité",
         "required": "Nom et type de carburant obligatoires.",
-        "invalidCapacity": "La capacité doit être un nombre positif ou nul."
+        "invalidCapacity": "La capacité doit être un nombre positif ou nul.",
+        "dipToleranceLiters": "Tolérance jaugeage (L)",
+        "dipTolerancePct": "Tolérance jaugeage (%)"
       }
     },
     "tabs": {
@@ -541,11 +674,109 @@
   },
   "reports": {
     "title": "Rapports",
-    "intro": "Rapports et analyse des bénéfices. Utilisez Inventaire hebdo (admin) pour l’export CSV par mois."
+    "intro": "Rapports et analyse des bénéfices. Utilisez Inventaire hebdo (admin) pour l’export CSV par mois.",
+    "tabs": {
+      "shifts": "Par poste",
+      "daily": "Par jour",
+      "variance": "Variance des cuves",
+      "audit": "Journal d'audit"
+    },
+    "filters": {
+      "from": "Du",
+      "to": "Au"
+    },
+    "exportCsv": "Exporter CSV",
+    "empty": "Aucune donnée sur la période.",
+    "errors": {
+      "load": "Impossible de charger le rapport."
+    },
+    "columns": {
+      "shift": "Poste",
+      "date": "Date",
+      "status": "Statut",
+      "shifts": "Postes (réc./total)",
+      "fuelVolume": "Carburant (L)",
+      "fuelRevenue": "Recettes carburant",
+      "shopRevenue": "Recettes boutique",
+      "cash": "Caisse remise",
+      "discrepancy": "Écart"
+    },
+    "variance": {
+      "tank": "Cuve",
+      "chartTitle": "Variance cumulée — {{tank}} (détecteur de fuite)",
+      "chartHint": "Réel − théorique cumulé à chaque jaugeage. Une pente descendante régulière peut indiquer une fuite ou des pertes.",
+      "chartAria": "Courbe de variance cumulée de la cuve {{tank}}",
+      "noData": "Aucun jaugeage avec quantité théorique sur la période.",
+      "actual": "Réel (L)",
+      "theoretical": "Théorique (L)",
+      "variance": "Écart (L)",
+      "cumulative": "Cumulé (L)",
+      "verdict": "Tolérance",
+      "ok": "OK",
+      "exceeded": "Dépassée"
+    },
+    "audit": {
+      "type": "Type d'événement",
+      "allTypes": "Tous les types",
+      "when": "Quand",
+      "eventType": "Type",
+      "shift": "Poste",
+      "details": "Détails",
+      "total": "{{count}} événement(s)",
+      "prev": "Précédent",
+      "next": "Suivant"
+    },
+    "subtitle": "Rapports carburant, boutique, trésorerie et journal d'audit — export CSV"
   },
   "languageSwitcher": {
     "label": "Langue",
     "en": "English",
     "fr": "Français"
+  },
+  "money": {
+    "title": "Caisse & trésorerie",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "errors": {
+      "load": "Impossible de charger les données de trésorerie.",
+      "save": "L'enregistrement a échoué.",
+      "invalidForm": "Veuillez renseigner les champs obligatoires avec des valeurs valides."
+    },
+    "safe": {
+      "cashCollected": "Caisse encaissée (FCFA)",
+      "expensesTotal": "Dépenses (FCFA)",
+      "depositsTotal": "Dépôts banque (FCFA)",
+      "balance": "Solde du coffre (FCFA)"
+    },
+    "table": {
+      "date": "Date",
+      "amount": "Montant (FCFA)",
+      "actions": "Actions",
+      "edit": "Modifier",
+      "delete": "Supprimer"
+    },
+    "expenses": {
+      "title": "Dépenses",
+      "add": "Ajouter une dépense",
+      "empty": "Aucune dépense enregistrée.",
+      "category": "Catégorie",
+      "paidBy": "Payé par",
+      "description": "Description",
+      "createTitle": "Nouvelle dépense",
+      "editTitle": "Modifier la dépense",
+      "confirmDelete": "Supprimer cette dépense ? L'action sera journalisée."
+    },
+    "deposits": {
+      "title": "Dépôts en banque",
+      "add": "Ajouter un dépôt",
+      "empty": "Aucun dépôt enregistré.",
+      "destination": "Banque / destination",
+      "reference": "Référence",
+      "notes": "Notes",
+      "createTitle": "Nouveau dépôt",
+      "editTitle": "Modifier le dépôt",
+      "confirmDelete": "Supprimer ce dépôt ? L'action sera journalisée."
+    },
+    "subtitle": "Suivez le coffre, les dépenses et les dépôts en banque"
   }
 }

@@ -4,7 +4,9 @@ import { requireAuth, requireAdmin } from "../middleware/auth.js"
 import {
   list,
   getById,
+  getClosePreview,
   create,
+  quickOpen,
   update,
   listWorkers,
   assignWorkers,
@@ -13,9 +15,11 @@ import {
   upsertStock,
   listPumpAssignments,
   assignPump,
+  updateTeam,
 } from "../controllers/shiftController.js"
 import {
   listByShift as listPumpReadings,
+  prefillForShift as prefillPumpReadingsForShift,
   createForShift as createPumpReadingForShift,
 } from "../controllers/pumpReadingController.js"
 import {
@@ -43,8 +47,12 @@ shiftsRouter.use(requireAuth)
 
 shiftsRouter.get("/", asyncHandler(list))
 shiftsRouter.get("/:id", requireAdmin, asyncHandler(getById))
+shiftsRouter.get("/:id/close-preview", requireAdmin, asyncHandler(getClosePreview))
 shiftsRouter.post("/", requireAdmin, asyncHandler(create))
+shiftsRouter.post("/quick-open", requireAdmin, asyncHandler(quickOpen))
 shiftsRouter.patch("/:id", requireAdmin, asyncHandler(update))
+
+shiftsRouter.put("/:id/team", requireAdmin, asyncHandler(updateTeam))
 
 shiftsRouter.get("/:id/workers", requireAdmin, asyncHandler(listWorkers))
 shiftsRouter.post("/:id/workers", requireAdmin, asyncHandler(assignWorkers))
@@ -72,6 +80,11 @@ shiftsRouter.get(
   "/:id/pump-readings",
   requireAdmin,
   asyncHandler(listPumpReadings)
+)
+shiftsRouter.get(
+  "/:id/pump-readings/prefill",
+  requireAdmin,
+  asyncHandler(prefillPumpReadingsForShift)
 )
 shiftsRouter.post(
   "/:id/pump-readings",

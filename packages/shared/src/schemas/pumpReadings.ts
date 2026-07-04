@@ -5,6 +5,8 @@ export const pumpReadingCreateSchema = z
     pumpId: z.number().int().positive(),
     openingReading: z.number().nonnegative(),
     closingReading: z.number().nonnegative(),
+    overrideCeiling: z.boolean().optional(),
+    overrideReason: z.string().trim().min(1).optional(),
   })
   .refine((data) => data.closingReading >= data.openingReading, {
     message:
@@ -15,6 +17,8 @@ export const pumpReadingCreateSchema = z
 export const pumpReadingUpdateSchema = z.object({
   openingReading: z.number().nonnegative().optional(),
   closingReading: z.number().nonnegative().optional(),
+  overrideCeiling: z.boolean().optional(),
+  overrideReason: z.string().trim().min(1).optional(),
 })
 
 export type PumpReadingCreateInput = z.infer<typeof pumpReadingCreateSchema>

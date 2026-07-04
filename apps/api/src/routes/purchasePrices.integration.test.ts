@@ -13,6 +13,16 @@ const mockCategoryFindUnique = vi.fn()
 const mockPurchasePriceFindMany = vi.fn()
 const mockPurchasePriceFindFirst = vi.fn()
 const mockPurchasePriceCreate = vi.fn()
+const mockEventCreate = vi.fn()
+
+const txClient = {
+  purchasePriceHistory: {
+    create: (...args: unknown[]) => mockPurchasePriceCreate(...args),
+  },
+  event: {
+    create: (...args: unknown[]) => mockEventCreate(...args),
+  },
+}
 
 vi.mock("../db.js", () => ({
   prisma: {
@@ -30,6 +40,13 @@ vi.mock("../db.js", () => ({
       findFirst: (...args: unknown[]) => mockPurchasePriceFindFirst(...args),
       create: (...args: unknown[]) => mockPurchasePriceCreate(...args),
     },
+    event: {
+      create: (...args: unknown[]) => mockEventCreate(...args),
+    },
+    $transaction: (arg: unknown) =>
+      Array.isArray(arg)
+        ? Promise.all(arg as Promise<unknown>[])
+        : (arg as (tx: unknown) => Promise<unknown>)(txClient),
   },
 }))
 

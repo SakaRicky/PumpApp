@@ -9,8 +9,11 @@ const mockShiftCreate = vi.fn()
 const mockShiftFindUnique = vi.fn()
 const mockShiftUpdate = vi.fn()
 const mockShiftWorkerFindMany = vi.fn()
+const mockShiftWorkerFindUnique = vi.fn()
 const mockShiftProductStockCount = vi.fn()
 const mockPumpReadingCount = vi.fn()
+const mockPumpFindUnique = vi.fn()
+const mockShiftPumpAssignmentUpsert = vi.fn()
 const mockProductUpdate = vi.fn()
 const mockTransaction = vi.fn()
 
@@ -24,6 +27,7 @@ vi.mock("../db.js", () => ({
     },
     shiftWorker: {
       findMany: (...args: unknown[]) => mockShiftWorkerFindMany(...args),
+      findUnique: (...args: unknown[]) => mockShiftWorkerFindUnique(...args),
     },
     shiftProductStock: {
       count: (...args: unknown[]) => mockShiftProductStockCount(...args),
@@ -32,6 +36,12 @@ vi.mock("../db.js", () => ({
     },
     pumpReading: {
       count: (...args: unknown[]) => mockPumpReadingCount(...args),
+    },
+    pump: {
+      findUnique: (...args: unknown[]) => mockPumpFindUnique(...args),
+    },
+    shiftPumpAssignment: {
+      upsert: (...args: unknown[]) => mockShiftPumpAssignmentUpsert(...args),
     },
     product: {
       update: (...args: unknown[]) => mockProductUpdate(...args),
@@ -210,5 +220,40 @@ describe("Shifts API (integration, basic rules)", () => {
     expect(res.body.error).toBe("Cannot close shift without pump readings")
     expect(mockShiftProductStockCount).not.toHaveBeenCalled()
     expect(mockPumpReadingCount).toHaveBeenCalled()
+  })
+
+  it("POST /api/shifts/:id/pump-assignments rejects shop workers", async () => {
+    const shiftId = 5
+    mockShiftFindUnique.mockResolvedValue({
+      id: shiftId,
+      date: new Date(),
+      startTime: new Date(),
+      endTime: new Date(),
+      status: "OPEN",
+      notes: null,
+    })
+    mockPumpFindUnique.mockResolvedValue({ id: 1, active: true })
+    mockShiftWorkerFindUnique.mockResolvedValue({
+      shiftId,
+      workerId: 10,
+      worker: {
+        id: 10,
+        name: "Bob",
+        designation: "Shop",
+        active: true,
+        user: null,
+      },
+    })
+
+    const res = await request(app)
+      .post(`/api/shifts/${shiftId}/pump-assignments`)
+      .set("Authorization", `Bearer ${ADMIN_TOKEN}`)
+      .send({ pumpId: 1, workerId: 10 })
+      .expect(400)
+
+    expect(res.body.error).toBe(
+      "Only fuel-side workers can be assigned to pumps; shop workers cannot work pumps on the same shift"
+    )
+    expect(mockShiftPumpAssignmentUpsert).not.toHaveBeenCalled()
   })
 })

@@ -55,6 +55,23 @@ const formatIsoTime = (iso: string): string =>
 
 const money = (n: number): string => n.toFixed(2)
 
+const roundMoney = (n: number): number => Math.round(n * 100) / 100
+
+const parseWorkerId = (value: string): number | null => {
+  const workerId = Number.parseInt(value, 10)
+  return Number.isFinite(workerId) && workerId > 0 ? workerId : null
+}
+
+const calculateHandInVariance = (
+  expectedAmount: number | undefined,
+  amountText: string
+): number | null => {
+  if (expectedAmount == null) return null
+  const amount = Number.parseFloat(amountText)
+  if (!Number.isFinite(amount) || amount < 0) return null
+  return roundMoney(expectedAmount - amount)
+}
+
 export const ReconciliationPage = () => {
   const { t } = useTranslation()
 
@@ -260,6 +277,34 @@ export const ReconciliationPage = () => {
     cashOverrideAmount,
   ])
 
+  const expectedFuelByWorker = useMemo(() => {
+    const byWorker = new Map<number, ReconciliationGetResponse["expectedFuelHandIns"][number]>()
+    for (const row of reco?.expectedFuelHandIns ?? []) {
+      byWorker.set(row.workerId, row)
+    }
+    return byWorker
+  }, [reco?.expectedFuelHandIns])
+
+  const selectedExpectedFuel = useMemo(() => {
+    const workerId = parseWorkerId(chiWorkerId)
+    return workerId == null ? undefined : expectedFuelByWorker.get(workerId)
+  }, [chiWorkerId, expectedFuelByWorker])
+
+  const computedChiVariance = calculateHandInVariance(
+    selectedExpectedFuel?.expectedAmount,
+    chiAmount
+  )
+
+  const editExpectedFuel = useMemo(() => {
+    const workerId = parseWorkerId(editWorkerId)
+    return workerId == null ? undefined : expectedFuelByWorker.get(workerId)
+  }, [editWorkerId, expectedFuelByWorker])
+
+  const computedEditVariance = calculateHandInVariance(
+    editExpectedFuel?.expectedAmount,
+    editAmount
+  )
+
   const handleSaveReconciliation = async () => {
     if (!selectedShiftId || !isAdmin) return
     setSaveError(null)
@@ -387,21 +432,23 @@ export const ReconciliationPage = () => {
       return
     }
 
-    const body: CashHandInCreateBody = {
-      workerId,
-      amount,
-    }
-    const varStr = chiVariance.trim()
-    if (varStr !== "") {
-      const v = Number.parseFloat(varStr)
-      if (!Number.isFinite(v)) {
-        setChiError(t("reconciliation.errors.varianceInvalid"))
-        return
+    const body: CashHandInCreateBody = { workerId, amount }
+    const expectedFuel = expectedFuelByWorker.get(workerId)
+    if (expectedFuel) {
+      body.varianceAmount = roundMoney(expectedFuel.expectedAmount - amount)
+    } else {
+      const varStr = chiVariance.trim()
+      if (varStr !== "") {
+        const v = Number.parseFloat(varStr)
+        if (!Number.isFinite(v)) {
+          setChiError(t("reconciliation.errors.varianceInvalid"))
+          return
+        }
+        body.varianceAmount = v
       }
-      body.varianceAmount = v
     }
     const vn = chiVarianceNote.trim()
-    if (vn !== "") {
+    if (vn !== "" && body.varianceAmount != null) {
       body.varianceNote = vn
     }
 
@@ -466,20 +513,27 @@ export const ReconciliationPage = () => {
     }
 
     const body: CashHandInPatchBody = { workerId, amount }
-    const varStr = editVariance.trim()
-    if (varStr === "") {
-      body.varianceAmount = null
+    const expectedFuel = expectedFuelByWorker.get(workerId)
+    if (expectedFuel) {
+      body.varianceAmount = roundMoney(expectedFuel.expectedAmount - amount)
       body.varianceNote =
         editVarianceNote.trim() === "" ? null : editVarianceNote.trim()
     } else {
-      const v = Number.parseFloat(varStr)
-      if (!Number.isFinite(v)) {
-        setEditError(t("reconciliation.errors.varianceInvalid"))
-        return
+      const varStr = editVariance.trim()
+      if (varStr === "") {
+        body.varianceAmount = null
+        body.varianceNote =
+          editVarianceNote.trim() === "" ? null : editVarianceNote.trim()
+      } else {
+        const v = Number.parseFloat(varStr)
+        if (!Number.isFinite(v)) {
+          setEditError(t("reconciliation.errors.varianceInvalid"))
+          return
+        }
+        body.varianceAmount = v
+        body.varianceNote =
+          editVarianceNote.trim() === "" ? null : editVarianceNote.trim()
       }
-      body.varianceAmount = v
-      body.varianceNote =
-        editVarianceNote.trim() === "" ? null : editVarianceNote.trim()
     }
 
     setEditSaving(true)
@@ -627,6 +681,79 @@ export const ReconciliationPage = () => {
 
             <section className="space-y-4 rounded-md border p-4">
               <h2 className="text-lg font-semibold">
+                {t("reconciliation.expected.title")}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t("reconciliation.expected.intro")}
+              </p>
+              {reco.assignmentIssues.length > 0 && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    <div className="space-y-1">
+                      <p>{t("reconciliation.expected.assignmentIssue")}</p>
+                      {reco.assignmentIssues.map((issue) => (
+                        <p key={`${issue.pumpId}-${issue.workerId ?? "none"}`}>
+                          {issue.workerName ?? `#${issue.workerId}`} ·{" "}
+                          {issue.pumpName}
+                        </p>
+                      ))}
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("reconciliation.handIns.worker")}</TableHead>
+                      <TableHead>{t("reconciliation.expected.pumps")}</TableHead>
+                      <TableHead>{t("reconciliation.expected.volume")}</TableHead>
+                      <TableHead>{t("reconciliation.expected.amount")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reco.expectedFuelHandIns.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-muted-foreground">
+                          {t("reconciliation.expected.empty")}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      reco.expectedFuelHandIns.map((row) => {
+                        const worker =
+                          resolveWorkerForHandIn(row.workerId)?.name ??
+                          row.workerName ??
+                          `#${row.workerId}`
+                        return (
+                          <TableRow key={row.workerId}>
+                            <TableCell className="font-medium">
+                              {worker}
+                            </TableCell>
+                            <TableCell>
+                              <div className="space-y-1 text-sm">
+                                {row.pumps.map((pump) => (
+                                  <div key={pump.pumpId}>
+                                    {pump.pumpName}: {pump.volume.toFixed(3)} L ×{" "}
+                                    {money(pump.pricePerUnit)}
+                                  </div>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>{row.volume.toFixed(3)} L</TableCell>
+                            <TableCell className="font-semibold">
+                              {money(row.expectedAmount)}
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </section>
+
+            <section className="space-y-4 rounded-md border p-4">
+              <h2 className="text-lg font-semibold">
                 {t("reconciliation.handIns.title")}
               </h2>
               <p className="text-sm text-muted-foreground">
@@ -741,7 +868,7 @@ export const ReconciliationPage = () => {
 
               <form
                 onSubmit={(e) => void handleAddHandIn(e)}
-                className="flex flex-wrap gap-3 items-end"
+                className="space-y-3"
               >
                 {shiftWorkers.length === 0 ? (
                   <p className="text-sm text-muted-foreground w-full">
@@ -749,67 +876,100 @@ export const ReconciliationPage = () => {
                   </p>
                 ) : (
                   <>
-                    <div className="space-y-1">
-                      <Label>{t("reconciliation.handIns.worker")}</Label>
-                      <Select
-                        value={chiWorkerId}
-                        onValueChange={setChiWorkerId}
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1.25fr)_minmax(130px,0.65fr)_minmax(130px,0.65fr)_minmax(220px,1fr)]">
+                      <div className="space-y-1">
+                        <Label>{t("reconciliation.handIns.worker")}</Label>
+                        <Select
+                          value={chiWorkerId}
+                          onValueChange={(value) => {
+                            setChiWorkerId(value)
+                            setChiVariance("")
+                            setChiVarianceNote("")
+                          }}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="—" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {shiftWorkers.map((w) => (
+                              <SelectItem key={w.id} value={String(w.id)}>
+                                {workerLabelWithDesignation(w)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="chi-amount">
+                          {t("reconciliation.handIns.amount")}
+                        </Label>
+                        <Input
+                          id="chi-amount"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={chiAmount}
+                          onChange={(e) => setChiAmount(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="chi-variance">
+                          {t("reconciliation.handIns.variance")}
+                        </Label>
+                        <Input
+                          id="chi-variance"
+                          type="number"
+                          step="0.01"
+                          value={
+                            selectedExpectedFuel
+                              ? computedChiVariance == null
+                                ? ""
+                                : money(computedChiVariance)
+                              : chiVariance
+                          }
+                          onChange={(e) => setChiVariance(e.target.value)}
+                          disabled={Boolean(selectedExpectedFuel)}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="chi-var-note">
+                          {t("reconciliation.handIns.varianceNoteOptional")}
+                        </Label>
+                        <Input
+                          id="chi-var-note"
+                          value={chiVarianceNote}
+                          onChange={(e) => setChiVarianceNote(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 border-t pt-3 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                        {selectedExpectedFuel
+                          ? computedChiVariance == null
+                            ? t("reconciliation.handIns.autoVarianceHint", {
+                                expected: money(
+                                  selectedExpectedFuel.expectedAmount
+                                ),
+                              })
+                            : t("reconciliation.handIns.autoVarianceFormula", {
+                                expected: money(
+                                  selectedExpectedFuel.expectedAmount
+                                ),
+                                amount: money(Number.parseFloat(chiAmount)),
+                                variance: money(computedChiVariance),
+                              })
+                          : t("reconciliation.handIns.custodyVarianceHint")}
+                      </p>
+                      <Button
+                        type="submit"
+                        disabled={chiSubmitting}
+                        className="w-full sm:w-auto"
                       >
-                        <SelectTrigger className="w-[min(100%,280px)] min-w-[200px]">
-                          <SelectValue placeholder="—" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {shiftWorkers.map((w) => (
-                            <SelectItem key={w.id} value={String(w.id)}>
-                              {workerLabelWithDesignation(w)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        {chiSubmitting
+                          ? t("auth.loading")
+                          : t("reconciliation.handIns.record")}
+                      </Button>
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="chi-amount">
-                        {t("reconciliation.handIns.amount")}
-                      </Label>
-                      <Input
-                        id="chi-amount"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={chiAmount}
-                        onChange={(e) => setChiAmount(e.target.value)}
-                        className="w-32"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="chi-variance">
-                        {t("reconciliation.handIns.varianceOptional")}
-                      </Label>
-                      <Input
-                        id="chi-variance"
-                        type="number"
-                        step="0.01"
-                        value={chiVariance}
-                        onChange={(e) => setChiVariance(e.target.value)}
-                        className="w-36"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="chi-var-note">
-                        {t("reconciliation.handIns.varianceNoteOptional")}
-                      </Label>
-                      <Input
-                        id="chi-var-note"
-                        value={chiVarianceNote}
-                        onChange={(e) => setChiVarianceNote(e.target.value)}
-                        className="w-[min(100%,220px)]"
-                      />
-                    </div>
-                    <Button type="submit" disabled={chiSubmitting}>
-                      {chiSubmitting
-                        ? t("auth.loading")
-                        : t("reconciliation.handIns.record")}
-                    </Button>
                   </>
                 )}
               </form>
@@ -839,7 +999,11 @@ export const ReconciliationPage = () => {
                       <Label>{t("reconciliation.handIns.worker")}</Label>
                       <Select
                         value={editWorkerId}
-                        onValueChange={setEditWorkerId}
+                        onValueChange={(value) => {
+                          setEditWorkerId(value)
+                          setEditVariance("")
+                          setEditVarianceNote("")
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="—" />
@@ -868,15 +1032,35 @@ export const ReconciliationPage = () => {
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="edit-chi-var">
-                        {t("reconciliation.handIns.varianceOptional")}
+                        {t("reconciliation.handIns.variance")}
                       </Label>
                       <Input
                         id="edit-chi-var"
                         type="number"
                         step="0.01"
-                        value={editVariance}
+                        value={
+                          editExpectedFuel
+                            ? computedEditVariance == null
+                              ? ""
+                              : money(computedEditVariance)
+                            : editVariance
+                        }
                         onChange={(e) => setEditVariance(e.target.value)}
+                        disabled={Boolean(editExpectedFuel)}
                       />
+                      <p className="text-xs leading-relaxed text-muted-foreground">
+                        {editExpectedFuel
+                          ? computedEditVariance == null
+                            ? t("reconciliation.handIns.autoVarianceHint", {
+                                expected: money(editExpectedFuel.expectedAmount),
+                              })
+                            : t("reconciliation.handIns.autoVarianceFormula", {
+                                expected: money(editExpectedFuel.expectedAmount),
+                                amount: money(Number.parseFloat(editAmount)),
+                                variance: money(computedEditVariance),
+                              })
+                          : t("reconciliation.handIns.custodyVarianceHint")}
+                      </p>
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="edit-chi-var-note">

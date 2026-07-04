@@ -5,6 +5,8 @@ export const tankCreateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   capacity: z.number().nonnegative().optional(),
   active: z.boolean().optional(),
+  dipToleranceLiters: z.number().nonnegative().nullable().optional(),
+  dipTolerancePct: z.number().nonnegative().max(100).nullable().optional(),
 })
 
 export const tankUpdateSchema = z.object({
@@ -13,6 +15,8 @@ export const tankUpdateSchema = z.object({
   capacity: z.number().nonnegative().optional(),
   active: z.boolean().optional(),
   actualQuantity: z.number().nonnegative().optional(),
+  dipToleranceLiters: z.number().nonnegative().nullable().optional(),
+  dipTolerancePct: z.number().nonnegative().max(100).nullable().optional(),
 })
 
 export type TankCreateInput = z.infer<typeof tankCreateSchema>

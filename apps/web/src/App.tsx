@@ -6,10 +6,11 @@ import {
   CategoriesPage,
   HomePage,
   LoginPage,
-  MasterDataPage,
+  MoneyPage,
   ProductsPage,
   ReconciliationPage,
   ReportsPage,
+  ShiftClosePage,
   ShiftsPage,
   UsersPage,
   WorkersPage,
@@ -59,9 +60,10 @@ const App = () => (
           <Route path="/shifts" element={<ShiftsPage />} />
           <Route path="/reconciliation" element={<ReconciliationPage />} />
           <Route path="/products" element={<ProductsPage />} />
-          <Route path="/master" element={<MasterDataPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route element={<RequireAdmin />}>
+            <Route path="/shifts/:id/close" element={<ShiftClosePage />} />
+            <Route path="/money" element={<MoneyPage />} />
             <Route path="/categories" element={<CategoriesPage />} />
             <Route path="/users" element={<UsersPage />} />
             <Route path="/workers" element={<WorkersPage />} />

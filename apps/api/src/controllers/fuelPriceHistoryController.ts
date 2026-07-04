@@ -6,6 +6,7 @@ import {
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
+import { recordEvent } from "../services/events.js"
 
 type FuelPriceRow = Awaited<
   ReturnType<typeof prisma.fuelPriceHistory.findMany>
@@ -140,15 +141,33 @@ const create = async (req: Request, res: Response): Promise<void> => {
 
   await ensureNoOverlap(fuelTypeId, fromDate, toDate)
 
-  const row = await prisma.fuelPriceHistory.create({
-    data: {
-      fuelTypeId,
-      pricePerUnit,
-      purchasePricePerUnit:
-        purchasePricePerUnit !== undefined ? purchasePricePerUnit : null,
-      effectiveFrom: fromDate,
-      effectiveTo: toDate,
-    },
+  const row = await prisma.$transaction(async (tx) => {
+    const created = await tx.fuelPriceHistory.create({
+      data: {
+        fuelTypeId,
+        pricePerUnit,
+        purchasePricePerUnit:
+          purchasePricePerUnit !== undefined ? purchasePricePerUnit : null,
+        effectiveFrom: fromDate,
+        effectiveTo: toDate,
+      },
+    })
+    await recordEvent(
+      {
+        type: "FUEL_PRICE_SET",
+        actorUserId: req.user?.id ?? null,
+        entity: "fuelPriceHistory",
+        entityId: created.id,
+        payload: {
+          fuelTypeId,
+          pricePerUnit,
+          effectiveFrom: fromDate.toISOString(),
+          effectiveTo: toDate ? toDate.toISOString() : null,
+        },
+      },
+      tx
+    )
+    return created
   })
 
   res.status(201).json(toFuelPriceResponse(row))

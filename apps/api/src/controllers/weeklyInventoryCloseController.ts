@@ -6,6 +6,7 @@ import {
 } from "@pumpapp/shared"
 import { prisma } from "../db.js"
 import { AppError, ErrorCode } from "../types/errors.js"
+import { recordEvent } from "../services/events.js"
 
 type CloseRow = Prisma.WeeklyInventoryCloseGetPayload<{
   include: { worker: true; lines: true }
@@ -166,7 +167,7 @@ const create = async (req: Request, res: Response): Promise<void> => {
 
   try {
     const created = await prisma.$transaction(async (tx) => {
-      return tx.weeklyInventoryClose.create({
+      const row = await tx.weeklyInventoryClose.create({
         data: {
           weekStart: ws,
           weekEnd: we,
@@ -191,6 +192,24 @@ const create = async (req: Request, res: Response): Promise<void> => {
           lines: true,
         },
       })
+      await recordEvent(
+        {
+          type: "WEEKLY_INVENTORY_CLOSE_RECORDED",
+          actorUserId: req.user?.id ?? null,
+          workerId,
+          entity: "weeklyInventoryClose",
+          entityId: row.id,
+          payload: {
+            weekStart,
+            weekEnd,
+            enforcedShortfall,
+            lineCount: lineItems.length,
+          },
+          notes: notes ?? null,
+        },
+        tx
+      )
+      return row
     })
     res.status(201).json(await toResponse(created))
   } catch (e: unknown) {
